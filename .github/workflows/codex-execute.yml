@@ -72,7 +72,7 @@ jobs:
       CODEX_ENVIRONMENT: ${{ inputs.codex_environment }}
       DRAFT_PR_ONLY: ${{ inputs.draft_pr_only }}
       GH_TOKEN: ${{ github.token }}
-      PORTFOLIO_TOKEN: ${{ secrets.SLUGGER_GITHUB_TOKEN }}
+      PORTFOLIO_TOKEN: ${{ secrets.PORTFOLIO_TASKS_TOKEN }}
 
     steps:
       - name: Validate router contract
