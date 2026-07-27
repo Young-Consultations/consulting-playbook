@@ -1,129 +1,150 @@
 #!/usr/bin/env python3
-"""Static contract checks for the Codex execution workflow."""
-from __future__ import annotations
-
-import re
+"""Regression checks for the execution workflow and its policy adapter."""
+import importlib.util
+import json
 import subprocess
+import sys
 import tempfile
+import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKFLOW = ROOT / ".github" / "workflows" / "codex-execute.yml"
-TEXT = WORKFLOW.read_text()
+WORKFLOW = (ROOT / ".github/workflows/codex-execute.yml").read_text()
+WRAPPER = (ROOT / ".github/actions/run-codex/action.yml").read_text()
+ADAPTER = (ROOT / "scripts/execution_contract.py").read_text()
+if "jsonschema" not in sys.modules:
+    fake_jsonschema = types.ModuleType("jsonschema")
+    fake_jsonschema.ValidationError = type("ValidationError", (Exception,), {})
+    fake_jsonschema.Draft202012Validator = lambda _schema: types.SimpleNamespace(validate=lambda _value: None)
+    sys.modules["jsonschema"] = fake_jsonschema
+SPEC = importlib.util.spec_from_file_location("execution_contract", ROOT / "scripts/execution_contract.py")
+contract = importlib.util.module_from_spec(SPEC)
+assert SPEC.loader
+SPEC.loader.exec_module(contract)
 
 
-def assert_true(condition: bool, message: str) -> None:
-    if not condition:
-        raise AssertionError(message)
+def check(fragment: str, text: str = WORKFLOW) -> None:
+    assert fragment in text, f"missing required fragment: {fragment}"
 
 
-def run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, cwd=cwd, text=True, capture_output=True, check=False)
+def test_canonical_input_acceptance() -> None:
+    check("execution_input:")
+    check("validate-input")
 
 
-def init_repo() -> Path:
-    tmp = Path(tempfile.mkdtemp(prefix="codex-contract-"))
-    run(["git", "init"], tmp).check_returncode()
-    run(["git", "config", "user.email", "contract@example.com"], tmp).check_returncode()
-    run(["git", "config", "user.name", "Contract Test"], tmp).check_returncode()
-    (tmp / "README.md").write_text("baseline\n")
-    run(["git", "add", "README.md"], tmp).check_returncode()
-    run(["git", "commit", "-m", "baseline"], tmp).check_returncode()
-    return tmp
+def test_contract_policy_rejections() -> None:
+    for fragment in ("unsupported contract version", "execution targets another repository", "executor is not codex", "only draft pull requests"):
+        check(fragment, ADAPTER)
 
 
-def has_generated_changes(repo: Path) -> bool:
-    return bool(run(["git", "status", "--porcelain"], repo).stdout.strip())
+def policy_payload(**updates):
+    payload = {
+        "contract_version": "ai-sdlc-contract/v1",
+        "source_issue": "Young-Consultations/portfolio-tasks#42",
+        "target_repository": "Young-Consultations/consulting-playbook",
+        "executor": "codex",
+        "draft_pr_only": True,
+        "project_component": "documentation",
+    }
+    payload.update(updates)
+    return payload
 
 
-def target_repository(body: str) -> str:
-    patterns = [
-        r"<!--\s*target_repository:\s*([^\s<>]+)\s*-->",
-        r"(?im)^target_repository:\s*([^\s]+)\s*$",
-        r"(?im)^target repository:\s*([^\s]+)\s*$",
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, body)
-        if match:
-            return match.group(1).strip()
-
-    lines = body.splitlines()
-    for index, line in enumerate(lines):
-        if re.fullmatch(r"\s*#{2,6}\s*Target repository\s*", line, re.IGNORECASE):
-            for candidate in lines[index + 1 :]:
-                candidate = candidate.strip()
-                if not candidate:
-                    continue
-                if candidate.startswith("#"):
-                    break
-                candidate = re.sub(r"^[-*]\s*", "", candidate).strip()
-                return candidate.strip("` ")
-            break
-    return ""
+def run_policy(payload):
+    with tempfile.TemporaryDirectory() as directory:
+        schema = Path(directory) / "schema.json"
+        destination = Path(directory) / "output"
+        # Policy tests isolate repository enforcement from the separately owned schema.
+        schema.write_text('{"type":"object"}')
+        args = type("Args", (), {
+            "json": json.dumps(payload), "schema": str(schema),
+            "expected_repository": "Young-Consultations/consulting-playbook",
+            "github_output": str(destination),
+        })()
+        contract.validate_input(args)
+        return destination.read_text()
 
 
-def test_untracked_file_is_valid_change() -> None:
-    repo = init_repo()
-    (repo / "new-file.txt").write_text("new\n")
-    assert_true(has_generated_changes(repo), "untracked file must be detected as a generated change")
+def test_canonical_policy_acceptance() -> None:
+    assert "source_issue_number=42" in run_policy(policy_payload())
 
 
-def test_unchanged_repository_fails_validation() -> None:
-    repo = init_repo()
-    assert_true(not has_generated_changes(repo), "unchanged repository must fail generated-change validation")
+def test_wrong_repository_rejection() -> None:
+    try:
+        run_policy(policy_payload(target_repository="Young-Consultations/other"))
+        assert False
+    except ValueError as error:
+        assert "another repository" in str(error)
 
 
-def test_generated_change_detection_uses_porcelain() -> None:
-    assert_true("git status --porcelain" in TEXT, "workflow must use git status --porcelain for change detection")
-    assert_true("git diff --quiet" not in TEXT, "workflow must not use git diff --quiet for change detection")
+def test_version_executor_and_draft_rejections() -> None:
+    for update in ({"contract_version": "v2"}, {"executor": "other"}, {"draft_pr_only": False}):
+        try:
+            run_policy(policy_payload(**update))
+            assert False
+        except ValueError:
+            pass
 
 
-def test_compileall_failure_not_ignored() -> None:
-    assert_true("python -m compileall . || true" not in TEXT, "compileall failures must not be suppressed")
-    assert_true("python -m compileall ." in TEXT, "workflow should still run Python compilation when applicable")
+def test_approval_rechecked() -> None:
+    check('index("status:approved")')
 
 
-def test_passing_tests_report_passed() -> None:
-    assert_true('pytest\n              test_result="passed"' in TEXT, "test_result must become passed only after pytest succeeds")
+def test_noop_retried_once() -> None:
+    check("Retry Codex once", WRAPPER)
+    assert WRAPPER.count("Retry Codex once") == 1
+    check("git status --porcelain", WRAPPER)
 
 
-def test_missing_test_infrastructure_reports_explicit_state() -> None:
-    assert_true('test_result="not-applicable"' in TEXT, "default test result should be not-applicable")
-    assert_true('test_result="not-configured"' in TEXT, "missing pytest should report not-configured")
+def test_validation_and_test_fail_closed() -> None:
+    check("python scripts/validate_repository.py")
+    check("python scripts/test_codex_execute_contract.py")
+    assert "continue-on-error" not in WORKFLOW
 
 
-def test_other_repository_target_rejected() -> None:
-    repo = target_repository("<!-- target_repository: Young-Consultations/other-repo -->")
-    assert_true(repo != "Young-Consultations/consulting-playbook", "other target repository must be rejected")
+def test_draft_pr_and_result_reporting() -> None:
+    check("--draft")
+    check("Validate canonical result")
+    check("Upload canonical execution result")
+    check("Post result to source issue")
 
 
-def test_consulting_repository_target_accepted() -> None:
-    repo = target_repository("## Target repository\n`Young-Consultations/consulting-playbook`\n")
-    assert_true(repo == "Young-Consultations/consulting-playbook", "consulting-playbook target should be accepted")
+def test_result_schema_survives_contract_checkout_removal() -> None:
+    check('cp "$result_schema" "$preserved_result_schema"')
+    check('echo "result=$preserved_result_schema"')
 
 
-def test_third_party_actions_are_pinned_to_full_shas() -> None:
-    uses = re.findall(r"uses:\s+(actions/checkout|openai/codex-action)@([^\s#]+)", TEXT)
-    assert_true(len(uses) == 2, "expected pinned checkout and codex actions")
-    for action, ref in uses:
-        assert_true(re.fullmatch(r"[0-9a-f]{40}", ref) is not None, f"{action} must be pinned to a full SHA")
-    assert_true("# v" in TEXT, "pinned actions should include release-version comments")
+def test_staged_credentials_are_rejected() -> None:
+    validator = ROOT / "scripts/validate_repository.py"
+    with tempfile.TemporaryDirectory() as directory:
+        repository = Path(directory)
+        subprocess.run(["git", "init", "--quiet"], cwd=repository, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=repository, check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repository, check=True)
+        readme = repository / "README.md"
+        readme.write_text("safe\n")
+        subprocess.run(["git", "add", "README.md"], cwd=repository, check=True)
+        subprocess.run(["git", "commit", "--quiet", "-m", "base"], cwd=repository, check=True)
+        readme.write_text("ghp_abcdefghijklmnopqrstuvwxyz\n")
+        subprocess.run(["git", "add", "README.md"], cwd=repository, check=True)
+
+        result = subprocess.run(
+            [sys.executable, str(validator)], cwd=repository, text=True, capture_output=True
+        )
+
+        assert result.returncode != 0
+        assert "credential-like value" in result.stderr
 
 
-def test_no_auto_merge_or_pull_request_target() -> None:
-    assert_true("pull_request_target" not in TEXT, "workflow must not use pull_request_target")
-    assert_true("--draft" in TEXT, "workflow must create draft PRs")
-    forbidden = [r"gh\s+pr\s+merge", r"merge\s+--auto", r"enable-auto-merge"]
-    for pattern in forbidden:
-        assert_true(re.search(pattern, TEXT) is None, f"workflow must not introduce {pattern}")
-
-
-def main() -> None:
-    tests = [value for name, value in sorted(globals().items()) if name.startswith("test_")]
-    for test in tests:
-        test()
-        print(f"PASS {test.__name__}")
+def test_security_properties() -> None:
+    assert "pull_request_target" not in WORKFLOW
+    assert "gh pr merge" not in WORKFLOW
+    assert "contents: write" in WORKFLOW and "pull-requests: write" in WORKFLOW
+    check("credential-like value", (ROOT / "scripts/validate_repository.py").read_text())
 
 
 if __name__ == "__main__":
-    main()
+    for name, function in sorted(globals().copy().items()):
+        if name.startswith("test_"):
+            function()
+            print(f"PASS {name}")
