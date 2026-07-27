@@ -2,6 +2,7 @@
 """Regression checks for the execution workflow and its policy adapter."""
 import importlib.util
 import json
+import subprocess
 import sys
 import tempfile
 import types
@@ -106,6 +107,33 @@ def test_draft_pr_and_result_reporting() -> None:
     check("Validate canonical result")
     check("Upload canonical execution result")
     check("Post result to source issue")
+
+
+def test_result_schema_survives_contract_checkout_removal() -> None:
+    check('cp "$result_schema" "$preserved_result_schema"')
+    check('echo "result=$preserved_result_schema"')
+
+
+def test_staged_credentials_are_rejected() -> None:
+    validator = ROOT / "scripts/validate_repository.py"
+    with tempfile.TemporaryDirectory() as directory:
+        repository = Path(directory)
+        subprocess.run(["git", "init", "--quiet"], cwd=repository, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=repository, check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repository, check=True)
+        readme = repository / "README.md"
+        readme.write_text("safe\n")
+        subprocess.run(["git", "add", "README.md"], cwd=repository, check=True)
+        subprocess.run(["git", "commit", "--quiet", "-m", "base"], cwd=repository, check=True)
+        readme.write_text("ghp_abcdefghijklmnopqrstuvwxyz\n")
+        subprocess.run(["git", "add", "README.md"], cwd=repository, check=True)
+
+        result = subprocess.run(
+            [sys.executable, str(validator)], cwd=repository, text=True, capture_output=True
+        )
+
+        assert result.returncode != 0
+        assert "credential-like value" in result.stderr
 
 
 def test_security_properties() -> None:

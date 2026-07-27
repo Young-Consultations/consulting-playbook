@@ -32,8 +32,10 @@ def main() -> None:
             raise SystemExit(f"changed path is outside the repository allowlist: {name}")
         if FORBIDDEN_NAMES.search(name):
             raise SystemExit("a credential-like file name was detected")
-    # Include untracked files in the content scan without staging their contents.
+    # Scan both working-tree and index changes. Codex may stage a tracked file,
+    # in which case the default diff no longer contains its generated content.
     content = run("git", "diff", "--no-ext-diff")
+    content += run("git", "diff", "--cached", "--no-ext-diff")
     for name in files:
         path = Path(name)
         if path.is_file() and name in run("git", "ls-files", "--others", "--exclude-standard").splitlines():

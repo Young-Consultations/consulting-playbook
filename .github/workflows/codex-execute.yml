@@ -51,8 +51,10 @@ jobs:
           test -n "$input_schema" && test -n "$result_schema" || {
             echo '::error::Canonical execution schemas were not found.'; exit 1;
           }
+          preserved_result_schema="$RUNNER_TEMP/execution-result.schema.json"
+          cp "$result_schema" "$preserved_result_schema"
           echo "input=$input_schema" >> "$GITHUB_OUTPUT"
-          echo "result=$result_schema" >> "$GITHUB_OUTPUT"
+          echo "result=$preserved_result_schema" >> "$GITHUB_OUTPUT"
 
       - name: Install schema validator
         run: python -m pip install --disable-pip-version-check --no-input jsonschema==4.23.0
