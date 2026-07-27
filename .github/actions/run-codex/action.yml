@@ -1,0 +1,50 @@
+name: Controlled Codex execution
+description: Runs Codex and performs the single permitted no-op retry
+inputs:
+  openai-api-key:
+    required: true
+  execution-input:
+    required: true
+  source-issue-file:
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Write bounded prompt
+      shell: bash
+      env:
+        EXECUTION_INPUT: ${{ inputs.execution-input }}
+        SOURCE_ISSUE_FILE: ${{ inputs.source-issue-file }}
+      run: |
+        set -euo pipefail
+        jq -n --argjson contract "$EXECUTION_INPUT" --slurpfile issue "$SOURCE_ISSUE_FILE" \
+          '{execution_input: $contract, source_issue: $issue[0]}' > "$RUNNER_TEMP/codex-task.json"
+        cat > "$RUNNER_TEMP/codex-prompt.md" <<EOF
+        Implement the approved task in $RUNNER_TEMP/codex-task.json. Work only in this repository.
+        Do not access secrets or the network, change workflow/security settings unless explicitly requested,
+        push, open or merge a pull request. Keep the change focused and obey repository conventions.
+        EOF
+    - name: Run Codex
+      uses: openai/codex-action@c300d2798ce5b59a7667c806b5e3a3d2c397ed2f # v1.7
+      with:
+        openai-api-key: ${{ inputs.openai-api-key }}
+        prompt-file: ${{ runner.temp }}/codex-prompt.md
+        working-directory: .
+        sandbox: workspace-write
+        safety-strategy: drop-sudo
+        effort: high
+    - name: Detect tracked and untracked changes
+      id: first
+      shell: bash
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then echo 'noop=false' >> "$GITHUB_OUTPUT"; else echo 'noop=true' >> "$GITHUB_OUTPUT"; fi
+    - name: Retry Codex once after successful no-op
+      if: steps.first.outputs.noop == 'true'
+      uses: openai/codex-action@c300d2798ce5b59a7667c806b5e3a3d2c397ed2f # v1.7
+      with:
+        openai-api-key: ${{ inputs.openai-api-key }}
+        prompt: The prior successful run made no repository changes. Re-read the task and implement it now; all original constraints still apply.
+        working-directory: .
+        sandbox: workspace-write
+        safety-strategy: drop-sudo
+        effort: high

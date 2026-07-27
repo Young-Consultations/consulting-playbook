@@ -3,486 +3,188 @@ name: Execute approved Codex task
 on:
   workflow_dispatch:
     inputs:
-      source_issue:
-        description: Source portfolio issue in owner/repository#number format
+      execution_input:
+        description: Canonical ai-sdlc-contract/v1 execution-input JSON
         required: true
         type: string
-
-      task_type:
-        description: Task classification
-        required: true
-        type: string
-
-      project_component:
-        description: Repository component
-        required: true
-        type: string
-
-      priority:
-        description: Backlog priority
-        required: true
-        type: string
-
-      parallel_safe:
-        description: Whether parallel execution is safe
-        required: true
-        type: boolean
-
-      dependency_status:
-        description: Dependency validation status
-        required: true
-        type: string
-
-      codex_environment:
-        description: Codex environment identifier
-        required: true
-        type: string
-
-      concurrency_group:
-        description: Router-generated concurrency group
-        required: true
-        type: string
-
-      draft_pr_only:
-        description: Require draft pull requests
-        required: true
-        type: boolean
 
 permissions:
   contents: write
   pull-requests: write
 
-concurrency:
-  group: ${{ inputs.concurrency_group }}
-  cancel-in-progress: false
-
 jobs:
   execute:
-    name: Execute consulting task
     runs-on: ubuntu-latest
     timeout-minutes: 45
-
     env:
-      SOURCE_ISSUE: ${{ inputs.source_issue }}
-      TASK_TYPE: ${{ inputs.task_type }}
-      PROJECT_COMPONENT: ${{ inputs.project_component }}
-      PRIORITY: ${{ inputs.priority }}
-      PARALLEL_SAFE: ${{ inputs.parallel_safe }}
-      DEPENDENCY_STATUS: ${{ inputs.dependency_status }}
-      CODEX_ENVIRONMENT: ${{ inputs.codex_environment }}
-      DRAFT_PR_ONLY: ${{ inputs.draft_pr_only }}
       GH_TOKEN: ${{ github.token }}
       PORTFOLIO_TOKEN: ${{ secrets.PORTFOLIO_TASKS_TOKEN }}
-
+      EXECUTION_INPUT: ${{ inputs.execution_input }}
+      RESULT_FILE: ${{ runner.temp }}/execution-result.json
     steps:
-      - name: Validate router contract
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          test -n "$SOURCE_ISSUE"
-          test -n "$TASK_TYPE"
-          test -n "$PROJECT_COMPONENT"
-          test -n "$PRIORITY"
-          test -n "$CODEX_ENVIRONMENT"
-
-          if [[ ! "$SOURCE_ISSUE" =~ ^Young-Consultations/portfolio-tasks#[0-9]+$ ]]; then
-            echo "::error::source_issue must use Young-Consultations/portfolio-tasks#number format."
-            exit 1
-          fi
-
-          case "$DEPENDENCY_STATUS" in
-            satisfied|none|waived)
-              ;;
-            *)
-              echo "::error::Unsupported dependency status."
-              exit 1
-              ;;
-          esac
-
-          if [ "$DRAFT_PR_ONLY" != "true" ]; then
-            echo "::error::Only draft pull-request execution is permitted."
-            exit 1
-          fi
-
-          if [ -z "${PORTFOLIO_TOKEN:-}" ]; then
-            echo "::error::PORTFOLIO_TASKS_TOKEN is not configured."
-            exit 1
-          fi
-
-      - name: Check out consulting repository
+      - name: Check out consulting-playbook
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Retrieve approved portfolio task
-        id: task
+      # The schemas are owned by portfolio-tasks.  This repository deliberately
+      # consumes them rather than carrying a subtly different local copy.
+      - name: Check out canonical execution contract
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          repository: Young-Consultations/portfolio-tasks
+          token: ${{ secrets.PORTFOLIO_TASKS_TOKEN }}
+          path: _execution-contract
+          persist-credentials: false
+          sparse-checkout: |
+            schemas
+            .github/schemas
+
+      - name: Locate canonical schemas
+        id: schemas
         shell: bash
         run: |
           set -euo pipefail
-
-          issue_number="${SOURCE_ISSUE##*#}"
-
-          response="$(
-            GH_TOKEN="$PORTFOLIO_TOKEN" gh api \
-              "/repos/Young-Consultations/portfolio-tasks/issues/$issue_number"
-          )"
-
-          state="$(jq -r '.state' <<<"$response")"
-          title="$(jq -r '.title' <<<"$response")"
-          body="$(jq -r '.body // ""' <<<"$response")"
-          is_pull_request="$(jq -r 'has("pull_request")' <<<"$response")"
-
-          if [ "$is_pull_request" = "true" ]; then
-            echo "::error::The source reference points to a pull request."
-            exit 1
-          fi
-
-          if [ "$state" != "open" ]; then
-            echo "::error::The source portfolio issue is not open."
-            exit 1
-          fi
-
-          labels="$(jq -r '.labels[].name' <<<"$response")"
-
-          grep -Fxq "executor:codex" <<<"$labels" || {
-            echo "::error::The source issue is not assigned to Codex."
-            exit 1
+          input_schema="$(find _execution-contract -type f -iname '*execution-input*.schema.json' -print -quit)"
+          result_schema="$(find _execution-contract -type f -iname '*execution-result*.schema.json' -print -quit)"
+          test -n "$input_schema" && test -n "$result_schema" || {
+            echo '::error::Canonical execution schemas were not found.'; exit 1;
           }
+          echo "input=$input_schema" >> "$GITHUB_OUTPUT"
+          echo "result=$result_schema" >> "$GITHUB_OUTPUT"
 
-          grep -Fxq "status:approved" <<<"$labels" || {
-            echo "::error::The source issue is not approved."
-            exit 1
-          }
+      - name: Install schema validator
+        run: python -m pip install --disable-pip-version-check --no-input jsonschema==4.23.0
 
-          target_repository="$(BODY="$body" python - <<'PY'
-          import os
-          import re
-
-          body = os.environ.get("BODY", "")
-          patterns = [
-              r"<!--\s*target_repository:\s*([^\s<>]+)\s*-->",
-              r"(?im)^target_repository:\s*([^\s]+)\s*$",
-              r"(?im)^target repository:\s*([^\s]+)\s*$",
-          ]
-          for pattern in patterns:
-              match = re.search(pattern, body)
-              if match:
-                  print(match.group(1).strip())
-                  raise SystemExit(0)
-
-          lines = body.splitlines()
-          for index, line in enumerate(lines):
-              if re.fullmatch(r"\s*#{2,6}\s*Target repository\s*", line, re.IGNORECASE):
-                  for candidate in lines[index + 1:]:
-                      candidate = candidate.strip()
-                      if not candidate:
-                          continue
-                      if candidate.startswith("#"):
-                          break
-                      candidate = re.sub(r"^[-*]\s*", "", candidate).strip()
-                      candidate = candidate.strip("` ")
-                      print(candidate)
-                      raise SystemExit(0)
-                  break
-          PY
-          )"
-
-          if [[ ! "$target_repository" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
-            echo "::error::The source issue target repository is missing or malformed."
-            exit 1
-          fi
-
-          if [ "$target_repository" != "Young-Consultations/consulting-playbook" ]; then
-            echo "::error::The source issue targets '$target_repository', not Young-Consultations/consulting-playbook."
-            exit 1
-          fi
-
-          {
-            echo "# Approved portfolio task"
-            echo
-            echo "Source: $SOURCE_ISSUE"
-            echo "Target repository: $GITHUB_REPOSITORY"
-            echo "Task type: $TASK_TYPE"
-            echo "Priority: $PRIORITY"
-            echo "Project component: $PROJECT_COMPONENT"
-            echo
-            echo "## Issue title"
-            echo
-            printf '%s\n' "$title"
-            echo
-            echo "## Issue body"
-            echo
-            printf '%s\n' "$body"
-          } > /tmp/approved-task.md
-
-          safe_component="$(
-            printf '%s' "$PROJECT_COMPONENT" |
-              tr '[:upper:]' '[:lower:]' |
-              sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g'
-          )"
-
-          if [ -z "$safe_component" ]; then
-            safe_component="consulting-task"
-          fi
-
-          branch="codex/${safe_component}-${GITHUB_RUN_ID}"
-
-          echo "issue_number=$issue_number" >> "$GITHUB_OUTPUT"
-          echo "branch=$branch" >> "$GITHUB_OUTPUT"
-
-      - name: Create task branch
+      - name: Validate canonical input
+        id: contract
         shell: bash
         env:
-          BRANCH: ${{ steps.task.outputs.branch }}
+          INPUT_SCHEMA: ${{ steps.schemas.outputs.input }}
         run: |
           set -euo pipefail
+          python scripts/execution_contract.py validate-input \
+            --schema "$INPUT_SCHEMA" --json "$EXECUTION_INPUT" \
+            --expected-repository Young-Consultations/consulting-playbook \
+            --github-output "$GITHUB_OUTPUT"
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Remove contract checkout from worktree
+        run: rm -rf _execution-contract
+
+      - name: Confirm source issue remains approved
+        shell: bash
+        env:
+          SOURCE_REPOSITORY: ${{ steps.contract.outputs.source_repository }}
+          SOURCE_ISSUE_NUMBER: ${{ steps.contract.outputs.source_issue_number }}
+        run: |
+          set -euo pipefail
+          test -n "${PORTFOLIO_TOKEN:-}" || { echo '::error::Portfolio token is unavailable.'; exit 1; }
+          response="$(GH_TOKEN="$PORTFOLIO_TOKEN" gh api "/repos/$SOURCE_REPOSITORY/issues/$SOURCE_ISSUE_NUMBER")"
+          jq -e '.state == "open" and (has("pull_request") | not)' >/dev/null <<<"$response" || {
+            echo '::error::Source issue is not an open issue.'; exit 1;
+          }
+          jq -e '[.labels[].name] | index("status:approved") != null' >/dev/null <<<"$response" || {
+            echo '::error::Source issue is no longer approved.'; exit 1;
+          }
+          jq -e '[.labels[].name] | index("executor:codex") != null' >/dev/null <<<"$response" || {
+            echo '::error::Source issue is no longer assigned to Codex.'; exit 1;
+          }
+          jq -r '{title, body: (.body // "")} | @json' <<<"$response" > "$RUNNER_TEMP/source-issue.json"
+
+      - name: Create one task branch
+        env:
+          BRANCH: ${{ steps.contract.outputs.branch }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -b "$BRANCH"
 
-      - name: Create Codex prompt
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          cat > /tmp/codex-prompt.md <<'PROMPT'
-          Act as a senior software engineer and documentation engineer.
-
-          Implement the approved task described in /tmp/approved-task.md.
-
-          Operating constraints:
-
-          1. Work only in the current repository.
-          2. Implement one focused, independently reviewable issue.
-          3. Do not modify GitHub Actions workflows, repository permissions,
-             secrets, CODEOWNERS, branch protection, or security policy unless
-             the approved issue explicitly requires that exact change.
-          4. Do not access the network, credentials, environment secrets, or
-             files outside the repository except /tmp/approved-task.md.
-          5. Do not run git push, create pull requests, merge branches, create
-             releases, or modify remote repositories.
-          6. Do not add unrelated cleanup or broad refactoring.
-          7. Preserve existing repository conventions.
-          8. Add or update tests when the repository contains executable code.
-          9. For documentation-only work, validate links, formatting,
-             consistency, and repository-relative paths where practical.
-          10. Do not claim that tests passed unless you ran them successfully.
-
-          Before finishing:
-
-          - Review the complete diff.
-          - Remove temporary files.
-          - Ensure no secrets or credentials were introduced.
-          - Ensure the change directly satisfies the approved task.
-          PROMPT
-
-      - name: Run Codex
+      - name: Run Codex through controlled wrapper
         id: codex
-        uses: openai/codex-action@c300d2798ce5b59a7667c806b5e3a3d2c397ed2f # v1.7
+        uses: ./.github/actions/run-codex
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: /tmp/codex-prompt.md
-          working-directory: .
-          sandbox: workspace-write
-          safety-strategy: drop-sudo
-          effort: high
+          execution-input: ${{ inputs.execution_input }}
+          source-issue-file: ${{ runner.temp }}/source-issue.json
 
-      - name: Remove unsafe Git configuration
-        if: always()
+      - name: Validate repository changes
+        id: validation
         shell: bash
         run: |
           set -euo pipefail
-
-          rm -rf .git/hooks
-          mkdir -p .git/hooks
-
-          git config --local --unset-all core.hooksPath || true
-          git config --local --unset-all include.path || true
-
-      - name: Validate generated changes
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          validation_result="failed"
-          test_result="not-applicable"
-
-          status_output="$(git status --porcelain)"
-          if [ -z "$status_output" ]; then
-            echo "::error::Codex did not produce any repository changes."
-            exit 1
-          fi
-
+          git status --porcelain | grep -q . || { echo '::error::Codex made no changes after one retry.'; exit 1; }
           git diff --check
+          python scripts/validate_repository.py
+          echo 'validation=passed' >> "$GITHUB_OUTPUT"
 
-          changed_files="$(git status --porcelain | sed -E 's/^...//')"
-          if grep -E '(^|/)(\.env|.*\.pem|.*\.key|credentials|secrets?)(\.|$)' \
-            <<<"$changed_files" >/dev/null; then
-            echo "::error::Potential secret or credential file detected."
-            exit 1
-          fi
-
-          git add --intent-to-add .
-
-          if git diff | grep -E \
-            '(sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9_]{20,})' \
-            >/dev/null; then
-            echo "::error::Potential credential detected in the diff."
-            exit 1
-          fi
-
-          if [ -f pyproject.toml ] || [ -d tests ]; then
-            python -m compileall .
-
-            if command -v pytest >/dev/null 2>&1 && [ -d tests ]; then
-              pytest
-              test_result="passed"
-            else
-              test_result="not-configured"
-            fi
-          fi
-
-          validation_result="passed"
-          {
-            echo "VALIDATION_RESULT=$validation_result"
-            echo "TEST_RESULT=$test_result"
-          } > /tmp/codex-validation.env
-
-      - name: Commit and push task branch
+      - name: Run repository tests
+        id: tests
         shell: bash
-        env:
-          BRANCH: ${{ steps.task.outputs.branch }}
         run: |
           set -euo pipefail
+          python scripts/test_codex_execute_contract.py
+          echo 'tests=passed' >> "$GITHUB_OUTPUT"
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
+      - name: Commit and push once
+        env:
+          BRANCH: ${{ steps.contract.outputs.branch }}
+        run: |
+          set -euo pipefail
           git add --all
-          git commit -m "Implement ${PROJECT_COMPONENT} task"
-
-          git remote set-url origin \
-            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-
+          git commit -m "Codex: ${{ steps.contract.outputs.project_component }}"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push --set-upstream origin "$BRANCH"
+          git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}.git"
 
-          git remote set-url origin \
-            "https://github.com/${GITHUB_REPOSITORY}.git"
-
-      - name: Open draft pull request
-        id: pull_request
-        shell: bash
+      - name: Create one draft pull request
+        id: pr
         env:
-          BRANCH: ${{ steps.task.outputs.branch }}
-          ISSUE_NUMBER: ${{ steps.task.outputs.issue_number }}
-          CODEX_FINAL_MESSAGE: ${{ steps.codex.outputs.final-message }}
+          BRANCH: ${{ steps.contract.outputs.branch }}
         run: |
           set -euo pipefail
+          url="$(gh pr create --base main --head "$BRANCH" --draft \
+            --title "Consulting: ${{ steps.contract.outputs.project_component }}" \
+            --body "Automated implementation of ${{ steps.contract.outputs.source_issue }}. Human review is required; no automatic merge is enabled.")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
 
-          if [ -f /tmp/codex-validation.env ]; then
-            # shellcheck disable=SC1091
-            source /tmp/codex-validation.env
-          else
-            VALIDATION_RESULT="failed"
-            TEST_RESULT="failed"
-          fi
+      - name: Build canonical success result
+        if: success()
+        env:
+          PR_URL: ${{ steps.pr.outputs.url }}
+          BRANCH: ${{ steps.contract.outputs.branch }}
+        run: python scripts/execution_contract.py build-result --input "$EXECUTION_INPUT" --out "$RESULT_FILE" --status success --branch "$BRANCH" --pull-request-url "$PR_URL" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 
-          {
-            echo "## Summary"
-            echo
-            echo "Automated implementation for:"
-            echo
-            echo "- Source task: \`$SOURCE_ISSUE\`"
-            echo "- Component: \`$PROJECT_COMPONENT\`"
-            echo "- Task type: \`$TASK_TYPE\`"
-            echo "- Priority: \`$PRIORITY\`"
-            echo
-            echo "## Validation"
-            echo
-            echo "- Router contract: passed"
-            echo "- Repository diff validation: $VALIDATION_RESULT"
-            echo "- Secret-pattern validation: $VALIDATION_RESULT"
-            echo "- Test result: $TEST_RESULT"
-            echo "- Draft-only policy: enforced"
-            echo
-            echo "## Codex result"
-            echo
-            printf '%s\n' "${CODEX_FINAL_MESSAGE:-Codex completed the requested implementation.}"
-            echo
-            echo "This pull request requires human review and must not be auto-merged."
-          } > /tmp/pull-request-body.md
+      - name: Build canonical failure result
+        if: failure()
+        run: python scripts/execution_contract.py build-result --input "$EXECUTION_INPUT" --out "$RESULT_FILE" --status failure --failure-category execution_failed --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 
-          pr_url="$(
-            gh pr create \
-              --repo "$GITHUB_REPOSITORY" \
-              --base main \
-              --head "$BRANCH" \
-              --title "Codex: ${PROJECT_COMPONENT}" \
-              --body-file /tmp/pull-request-body.md \
-              --draft
-          )"
-
-          echo "url=$pr_url" >> "$GITHUB_OUTPUT"
-
-      - name: Report result to portfolio task
+      - name: Validate canonical result
         if: always()
-        shell: bash
         env:
-          BRANCH: ${{ steps.task.outputs.branch }}
-          ISSUE_NUMBER: ${{ steps.task.outputs.issue_number }}
-          PR_URL: ${{ steps.pull_request.outputs.url }}
-          JOB_STATUS: ${{ job.status }}
+          RESULT_SCHEMA: ${{ steps.schemas.outputs.result }}
+        run: python scripts/execution_contract.py validate-result --schema "$RESULT_SCHEMA" --file "$RESULT_FILE"
+
+      - name: Upload canonical execution result
+        if: always()
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        with:
+          name: execution-result
+          path: ${{ runner.temp }}/execution-result.json
+          if-no-files-found: error
+
+      - name: Post result to source issue
+        if: always()
+        env:
+          SOURCE_REPOSITORY: ${{ steps.contract.outputs.source_repository }}
+          SOURCE_ISSUE_NUMBER: ${{ steps.contract.outputs.source_issue_number }}
         run: |
           set -euo pipefail
+          test -s "$RESULT_FILE"
+          body="### Codex execution result
 
-          if [ -z "${ISSUE_NUMBER:-}" ]; then
-            echo "Source issue number was not resolved; skipping portfolio comment."
-            exit 0
-          fi
+          \`$(jq -r '.status' "$RESULT_FILE")\` — [workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
 
-          if [ -f /tmp/codex-validation.env ]; then
-            # shellcheck disable=SC1091
-            source /tmp/codex-validation.env
-          else
-            VALIDATION_RESULT="failed"
-            TEST_RESULT="failed"
-          fi
-
-          if [ "$JOB_STATUS" = "success" ]; then
-            body="$(
-              cat <<EOF
-          ### Consulting Codex task dispatched successfully
-
-          - Target repository: \`$GITHUB_REPOSITORY\`
-          - Generated branch: \`${BRANCH:-unknown}\`
-          - Draft pull request: ${PR_URL:-not-created}
-          - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
-          - Validation result: ${VALIDATION_RESULT:-failed}
-          - Test result: ${TEST_RESULT:-failed}
-
-          Human review is required before merge.
-          EOF
-            )"
-          else
-            body="$(
-              cat <<EOF
-          ### Consulting Codex task failed
-
-          - Target repository: \`$GITHUB_REPOSITORY\`
-          - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
-          - Result: failed
-          - Validation result: ${VALIDATION_RESULT:-failed}
-          - Test result: ${TEST_RESULT:-failed}
-
-          Review the workflow logs. No automatic merge was attempted.
-          EOF
-            )"
-          fi
-
-          GH_TOKEN="$PORTFOLIO_TOKEN" gh api \
-            --method POST \
-            "/repos/Young-Consultations/portfolio-tasks/issues/$ISSUE_NUMBER/comments" \
-            -f body="$body"
+          Result contract: \`ai-sdlc-contract/v1\`. Human review is required."
+          GH_TOKEN="$PORTFOLIO_TOKEN" gh api --method POST "/repos/$SOURCE_REPOSITORY/issues/$SOURCE_ISSUE_NUMBER/comments" -f body="$body"
