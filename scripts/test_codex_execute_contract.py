@@ -77,15 +77,15 @@ def test_no_local_production_module_declares_canonical_contract_version() -> Non
 
 
 def test_workflow_installs_shared_contracts_from_org_github() -> None:
-    check("repository: Young-Consultations/.github")
-    check("path: shared-platform")
-    check("python -m pip install --disable-pip-version-check --no-input ./shared-platform/ai_sdlc_contracts")
+    check("https://github.com/Young-Consultations/.github.git")
+    check('"$RUNNER_TEMP/shared-platform"')
+    check('python -m pip install --disable-pip-version-check --no-input "$RUNNER_TEMP/shared-platform/ai_sdlc_contracts"')
     check("python -m ai_sdlc_contracts.execution_input validate")
     check("python -m ai_sdlc_contracts.execution_result validate")
 
 
 def test_organization_release_is_pinned() -> None:
-    check("ref: ai-sdlc-v2.1.0")
+    check("--branch ai-sdlc-v2.1.0")
 
 
 def test_workflow_accepts_canonical_router_inputs() -> None:

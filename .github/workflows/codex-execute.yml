@@ -47,19 +47,23 @@ jobs:
           persist-credentials: false
 
       - name: Check out canonical AI-SDLC control plane
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        with:
-          repository: Young-Consultations/.github
-          ref: ai-sdlc-v2.1.0
-          token: ${{ secrets.ORG_CONTROL_PLANE_TOKEN }}
-          path: shared-platform
-          persist-credentials: false
+        shell: bash
+        env:
+          ORG_CONTROL_PLANE_TOKEN: ${{ secrets.ORG_CONTROL_PLANE_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${ORG_CONTROL_PLANE_TOKEN:-}" || { echo '::error::Organization control-plane token is unavailable.'; exit 1; }
+          auth_header="$(printf 'x-access-token:%s' "$ORG_CONTROL_PLANE_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" \
+            clone --depth 1 --branch ai-sdlc-v2.1.0 \
+            https://github.com/Young-Consultations/.github.git \
+            "$RUNNER_TEMP/shared-platform"
 
       - name: Install canonical AI-SDLC contracts
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check --no-input ./shared-platform/ai_sdlc_contracts
+          python -m pip install --disable-pip-version-check --no-input "$RUNNER_TEMP/shared-platform/ai_sdlc_contracts"
 
       - name: Materialize canonical execution input
         shell: bash
