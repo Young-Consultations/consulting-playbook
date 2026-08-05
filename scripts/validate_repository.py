@@ -34,8 +34,14 @@ def main() -> None:
             raise SystemExit("a credential-like file name was detected")
     # Scan both working-tree and index changes. Codex may stage a tracked file,
     # in which case the default diff no longer contains its generated content.
-    content = run("git", "diff", "--no-ext-diff")
-    content += run("git", "diff", "--cached", "--no-ext-diff")
+    def added_content(diff: str) -> str:
+        return "\n".join(
+            line[1:] for line in diff.splitlines()
+            if line.startswith("+") and not line.startswith("+++")
+        )
+
+    content = added_content(run("git", "diff", "--no-ext-diff"))
+    content += "\n" + added_content(run("git", "diff", "--cached", "--no-ext-diff"))
     for name in files:
         path = Path(name)
         if path.is_file() and name in run("git", "ls-files", "--others", "--exclude-standard").splitlines():
