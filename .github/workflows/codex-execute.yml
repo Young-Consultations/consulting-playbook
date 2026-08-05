@@ -21,6 +21,7 @@ on:
         type: string
 
 concurrency:
+  # Serialization reduces simultaneous attempts; publication preflight provides idempotency.
   group: ${{ inputs.concurrency_group }}
   cancel-in-progress: false
 
@@ -39,6 +40,7 @@ jobs:
       RESULT_FILE: ${{ runner.temp }}/execution-result.json
       EXECUTION_INPUT_FILE: ${{ runner.temp }}/execution-input.json
       POLICY_OUTPUT_FILE: ${{ runner.temp }}/repository-policy.env
+      PUBLICATION_METADATA_FILE: ${{ runner.temp }}/publication-metadata.json
     steps:
       - name: Check out consulting-playbook
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -122,6 +124,31 @@ jobs:
           }
           jq -r '{title, body: (.body // "")} | @json' <<<"$response" > "$RUNNER_TEMP/source-issue.json"
 
+      - name: Materialize publication ownership metadata
+        shell: bash
+        env:
+          DELIVERY_ID: ${{ steps.policy.outputs.delivery_id }}
+          CORRELATION_ID: ${{ steps.policy.outputs.correlation_id }}
+          SOURCE_ISSUE: ${{ steps.policy.outputs.source_issue }}
+          TARGET_REPOSITORY: ${{ steps.policy.outputs.target_repository }}
+          CONTRACT_VERSION: ${{ steps.policy.outputs.contract_version }}
+          BRANCH: ${{ steps.policy.outputs.branch }}
+        run: |
+          set -euo pipefail
+          jq -n --arg delivery_id "$DELIVERY_ID" --arg correlation_id "$CORRELATION_ID" \
+            --arg source_issue "$SOURCE_ISSUE" --arg target_repository "$TARGET_REPOSITORY" \
+            --arg contract_version "$CONTRACT_VERSION" --arg branch "$BRANCH" \
+            '{delivery_id:$delivery_id,correlation_id:$correlation_id,source_issue:$source_issue,target_repository:$target_repository,contract_version:$contract_version,branch:$branch}' \
+            > "$PUBLICATION_METADATA_FILE"
+
+      - name: Preflight deterministic publication
+        if: steps.policy.outputs.execution_mode == 'implement'
+        id: preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/codex_publication.py preflight --metadata "$PUBLICATION_METADATA_FILE" --github-output "$GITHUB_OUTPUT"
+
       - name: Run verify-mode repository checks
         if: steps.policy.outputs.execution_mode == 'verify'
         shell: bash
@@ -139,7 +166,7 @@ jobs:
           echo 'Verify mode completed without Codex invocation, branch creation, push, or pull request publication.'
 
       - name: Create one task branch
-        if: steps.policy.outputs.execution_mode == 'implement'
+        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
         env:
           BRANCH: ${{ steps.policy.outputs.branch }}
         run: |
@@ -149,7 +176,7 @@ jobs:
           git checkout -b "$BRANCH"
 
       - name: Run Codex through controlled wrapper
-        if: steps.policy.outputs.execution_mode == 'implement'
+        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
         id: codex
         uses: ./.github/actions/run-codex
         with:
@@ -158,7 +185,7 @@ jobs:
           source-issue-file: ${{ runner.temp }}/source-issue.json
 
       - name: Validate repository changes
-        if: steps.policy.outputs.execution_mode == 'implement'
+        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
         id: validation
         shell: bash
         run: |
@@ -169,7 +196,7 @@ jobs:
           echo 'validation=passed' >> "$GITHUB_OUTPUT"
 
       - name: Run repository tests
-        if: steps.policy.outputs.execution_mode == 'implement'
+        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
         id: tests
         shell: bash
         run: |
@@ -177,46 +204,42 @@ jobs:
           python scripts/test_codex_execute_contract.py
           echo 'tests=passed' >> "$GITHUB_OUTPUT"
 
-      - name: Commit and push once
-        if: steps.policy.outputs.execution_mode == 'implement'
+      - name: Commit deterministic delivery
+        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
         env:
           BRANCH: ${{ steps.policy.outputs.branch }}
         run: |
           set -euo pipefail
           git add --all
           git commit -m "Codex: ${{ steps.policy.outputs.project_component }}"
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push --set-upstream origin "$BRANCH"
-          git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}.git"
 
-      - name: Create or update one deterministic draft pull request
-        if: steps.policy.outputs.execution_mode == 'implement'
-        id: pr
+      - name: Push and recover publication create races
+        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
+        id: publish
+        shell: bash
         env:
           BRANCH: ${{ steps.policy.outputs.branch }}
         run: |
           set -euo pipefail
-          existing="$(gh pr list --state open --head "$BRANCH" --json url --jq '.[0].url // empty')"
-          if [ -n "$existing" ]; then
-            url="$existing"
-          else
-            url="$(gh pr create --base main --head "$BRANCH" --draft \
-              --title "Consulting: ${{ steps.policy.outputs.project_component }}" \
-              --body "Automated implementation of ${{ steps.policy.outputs.source_issue }}. Human review is required; no automatic merge is enabled.")"
-          fi
-          echo "url=$url" >> "$GITHUB_OUTPUT"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          branch_created=false
+          if git push --set-upstream origin "$BRANCH"; then branch_created=true; fi
+          git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          extra=(); if [ "$branch_created" = true ]; then extra+=(--branch-created); fi
+          python scripts/codex_publication.py publish --metadata "$PUBLICATION_METADATA_FILE" \
+            --title "Consulting: ${{ steps.policy.outputs.project_component }}" --github-output "$GITHUB_OUTPUT" "${extra[@]}"
 
       - name: Build canonical execution result
         if: always()
         shell: bash
         env:
-          PR_URL: ${{ steps.pr.outputs.url }}
+          PR_URL: ${{ steps.publish.outputs.pr_url || steps.preflight.outputs.pr_url }}
           BRANCH: ${{ steps.policy.outputs.branch }}
           EXECUTION_STATUS: ${{ job.status }}
         run: |
           set -euo pipefail
           status="failure"
-          failure_args=(--failure-category execution_failed)
+          failure_args=(--failure-category execution_failed --failure-message "Target publication or execution failed; inspect the workflow logs.")
           if [ "$EXECUTION_STATUS" = "success" ]; then
             status="success"
             failure_args=()

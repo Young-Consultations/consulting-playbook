@@ -7,6 +7,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +20,12 @@ SPEC = importlib.util.spec_from_file_location("codex_repository_policy", POLICY_
 policy = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader
 SPEC.loader.exec_module(policy)
+PUBLICATION_PATH = ROOT / "scripts/codex_publication.py"
+PUBLICATION_SPEC = importlib.util.spec_from_file_location("codex_publication", PUBLICATION_PATH)
+publication = importlib.util.module_from_spec(PUBLICATION_SPEC)
+assert PUBLICATION_SPEC.loader
+sys.modules[PUBLICATION_SPEC.name] = publication
+PUBLICATION_SPEC.loader.exec_module(publication)
 
 PRODUCTION_FILES = [
     path for path in ROOT.rglob("*")
@@ -36,6 +43,7 @@ def check(fragment: str, text: str = WORKFLOW) -> None:
 def sample_payload(**updates):
     payload = {
         "target_repository": "Young-Consultations/consulting-playbook",
+        "contract_version": "ai-sdlc-contract/v2",
         "executor": "codex",
         "source_issue": {
             "repository": "Young-Consultations/portfolio-tasks",
@@ -48,6 +56,7 @@ def sample_payload(**updates):
         "auto_merge": False,
         "execution_mode": "implement",
         "task_id": "TASK-42",
+        "delivery_id": "delivery-42",
         "correlation_id": "corr-42",
         "project_component": "documentation",
     }
@@ -140,7 +149,7 @@ def test_verify_mode_cannot_invoke_codex_or_publish() -> None:
 
 def test_implement_mode_remains_draft_only() -> None:
     assert run_policy(sample_payload())["execution_mode"] == "implement"
-    check("--draft")
+    check('"--draft"', PUBLICATION_PATH.read_text(encoding="utf-8"))
     try:
         run_policy(sample_payload(draft_pr_only=False))
         assert False
@@ -156,8 +165,132 @@ def test_no_workflow_can_merge_or_push_directly_to_main() -> None:
     forbidden = ("gh pr merge", "--auto", "git push origin main", "git push origin HEAD:main")
     for fragment in forbidden:
         assert fragment not in WORKFLOW
-    assert "--base main" in WORKFLOW
-    assert "--head \"$BRANCH\"" in WORKFLOW
+    check('"--base", "main"', PUBLICATION_PATH.read_text(encoding="utf-8"))
+    check('"--head", branch', PUBLICATION_PATH.read_text(encoding="utf-8"))
+
+
+def test_branch_identity_is_stable_across_workflow_runs() -> None:
+    old = os.environ.get("GITHUB_RUN_ID")
+    try:
+        os.environ["GITHUB_RUN_ID"] = "100"
+        first = run_policy(sample_payload())["branch"]
+        os.environ["GITHUB_RUN_ID"] = "999"
+        assert run_policy(sample_payload())["branch"] == first
+    finally:
+        if old is None:
+            os.environ.pop("GITHUB_RUN_ID", None)
+        else:
+            os.environ["GITHUB_RUN_ID"] = old
+
+
+def test_distinct_delivery_ids_have_distinct_hashed_branches() -> None:
+    first = run_policy(sample_payload(delivery_id="a/b"))["branch"]
+    second = run_policy(sample_payload(delivery_id="a-b"))["branch"]
+    assert first != second
+    assert first.startswith("consulting-codex/")
+
+
+def test_requested_branch_must_belong_to_delivery() -> None:
+    expected = policy.delivery_branch("delivery-42")
+    assert run_policy(sample_payload(requested_branch=expected))["branch"] == expected
+    try:
+        run_policy(sample_payload(requested_branch="consulting-codex/delivery-else-deadbeef"))
+        assert False
+    except ValueError as error:
+        assert "belong" in str(error)
+
+
+class FakeGitHub:
+    def __init__(self, branch=False, prs=None):
+        self.branch = branch
+        self.prs = list(prs or [])
+        self.branch_queries = self.pr_queries = self.creates = 0
+
+    def branch_exists(self, repository, branch):
+        self.branch_queries += 1
+        return self.branch
+
+    def pull_requests(self, repository, branch):
+        self.pr_queries += 1
+        return list(self.prs)
+
+    def create_draft(self, repository, branch, title, body):
+        self.creates += 1
+        self.branch = True
+        self.prs = [{"url": "https://example.test/pr/1", "state": "OPEN", "isDraft": True, "body": body}]
+        return self.prs[0]["url"]
+
+
+def publication_metadata(**updates):
+    result = {
+        "delivery_id": "delivery-42", "correlation_id": "corr-42",
+        "source_issue": "Young-Consultations/portfolio-tasks#42",
+        "target_repository": "Young-Consultations/consulting-playbook",
+        "contract_version": "ai-sdlc-contract/v2",
+        "branch": policy.delivery_branch("delivery-42"),
+    }
+    result.update(updates)
+    return result
+
+
+def managed_pr(metadata, **updates):
+    result = {"url": "https://example.test/pr/1", "state": "OPEN", "isDraft": True,
+              "body": publication.marker(metadata)}
+    result.update(updates)
+    return result
+
+
+def test_duplicate_completed_and_lost_acknowledgement_reuse_without_effects() -> None:
+    metadata = publication_metadata()
+    api = FakeGitHub(True, [managed_pr(metadata)])
+    for _ in range(2):
+        decision = publication.classify(api, metadata)
+        assert decision.state == "reuse-completed-delivery"
+        assert decision.pr_url.endswith("/1")
+    assert api.creates == 0
+
+
+def test_create_race_requery_converges_to_managed_draft() -> None:
+    metadata = publication_metadata()
+    api = FakeGitHub()
+    assert publication.classify(api, metadata).state == "new-delivery"
+    api.create_draft(metadata["target_repository"], metadata["branch"], "title", publication.marker(metadata))
+    assert publication.classify(api, metadata).state == "reuse-completed-delivery"
+    assert api.creates == 1
+
+
+def test_conflicting_marker_fails_closed() -> None:
+    metadata = publication_metadata()
+    other = publication_metadata(delivery_id="other")
+    decision = publication.classify(FakeGitHub(True, [managed_pr(other)]), metadata)
+    assert decision.state == "ambiguous"
+
+
+def test_multiple_matching_drafts_fail_closed_without_cleanup() -> None:
+    metadata = publication_metadata()
+    api = FakeGitHub(True, [managed_pr(metadata), managed_pr(metadata, url="https://example.test/pr/2")])
+    assert publication.classify(api, metadata).state == "ambiguous"
+    assert api.creates == 0 and len(api.prs) == 2
+
+
+def test_closed_or_merged_prior_pr_requires_manual_recovery() -> None:
+    metadata = publication_metadata()
+    for state in ("CLOSED", "MERGED"):
+        decision = publication.classify(FakeGitHub(True, [managed_pr(metadata, state=state)]), metadata)
+        assert decision.state == "blocked"
+        assert decision.failure_category == "manual_recovery_required"
+
+
+def test_branch_without_pr_is_blocked() -> None:
+    decision = publication.classify(FakeGitHub(True), publication_metadata())
+    assert decision.failure_category == "orphaned_branch"
+
+
+def test_workflow_gates_codex_on_preflight_and_emits_reuse_result() -> None:
+    check("Preflight deterministic publication")
+    check("steps.preflight.outputs.state == 'new-delivery'")
+    check("steps.publish.outputs.pr_url || steps.preflight.outputs.pr_url")
+    assert "sleep " not in WORKFLOW
 
 
 def test_source_issue_revalidation_and_secret_redaction_preserved() -> None:
