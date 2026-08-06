@@ -9,8 +9,8 @@ consulting-playbook authorization policy.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
-import os
 import re
 from pathlib import Path
 from typing import Any
@@ -21,6 +21,7 @@ SENSITIVE_LABELS = {"sensitive", "sensitivity:sensitive"}
 APPROVAL_LABEL = "status:approved"
 DRAFT_ONLY_KEYS = ("draft_pr_only", "draft_only")
 NO_AUTO_MERGE_KEYS = ("auto_merge", "automatic_merge", "merge_automatically")
+BRANCH_PREFIX = "consulting-codex/"
 
 
 def load_payload(path: str) -> dict[str, Any]:
@@ -81,6 +82,23 @@ def slugify(value: str) -> str:
     return re.sub(r"[^a-z0-9-]+", "-", value.lower()).strip("-") or "task"
 
 
+def delivery_branch(delivery_id: str) -> str:
+    """Return a readable, collision-resistant branch for a logical delivery."""
+    digest = hashlib.sha256(delivery_id.encode("utf-8")).hexdigest()[:16]
+    return f"{BRANCH_PREFIX}{slugify(delivery_id)[:40]}-{digest}"
+
+
+def validate_requested_branch(requested: Any, delivery_id: str) -> str:
+    expected = delivery_branch(delivery_id)
+    if requested is None:
+        return expected
+    if not isinstance(requested, str) or requested != expected:
+        raise ValueError("requested branch does not belong to the canonical delivery ID")
+    if not requested.startswith(BRANCH_PREFIX) or not re.fullmatch(r"[a-z0-9][a-z0-9./-]{1,254}", requested):
+        raise ValueError("requested branch is unsafe or has the wrong target prefix")
+    return requested
+
+
 def write_output(path: str | None, values: dict[str, Any]) -> None:
     if not path:
         return
@@ -113,11 +131,17 @@ def validate_policy(payload: dict[str, Any], expected_repository: str) -> dict[s
     if mode not in ALLOWED_MODES:
         raise ValueError("unsupported execution mode")
 
-    task_id = str(field(payload, "task_id", "id", default=f"issue-{source_number}"))
+    delivery_value = field(payload, "delivery_id", "idempotency_key")
+    if not isinstance(delivery_value, str) or not delivery_value.strip() or len(delivery_value) > 256:
+        raise ValueError("canonical delivery ID is required")
+    delivery_id = delivery_value.strip()
+    task_id = str(field(payload, "task_id", default=f"issue-{source_number}"))
     correlation_id = str(field(payload, "correlation_id", default=task_id))
     component = str(field(payload, "project_component", "component", "title", default="task"))
-    run_id = re.sub(r"[^0-9]", "", os.environ.get("GITHUB_RUN_ID", "0")) or "0"
-    branch = f"consulting-codex/{slugify(task_id)}-{source_number}-{run_id}"
+    contract_version = field(payload, "contract_version", "version")
+    if not isinstance(contract_version, str) or not contract_version:
+        raise ValueError("canonical contract version is required")
+    branch = validate_requested_branch(field(payload, "requested_branch"), delivery_id)
 
     return {
         "source_repository": source_repository,
@@ -127,6 +151,9 @@ def validate_policy(payload: dict[str, Any], expected_repository: str) -> dict[s
         "execution_mode": mode,
         "task_id": task_id,
         "correlation_id": correlation_id,
+        "delivery_id": delivery_id,
+        "target_repository": expected_repository,
+        "contract_version": contract_version,
         "branch": branch,
     }
 
