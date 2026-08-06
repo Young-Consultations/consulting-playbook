@@ -51,6 +51,7 @@ sequenceDiagram
   actor User
   participant App as Application Service
   participant Policy as Domain Policy
+  participant Tx as Governed Transaction Port
   participant Store as Record Port
   participant Audit as Audit Port
   participant Ext as External Port
@@ -60,16 +61,25 @@ sequenceDiagram
     Policy-->>App: typed rejection
     App-->>User: safe error + remediation
   else valid local transition
-    App->>Store: atomically save revision + domain events
-    Store->>Audit: append auditable transition
-    opt external effect required
-      App->>Ext: command + correlation + idempotency
-      Ext-->>App: acknowledgement / indeterminate / rejection
-      App->>Store: record integration status
+    App->>Tx: commit revision + events + audit record
+    Tx->>Store: stage revision + domain events
+    Tx->>Audit: stage auditable transition
+    alt state or audit stage fails
+      Tx-->>App: roll back all staged writes
+      App-->>User: safe failure; governed state unchanged
+    else atomic commit succeeds
+      Tx-->>App: committed revision + audit identity
+      opt external effect required
+        App->>Ext: command + correlation + idempotency
+        Ext-->>App: acknowledgement / indeterminate / rejection
+        App->>Tx: atomically record integration status + audit
+      end
+      App-->>User: accepted result + revision
     end
-    App-->>User: accepted result + revision
   end
 ```
+
+The governed transaction boundary commits the authoritative revision, its domain events and the required audit record atomically. An implementation may instead commit the state, events and an audit outbox entry in one store transaction, but that outbox entry is part of the governed record and must be durably accepted before the mutation succeeds; a relay may subsequently deliver it idempotently to a separate audit sink. Failure to stage any required item rolls back the complete transaction, so no governed revision can become visible without durable audit intent.
 
 Events are past-tense facts such as `FindingValidated`, `DecisionRecorded`, `HandoffAcknowledged` and `KnowledgeAssetPublished`. Event consumers may rebuild views or trigger authorized orchestration; they must not infer approval from event presence.
 
