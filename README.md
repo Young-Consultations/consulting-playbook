@@ -2,6 +2,10 @@
 
 `Young-Consultations/consulting-playbook` is a target executor repository for approved consulting-playbook implementation work.
 
+## Repository direction
+
+The [Consulting Playbook Vision](docs/VISION.md) defines the intended direction for this repository as Young Consultations' reusable consulting operating system. The target-executor workflow described below is an enabling delivery mechanism for approved implementation work; it is not the full consulting-playbook product vision, and the envisioned consulting methods and assets still require requirements development and implementation.
+
 ## AI-SDLC control plane
 
 The shared AI-SDLC execution control plane is owned by `Young-Consultations/.github`. That organization repository owns the canonical schemas, the `ai_sdlc_contracts` Python package, task and execution validation, contract versioning, repository registry, routing policy, shared failure categories, and correlation behavior.
