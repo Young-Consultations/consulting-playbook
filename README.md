@@ -8,11 +8,11 @@ The [Consulting Playbook Vision](docs/VISION.md) defines the intended direction 
 
 ## AI-SDLC control plane
 
-The shared AI-SDLC execution control plane is owned by `Young-Consultations/.github`. That organization repository owns the canonical schemas, the `ai_sdlc_contracts` Python package, task and execution validation, contract versioning, repository registry, routing policy, shared failure categories, and correlation behavior.
+The shared AI-SDLC execution control plane is owned by `Young-Consultations/.github`. That organization repository owns canonical schemas, task and execution validation, contract versioning, repository registry, routing policy, shared failure categories, and correlation behavior.
 
 `Young-Consultations/portfolio-tasks` owns portfolio backlog issues, structured intake and governance metadata, explicit human approval, and initiating the organization router. It does not own shared execution schemas or target execution-result contracts.
 
-This repository consumes `ai-sdlc-contract/v2` as dispatched by the organization router to `.github/workflows/codex-execute.yml`. The workflow pins the organization control-plane checkout to immutable release `ai-sdlc-v2.1.0` and installs `ai_sdlc_contracts` from that checkout instead of copying schemas or implementing shared validators locally.
+The next-MVP adapter will consume `ai-sdlc-contract/v2` as dispatched by the organization router to `.github/workflows/codex-execute.yml`. Its approved compatibility unit is release `2.2.0` at immutable commit `f2491872976a4dcc1633997954c03c07cbc4fced`. It will consume `contracts/task-contract.schema.json`, `contracts/execution-input.schema.json`, and `contracts/execution-result.schema.json` directly at that commit. No published package, undocumented module, mutable branch, or unavailable tag is assumed. The existing workflow is blueprint evidence only and is not aligned or enabled by this documentation change.
 
 Upgrades to the organization control-plane release require an explicit reviewed repository change. Rollback must pin the workflow to the previous immutable known-good organization release.
 
@@ -22,11 +22,11 @@ The consulting-playbook target workflow owns only repository-specific behavior:
 
 - validating that the canonical input targets `Young-Consultations/consulting-playbook`;
 - requiring the executor to be Codex;
-- revalidating immediately before execution that the source is an open GitHub issue, remains explicitly approved, remains assigned to Codex, and is not marked sensitive;
+- authenticating the admitted caller and enforcing the canonical admitted request plus repository-local policy without a mutable source-label approval recheck;
 - enforcing draft-only publication, no automatic merge, and no direct push to `main`;
 - deriving deterministic implementation branches from canonical delivery identity;
 - running repository validation and tests before publication;
-- producing and uploading a canonical execution result through the organization package.
+- producing canonical execution-result/v2 and separately invoking the organization-owned fail-closed result-receiver interface.
 
 Verify mode is non-mutating: it validates the canonical contract, routing authorization, repository policy, and safe repository checks, but it does not invoke Codex, create a branch, commit, push, or create a pull request.
 
@@ -34,7 +34,7 @@ Implement mode may run Codex through the controlled wrapper and may create or up
 
 ## Idempotent publication protocol
 
-The canonical `delivery_id` (or its contract-defined alias, `idempotency_key`) is
+The canonical `delivery_id` is
 the logical publication identity. It must be stable across dispatch retries and
 must not be a workflow run ID. The target branch convention is:
 
@@ -47,10 +47,10 @@ from colliding. A router-supplied `requested_branch` is accepted only when it is
 exactly the branch this convention derives for the supplied delivery identity.
 
 Every managed pull request body contains exactly one machine-readable ownership
-marker. The compact JSON object is embedded as:
+marker. The canonical marker is embedded as:
 
 ```
-<!-- consulting-codex-publication:{"branch":"...","contract_version":"...","correlation_id":"...","delivery_id":"...","source_issue":"owner/repository#123","target_repository":"Young-Consultations/consulting-playbook"} -->
+<!-- ai-sdlc-delivery-id: delivery-id -->
 ```
 
 Before Codex is invoked, the target queries the remote branch and all open,
@@ -90,11 +90,11 @@ and secrets are never included.
 
 ### Rollout and rollback
 
-Roll out only after the organization pins a shared-contract release that supplies
-a stable `delivery_id`/`idempotency_key`, `correlation_id`, `source_issue`,
-`target_repository`, `requested_branch`, `concurrency_group`, `draft_pr_only`,
-and `execution_mode`. Existing run-ID branches are legacy and are not adopted
-automatically. To roll back, disable dispatch first, restore the previous target
-workflow and policy commit, and restore the previous immutable shared-contract
-pin if it changed; do not redeliver identities already published under this
-protocol until operators reconcile their managed PRs.
+Live rollout is prohibited while the organization registry entry is disabled and
+while its result receiver remains an interface skeleton. The exact target inputs
+are `execution_input_json` and `concurrency_group`; see the
+[next-MVP profile](docs/requirements/NextMVP.md) for the complete immutable
+interface, approval/content boundaries, planned fake tests, and external gates.
+Existing run-ID branches are legacy and are not adopted automatically. Rollback
+must disable dispatch first and must not redeliver identities already published
+until operators reconcile their managed PRs.

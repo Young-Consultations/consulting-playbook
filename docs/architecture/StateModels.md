@@ -125,10 +125,10 @@ Blocked recovery is manual evidence-preserving reconciliation. A replacement req
 
 Every terminal state maps to the organization-owned canonical result vocabulary
 and one idempotent result transition. The local model does not prescribe external
-status strings. `Received` can advance only after stable approval evidence binds
-the portfolio authority, approved revision/scope and intended target and passes
-freshness/revocation plus repository policy. A mutable portfolio label is not an
-authorization state in this model. Interrupted or unknown publication remains
+status strings. `Received` can advance only after caller authentication/authorization, canonical
+router admission, and repository policy validation. A material change requires a
+new task ID and approval; the target never uses a mutable portfolio label as an
+authorization check. Interrupted or unknown publication remains
 blocked/ambiguous until reconciliation proves the visible effect.
 
 ## Evidence reference

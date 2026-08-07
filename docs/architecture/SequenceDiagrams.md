@@ -158,7 +158,7 @@ sequenceDiagram
   participant T as Target Adapter
   participant H as Git Host
   participant X as Bounded Executor
-  T->>T: Validate stable approval proof + target policy
+  T->>T: Authenticate admitted caller + validate target policy
   T->>H: Inspect deterministic branch + all PRs for delivery identity
   alt one valid open managed draft
     H-->>T: Existing draft

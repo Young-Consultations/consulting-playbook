@@ -60,12 +60,11 @@ Before AI use: classify data, verify purpose/destination authorization, minimize
 
 ## Target executor security
 
-Validate the immutable release's documented public schema/API, stable portfolio
-repository-change approval proof, exact target, and local executor/mode,
-classification and publication policy. Routing admission is not target authority;
-a mutable approval/queue label is not proof. Bind proof to authority, approved
-revision/scope, target and time and fail closed for material edits, stale evidence,
-withdrawal, revocation or mismatch. Run bounded tooling with minimal credentials
+Validate the immutable schema files, exact target, admitted caller, task type,
+executor/mode, classification, and local publication policy. Router admission is
+the canonical organization approval; do not recheck a mutable approval/queue label
+or demand a second approval record. Require a new task ID and approval after every
+material change and fail closed for stale/improper routing or mismatch. Run bounded tooling with minimal credentials
 and no uncontrolled network/secrets. Validate paths, secrets and tests. Permit only
 deterministic draft publication; never direct `main`, auto-merge or automatic
 merge. Sanitize canonical result messages and preserve ambiguity for reconciliation.

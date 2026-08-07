@@ -68,10 +68,11 @@ result consumption, retention, SLA, test fixtures, incident response, recovery,
 upgrade, and rollback. See
 [Interface-Organization-Control-Plane.md](Interface-Organization-Control-Plane.md).
 
-Specifically unresolved for next-MVP enablement are the immutable organization
-release, documented public package API, stable approval-proof semantics,
-result-return transport, shared fixture location, target registry enablement, and
-canonical lifecycle vocabulary. No observed module/path is treated as confirmed.
+The next-MVP compatibility unit is release `2.2.0` at immutable commit
+`f2491872976a4dcc1633997954c03c07cbc4fced`; direct schema-file consumption is
+required and no package API is assumed. Live use remains blocked by the disabled
+registry and organization-owned receiver skeleton. Executable shared fixture
+payloads are incomplete; their completion is an external dependency.
 
 ### `Young-Consultations/portfolio-tasks`
 
@@ -79,8 +80,8 @@ Confirm intake schema/transport, issue/state model, authority, classifications,
 deduplication, acknowledgements, synchronization, cancellation, permissions,
 retention, result handling, and recovery. See
 [Interface-Portfolio-Tasks.md](Interface-Portfolio-Tasks.md).
-Confirmation must explain material-edit, stale-proof, withdrawal and revocation
-behavior when an approval label changes to queued after routing.
+For this adapter, router admission is canonical approval, `queued` is only a
+projection, and every material edit requires a new task ID and approval.
 
 ### `Young-Consultations/slugger`
 
