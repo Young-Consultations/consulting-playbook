@@ -170,14 +170,19 @@ sequenceDiagram
     T->>X: Authorized bounded task
     X-->>T: Candidate changes
     T->>T: Validate and test; commit locally
-    T->>H: Create deterministic remote branch
-    alt another attempt wins
-      H-->>T: Create conflict
-      T->>H: Immediate requery
+    T->>T: Revalidate approval freshness/revocation + target policy
+    alt approval revoked, stale, or unavailable
+      T-->>C: Rejected; no remote publication effects
+    else publication still authorized
+      T->>H: Create deterministic remote branch
+      alt another attempt wins
+        H-->>T: Create conflict
+        T->>H: Immediate requery
+      end
+      T->>H: Create/requery managed draft with exact marker
+      H-->>T: Exactly one valid draft or ambiguity
+      T-->>C: Deliver/expose canonical success or ambiguous result
     end
-    T->>H: Create/requery managed draft with exact marker
-    H-->>T: Exactly one valid draft or ambiguity
-    T-->>C: Deliver/expose canonical success or ambiguous result
   end
 ```
 
