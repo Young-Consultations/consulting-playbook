@@ -20,6 +20,9 @@ operating system independently of the current implementation.
 
 ## Document set
 
+- [Next-MVP profile](NextMVP.md) — narrow release scope, acceptance boundary,
+  deferrals, no-Codex conformance, and external confirmation gates.
+
 | Document | Purpose |
 | --- | --- |
 | [ProjectRequirements.md](ProjectRequirements.md) | Product purpose, scope, outcomes, stakeholders, and constraints |

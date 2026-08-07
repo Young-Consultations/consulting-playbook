@@ -137,17 +137,16 @@ sequenceDiagram
 sequenceDiagram
   participant C as Control Plane
   participant T as Target Adapter
-  participant S as Source Authority
   participant V as Repository Validator
   C->>T: Canonical versioned execution input
-  T->>T: Validate schema/target/executor/mode
-  T->>S: Query current open/approved/assigned/non-sensitive state
+  T->>T: Validate public contract API/version/target/mode
+  T->>T: Validate stable portfolio approval proof + local policy
   alt invalid or unavailable
-    T-->>C: Sanitized failure result
+    T-->>C: Canonical correlated rejection result
   else authorized verify
     T->>V: Safe non-mutating checks
     V-->>T: Check result
-    T-->>C: Canonical result (no branch/commit/PR)
+    T-->>C: Canonical verify result (no Codex/branch/commit/PR)
   end
 ```
 
@@ -159,6 +158,7 @@ sequenceDiagram
   participant T as Target Adapter
   participant H as Git Host
   participant X as Bounded Executor
+  T->>T: Validate stable approval proof + target policy
   T->>H: Inspect deterministic branch + all PRs for delivery identity
   alt one valid open managed draft
     H-->>T: Existing draft
@@ -177,6 +177,12 @@ sequenceDiagram
     end
     T->>H: Create/requery managed draft with exact marker
     H-->>T: Exactly one valid draft or ambiguity
-    T-->>C: Canonical success or blocked result
+    T-->>C: Deliver/expose canonical success or ambiguous result
   end
 ```
+
+If the executor returns no changes, the adapter emits the canonical no-change
+outcome without branch or PR creation. If result delivery acknowledgement is lost,
+the same result identity is reconciled/replayed without a second lifecycle
+transition. The organization-owned transport and lifecycle terms require external
+confirmation; these diagrams intentionally do not create local equivalents.

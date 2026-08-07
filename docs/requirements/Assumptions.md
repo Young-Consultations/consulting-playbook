@@ -10,7 +10,7 @@ inspection of external repositories.
 | CA-01 | Consulting-playbook owns reusable consulting knowledge and recommendation-to-action patterns, not portfolio governance or Slugger. |
 | CA-02 | Human judgment and designated authority remain final for recommendations, approvals, architecture, review, merge, and production. |
 | CA-03 | Current implemented scope is primarily a bounded organization-routed target executor; intended consulting content is not yet implemented. |
-| CA-04 | Current execution supports verify and implement modes, requires approval/non-sensitive/Codex assignment, and permits draft publication but not automatic merge. |
+| CA-04 | Inspected implementation evidence supports verify/implement paths, approval/non-sensitive/Codex checks, and draft-only publication; it does not prove next-MVP contract or authorization conformance. |
 | CA-05 | Other repositories were not inspected; cross-repository descriptions are owner-supplied context and required contracts, not implementation claims. |
 
 ## Working assumptions requiring validation
@@ -68,12 +68,19 @@ result consumption, retention, SLA, test fixtures, incident response, recovery,
 upgrade, and rollback. See
 [Interface-Organization-Control-Plane.md](Interface-Organization-Control-Plane.md).
 
+Specifically unresolved for next-MVP enablement are the immutable organization
+release, documented public package API, stable approval-proof semantics,
+result-return transport, shared fixture location, target registry enablement, and
+canonical lifecycle vocabulary. No observed module/path is treated as confirmed.
+
 ### `Young-Consultations/portfolio-tasks`
 
 Confirm intake schema/transport, issue/state model, authority, classifications,
 deduplication, acknowledgements, synchronization, cancellation, permissions,
 retention, result handling, and recovery. See
 [Interface-Portfolio-Tasks.md](Interface-Portfolio-Tasks.md).
+Confirmation must explain material-edit, stale-proof, withdrawal and revocation
+behavior when an approval label changes to queued after routing.
 
 ### `Young-Consultations/slugger`
 

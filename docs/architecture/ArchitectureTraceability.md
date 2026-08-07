@@ -51,6 +51,17 @@ Trace flows **Vision goal → business rules/objective → requirements → arch
 
 ## Interface and use-case coverage
 
+### Next-MVP architecture slice
+
+The [repository release profile](../requirements/NextMVP.md) selects AC-08–11,
+ADR-005–008/010–011, Target Policy, bounded Executor, Repository Validator,
+Publication Coordinator, and the control-plane/portfolio/Git ports. It excludes
+AC-01–07 consulting runtime implementation. FR-EXE-01–02 and the profile's listed
+NFRs trace through UC-10 and Sequences 6–7 to deterministic fake-executor,
+fake-publication, duplicate/result-replay, failure, and shared-fixture conformance
+evidence. The terminal boundary is one validated draft or reuse/no-change and one
+canonical correlated result; no merge or downstream lifecycle is included.
+
 | Use cases | Primary components | Interfaces |
 |---|---|---|
 | UC-01 | Engagement Context, Knowledge Catalog | Human authoring, Command/Query, Catalog |

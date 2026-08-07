@@ -41,5 +41,5 @@ rules. Priority uses P0–P3.
 | --- | --- | --- | --- | --- |
 | US-18 | As a consultant, I want bounded AI drafting with visible provenance so that I gain speed without treating AI as authority. | FR-SEC-02 and NFR-AI-02 pass; fabricated facts are rejected. | P0 | Classification/authorization |
 | US-19 | As an AI agent, I want self-contained approved context so that I can work within one repository without inventing external behavior. | NFR-AI-01 and FR-HO-01 pass in a blind-agent review. | P1 | US-14 |
-| US-20 | As a repository owner, I want live authorization checked before mutation so that stale routing cannot execute revoked or sensitive work. | FR-EXE-01 negative cases all fail without effects. | P0 | External contracts |
+| US-20 | As a repository owner, I want stable portfolio approval evidence and local authorization checked before execution so mutable labels, stale routing, edits, revocation, or sensitive work cannot grant authority. | FR-EXE-01 negative cases all fail without effects. | P0 | External contracts |
 | US-21 | As a human reviewer, I want retries to converge on one draft and never merge so that publication remains safe and reviewable. | FR-EXE-02 race, ambiguity, reuse, and no-merge criteria pass. | P0 | US-20 |

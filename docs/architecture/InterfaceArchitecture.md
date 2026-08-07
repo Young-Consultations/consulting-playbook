@@ -35,20 +35,31 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
 ## External interface: Organization AI-SDLC control plane
 
 - **Responsibility:** external owner supplies canonical execution input schemas, contract versions, routing, repository registration, shared validation/failure taxonomy and result consumption. This repository supplies only target policy and effect/result.
-- **Inbound:** validated version, source issue, target repository, executor, execution mode, approval/classification fields, delivery/idempotency identity, correlation, requested branch/concurrency, and draft/no-merge constraints.
-- **Outbound:** original identities, source/target, deterministic branch, optional draft URL, workflow reference, terminal status and shared failure category with sanitized message.
-- **Assumptions:** currently referenced contract is `ai-sdlc-contract/v2`; exact future fields, transport, auth, SLA and retention remain owner-validated.
-- **Validation:** shared schema first, then exact target, supported executor/mode, fresh source authority/sensitivity and repository policy.
+- **Inbound:** supported version, source and target, executor/mode, stable approval
+  evidence, classification, delivery/result/correlation identities, publication
+  constraints, and the organization-defined freshness/revocation material.
+- **Outbound:** the canonical result only, covering every terminal outcome with
+  identities, target, timestamps, validation evidence, safe failure/reconciliation
+  detail, and branch/draft metadata when applicable.
+- **Assumptions:** immutable release, public API, approval-proof semantics, result
+  transport, fixtures, registry enablement and lifecycle vocabulary are all
+  externally unconfirmed; observed implementation imports are not contracts.
+- **Validation:** documented public schema/API first, then proof/target, supported
+  executor/mode, sensitivity, repository policy, and effect reconciliation.
 - **Retries/idempotency:** router retries retain logical delivery identity; concurrency is optimization only. Results are correlated and safe to re-consume.
 - **Ownership:** `Young-Consultations/.github` owns contract and routing; this repository owns local acceptance and publication policy.
 
 ## External interface: Portfolio Tasks
 
 - **Recommendation intake input:** source engagement/recommendation/decision references, disposition and conditions, outcome/scope/exclusions, independently understandable proposed tasks by owner, acceptance outcomes, dependencies, risks, readiness, priority rationale, classification, transfer authorization, correlation and idempotency.
-- **Execution-source input:** canonical open issue reference and explicit structured current approval, executor assignment and non-sensitive classification as required by the shared contract.
+- **Execution-source input:** canonical issue reference plus stable structured
+  repository-change approval evidence, executor assignment and classification.
 - **Output expected:** accepted/rejected acknowledgement, external identity/version, authoritative status and safe reason.
 - **Assumptions/unknowns:** exact schema, transport, labels/state model, deduplication, cancellation, permissions, retention and SLA are unknown until confirmed.
-- **Validation:** never infer authority/classification from prose; query fresh authoritative state before execution; treat local cached state as advisory.
+- **Validation:** never infer authority/classification from prose or a mutable
+  label; validate evidence binding authority, approved revision/scope and target,
+  and apply canonical edit/withdrawal/revocation/freshness rules. Treat cached
+  state as advisory. Consulting approval remains a separate domain concept.
 - **Retries:** transport failure may retry with identical idempotency identity after reconciliation; business rejection or revoked authority may not.
 - **Ownership:** Portfolio Tasks owns intake, priority, approval and task state; this repository owns proposal construction and traceability.
 
@@ -70,4 +81,4 @@ Input is principal, action, subject and required freshness; output is authentica
 
 ## Compatibility and conformance
 
-Each adapter ships consumer/provider contract tests, valid/invalid fixtures, maximum-size and classification tests, retry/lost-acknowledgement scenarios, and a support matrix. Contract owners approve production compatibility. Deprecation states announcement, overlap window, migration and rollback; historical records remain readable under their original semantics.
+Each adapter ships consumer/provider contract tests, valid/invalid fixtures, maximum-size and classification tests, retry/lost-acknowledgement scenarios, and a support matrix. Ordinary target conformance replaces Codex and Git publication with deterministic fakes and has no external write credentials. Drift from organization-owned fixtures blocks merge. A real-Codex boundary is separately controlled and excluded from ordinary CI. Contract owners approve production compatibility. Deprecation states announcement, overlap window, migration and rollback; historical records remain readable under their original semantics.

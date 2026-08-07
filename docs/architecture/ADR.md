@@ -63,6 +63,12 @@
 **Consequences:** Unknown details are acceptance blockers, not design blanks to invent.
 **Open questions:** Every external schema, transport, auth and SLA listed in Integration Architecture.
 
+**Next-MVP application:** The target pins package, schema, workflow interface,
+registry expectation, and shared consumer fixtures to one immutable compatible
+organization release. Only its documented public API is consumable; internal or
+observed module paths and copied schemas are prohibited. Unsupported or unverified
+APIs fail closed. Public API and release details remain an external enablement gate.
+
 ## ADR-008 — Idempotent external effects with reconciliation
 
 **Context:** Network retries/lost acknowledgements can duplicate portfolio submissions or publications.
@@ -71,6 +77,11 @@
 **Tradeoffs:** Safety and traceability over automatic recovery in ambiguous cases.
 **Consequences:** External contracts must support deduplication/query or documented manual recovery. Concurrency is not correctness.
 **Open questions:** Portfolio deduplication contract and retention window.
+
+**Next-MVP application:** At-least-once deliveries and result replay converge on
+one draft and one externally visible result transition. No-change has no
+publication effect; interruption or uncertain publication is reconciled before
+retry and reports canonical recovery guidance.
 
 ## ADR-009 — Domain events and regenerable audience projections
 
@@ -89,6 +100,23 @@
 **Tradeoffs:** Controlled benefit and portability versus less autonomy.
 **Consequences:** AI cannot invoke decision transitions; evaluation/security tests are required.
 **Open questions:** Approved models, evaluation thresholds, residency/retention and disclosure formats.
+
+## ADR-011 — Stable approval proof across mutable workflow state
+
+**Context:** Portfolio approval truth and routing admission have different owners,
+and queue processing may replace an approval label after admission.
+**Decision:** Treat control-plane admission as necessary but insufficient. Validate
+stable canonical repository-change approval evidence plus local policy; never use
+a mutable label as the sole proof. Bind proof to authority, approved revision/scope,
+target and decision time and fail closed for edits, staleness, withdrawal,
+revocation, invalid authority or mismatch.
+**Alternatives:** Recheck only `status:approved`; trust routing without target checks;
+reuse consulting recommendation approval.
+**Tradeoffs:** Race-safe accountability over simpler label checks; depends on an
+organization decision if the canonical contract lacks sufficient evidence.
+**Consequences:** Live registry enablement is blocked until proof and revocation
+semantics are externally confirmed. Consulting and execution approvals remain
+distinct audit records.
 
 ## ADR governance
 

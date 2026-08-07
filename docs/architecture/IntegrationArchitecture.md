@@ -8,8 +8,8 @@ External systems are authoritative only for their owned state. Anti-corruption a
 
 | Collaborator | Known | Assumed (must validate) | Unknown / decision required |
 |---|---|---|---|
-| Organization `.github` control plane | Owns AI-SDLC contracts, routing, registry, compatibility and shared verification; currently dispatches v2 target work. | Canonical logical identity remains stable across retry. | Future versions, auth, transports, SLA, result retention, incident process. |
-| `portfolio-tasks` | Owns intake, governance, priority, approval and initiation. | Can acknowledge deduplicated recommendation proposals and expose fresh source state. | Exact schema/events/states, cancellation, permissions, retention, synchronization. |
+| Organization `.github` control plane | Owner context says it owns AI-SDLC contracts, routing, registry, compatibility and shared verification. | Canonical identities remain stable across retry. | Immutable release/public API, approval proof, result transport, fixtures, registry enablement, lifecycle vocabulary, auth, SLA and incidents require external confirmation. |
+| `portfolio-tasks` | Owner context says it owns intake, governance, priority, approval and initiation. | Stable canonical proof can represent an authorized decision despite mutable queue labels. | Exact proof/revocation/edit semantics, schema/events/states, permissions and retention require external confirmation. |
 | `slugger` | Owns AI Software Factory product. | None; direct interaction is not confirmed. | Whether integration exists and every contract detail. |
 | Client evidence systems | Own source evidence. | Can provide authorized access-safe references. | Systems, formats, jurisdictions, authentication, retention and availability. |
 | Identity/authority provider | Needed only for an application runtime. | Can assert principal and scoped roles. | Provider, tenancy, federation, freshness and break-glass model. |
@@ -18,7 +18,8 @@ External systems are authoritative only for their owned state. Anti-corruption a
 
 ## Patterns
 
-- **Synchronous query:** fresh authority/classification/source validation when an immediate decision is required.
+- **Synchronous query:** freshness/revocation validation only when required by the
+  approved contract; a mutable label query cannot replace stable approval proof.
 - **Asynchronous command with acknowledgement:** handoff and execution result where external processing may outlive request.
 - **Domain event:** local audit/projection fact. External delivery is not assumed unless a contract says so.
 - **File/artifact exchange:** portable knowledge, reports and contract payloads, with schema/version/checksum/classification.
@@ -26,7 +27,7 @@ External systems are authoritative only for their owned state. Anti-corruption a
 
 ## Synchronization expectations
 
-Local records store external references and last observed version/status, clearly labeled non-authoritative. Before an irreversible or privileged transition, query the authoritative boundary at required freshness. Reconciliation compares idempotency identity, external ID, revision, status and payload digest. Divergence produces an explicit conflict for an owner; last-write-wins is prohibited for governed state.
+Local records store external references and last observed version/status, clearly labeled non-authoritative. Before an irreversible or privileged transition, validate canonical stable evidence and perform any contract-required revocation/freshness check. Reconciliation compares idempotency identity, external ID, revision, status and payload digest. Divergence produces an explicit conflict for an owner; last-write-wins is prohibited for governed state.
 
 ```mermaid
 sequenceDiagram
@@ -57,7 +58,12 @@ Where messaging is selected, an envelope carries message ID, type, semantic vers
 
 ## Workflow boundaries
 
-The consulting workflow ends at a validated handoff proposal and acknowledgement; portfolio governance begins at intake. Target execution begins only after control-plane routing and fresh source validation and ends at a draft/result, never merge. A Slugger workflow, if later approved, begins only at its accepted contract and remains externally owned.
+The consulting workflow ends at a validated handoff proposal and acknowledgement;
+portfolio governance begins at intake. Target execution begins only after
+control-plane admission, stable portfolio approval evidence, and independent local
+authorization. It ends at one validated draft (or reuse/no-change) plus a
+correlated result, never merge. A Slugger workflow, if later approved, begins only
+at its accepted contract and remains externally owned.
 
 ## Failure policy
 
@@ -65,4 +71,9 @@ Authentication, authorization, classification or schema failures do not retry au
 
 ## Integration acceptance gates
 
-Before enabling an adapter: confirm owner and decision rights; approve schemas and supported versions; threat-model the trust boundary; establish credentials and least privilege; define classification/retention; pass contract, idempotency, recovery and load tests; document SLO/incident contacts; test upgrade and rollback; and obtain external owner sign-off.
+Before enabling an adapter: confirm owner and decision rights; confirm the immutable
+release's documented public API, schema, workflow, registry and shared fixtures as
+one release unit; threat-model the trust boundary; establish least privilege;
+define classification/retention; pass consumer-driven contract, idempotency,
+recovery and load tests; document SLO/incident contacts; test upgrade and rollback;
+and obtain external owner sign-off. Internal package paths are never an interface.

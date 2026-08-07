@@ -35,10 +35,21 @@ external owner accepts this contract.
 When an approved portfolio issue initiates work in consulting-playbook, the
 interface SHALL provide the canonical control-plane request defined by
 [Interface-Organization-Control-Plane.md](Interface-Organization-Control-Plane.md).
-Immediately before execution, the target requires authoritative confirmation
-that the source is an open issue, explicitly approved, assigned to the intended
-executor, and not sensitive. The target result SHALL link the source, run, and
-draft PR and require human review.
+Portfolio-tasks owns approval truth; the control plane owns routing admission.
+The target independently validates canonical, stable approval evidence and its
+own repository policy before execution. A mutable `status:approved` label is
+workflow state, not sufficient proof: it may legitimately have become
+`status:queued` after admission. The evidence must bind the approving authority,
+approved source revision/content digest, target, scope, decision and time, and
+support the canonical freshness/revocation rules. Material edits, withdrawal,
+revocation, staleness, invalid authority, or target mismatch fail closed. If the
+canonical contract cannot carry or reference sufficient stable proof, live
+enablement is blocked pending an organization-level contract decision.
+
+Approval of a consulting recommendation is not approval to change this repository.
+Repository-change execution requires its own portfolio authority and evidence.
+The target result SHALL link source, delivery, run, and draft PR when applicable
+and preserve human review.
 
 ## Events and lifecycle
 

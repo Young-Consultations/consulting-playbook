@@ -101,10 +101,11 @@ Retry from Indeterminate is reconciliation-first and uses the same idempotency i
 ```mermaid
 stateDiagram-v2
   [*] --> Received
-  Received --> Rejected: schema/policy/fresh authority invalid
+  Received --> Rejected: contract/proof/target/local policy invalid
   Received --> Verified: verify mode checks complete
   Received --> Ready: implement authorized + publication absent
   Received --> Reused: exact valid managed draft exists
+  Received --> NoChanges: authorized outcome requires no change
   Received --> Blocked: ambiguous/orphaned/closed prior state
   Ready --> Executing
   Executing --> ValidationFailed
@@ -112,6 +113,7 @@ stateDiagram-v2
   Publishing --> Published: exact managed draft confirmed
   Publishing --> Blocked: conflict cannot reconcile safely
   Verified --> [*]
+  NoChanges --> [*]
   Reused --> [*]
   Published --> [*]
   Rejected --> [*]
@@ -120,6 +122,14 @@ stateDiagram-v2
 ```
 
 Blocked recovery is manual evidence-preserving reconciliation. A replacement requires a newly authorized logical delivery identity; the same identity cannot overwrite or reopen history.
+
+Every terminal state maps to the organization-owned canonical result vocabulary
+and one idempotent result transition. The local model does not prescribe external
+status strings. `Received` can advance only after stable approval evidence binds
+the portfolio authority, approved revision/scope and intended target and passes
+freshness/revocation plus repository policy. A mutable portfolio label is not an
+authorization state in this model. Interrupted or unknown publication remains
+blocked/ambiguous until reconciliation proves the visible effect.
 
 ## Evidence reference
 

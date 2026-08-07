@@ -133,11 +133,12 @@ plane, target repository, and bounded AI agent.
 
 - **Primary actors:** Control plane, portfolio source, target workflow, AI agent,
   human reviewer; **value:** safe change proposal; **requirements:** FR-EXE-01–02.
-- **Primary flow:** Receive/version-validate → revalidate live authorization →
-  preflight identity → verify without mutation or implement bounded change →
+- **Primary flow:** Receive/version-validate → validate stable portfolio approval
+  evidence and local authorization → preflight identity → verify without Codex or
+  implement bounded change →
   validate/test → publish/reuse one draft → emit result → human reviews.
-- **Alternatives:** Valid prior draft is reused; no-op receives the allowed bounded
-  retry; verify mode stops after checks.
+- **Alternatives:** Valid prior draft is reused; no-change emits its canonical
+  terminal outcome without publication; verify mode stops after checks.
 - **Failures:** Wrong target, revoked approval, sensitive state, incompatible
   contract, test failure, orphan/conflict. Fail closed, report sanitized failure,
   and require manual recovery where ambiguous.
