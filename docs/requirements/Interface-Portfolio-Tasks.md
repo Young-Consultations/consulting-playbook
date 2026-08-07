@@ -36,15 +36,12 @@ When an approved portfolio issue initiates work in consulting-playbook, the
 interface SHALL provide the canonical control-plane request defined by
 [Interface-Organization-Control-Plane.md](Interface-Organization-Control-Plane.md).
 Portfolio-tasks owns approval truth; the control plane owns routing admission.
-The target independently validates canonical, stable approval evidence and its
-own repository policy before execution. A mutable `status:approved` label is
-workflow state, not sufficient proof: it may legitimately have become
-`status:queued` after admission. The evidence must bind the approving authority,
-approved source revision/content digest, target, scope, decision and time, and
-support the canonical freshness/revocation rules. Material edits, withdrawal,
-revocation, staleness, invalid authority, or target mismatch fail closed. If the
-canonical contract cannot carry or reference sufficient stable proof, live
-enablement is blocked pending an organization-level contract decision.
+Router admission is the canonical organization approval; `status:queued` is a
+post-admission projection rather than authorization. The target authenticates the
+admitted caller and validates its repository policy without reading a live label
+or demanding another organization approval record. Every material change requires
+a new `task_id` and new approval. Repository-change authorization, consulting-
+content approval, draft review, and final publication remain separate decisions.
 
 Approval of a consulting recommendation is not approval to change this repository.
 Repository-change execution requires its own portfolio authority and evidence.

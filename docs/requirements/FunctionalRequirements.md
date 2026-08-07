@@ -415,23 +415,22 @@ otherwise, acceptance criteria apply to every supported engagement type.
 ### FR-EXE-01 — Validate target execution authorization
 
 - **Description:** While the repository accepts organization-routed execution, it
-  MUST validate a supported canonical contract, correct target, stable approval
-  evidence issued by the portfolio authority, routing admission, repository-local
-  authorization, assigned executor, non-sensitive status, allowed execution mode,
+  MUST validate a supported canonical contract, correct target, authenticated and
+  authorized admitted caller, canonical router admission, repository-local policy,
+  assigned executor, non-sensitive status, allowed task type and execution mode,
   draft-only publication, and prohibition of automatic merge before execution.
 - **Rationale:** Current delivery infrastructure must remain bounded.
 - **Priority:** P0
 - **Dependencies:** Interface-Organization-Control-Plane,
   Interface-Portfolio-Tasks.
-- **Inputs:** Versioned execution request, immutable approval evidence, and any
-  freshness/revocation evidence required by the canonical contract.
+- **Inputs:** Versioned execution request carrying canonical router-admission status.
 - **Outputs:** Authorization decision and sanitized failure category.
 - **Preconditions:** An organization router dispatches a request.
 - **Postconditions:** Unauthorized work has no mutation/publication effect.
-- **Acceptance criteria:** Unsupported versions, malformed evidence, wrong target,
-  invalid authority, stale evidence, material source edits, withdrawal or revocation
-  fail closed without executor or publication effects. A mutable workflow label is
-  never the sole proof. Verify mode does not invoke Codex or mutate/publish.
+- **Acceptance criteria:** Unsupported versions, malformed input, wrong target,
+  unauthorized caller, stale/improper routing, or a material edit without a new
+  task ID and approval fail closed without executor or publication effects. No live
+  label recheck occurs. Verify mode does not invoke Codex or mutate/publish.
 - **Related vision goals:** VG-08, VG-10.
 
 ### FR-EXE-02 — Publish an idempotent draft result

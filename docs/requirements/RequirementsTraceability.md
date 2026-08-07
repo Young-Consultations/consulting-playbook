@@ -42,11 +42,11 @@ The release subset is normative in [NextMVP.md](NextMVP.md). Its trace is:
 
 | Outcome | Requirement IDs | Architecture/design | Acceptance evidence |
 | --- | --- | --- | --- |
-| Canonical receipt, version, target, proof and local policy | FR-EXE-01; NFR-CFG-02, NFR-INT-01, NFR-AUTO-02 | ADR-007/011; Interface-Organization-Control-Plane; UC-10 | Valid fixture reaches fake; unsupported/malformed/wrong-target and unapproved/stale/edited/withdrawn/revoked fixtures fail before effects. |
+| Canonical receipt, version, target, caller/admission and local policy | FR-EXE-01; NFR-CFG-02, NFR-INT-01, NFR-AUTO-02 | ADR-007/011; Interface-Organization-Control-Plane; UC-10 | Valid input reaches a fake; unsupported/malformed/wrong-target, unauthorized-caller, stale/improper-routing, and material-change-without-new-approval scenarios fail before effects. |
 | Bounded verify/implement execution and validation | FR-EXE-01–02; FR-SEC-01–02; NFR-SEC-02–03, NFR-AI-01 | SequenceDiagrams 6–7; SecurityArchitecture; Target Policy/Executor/Validator | Verify and ordinary CI never call Codex; fake output/no-change is deterministic; repository validation and secret/path policy execute. |
 | One draft or safe reuse | FR-EXE-02; NFR-REL-02, NFR-REC-02 | ADR-008; StateModels target delivery; Publication Coordinator | Fake publication metadata asserted; redelivery reuses one draft; ambiguity fails closed; no branch/PR/merge is real. |
 | Canonical result and delivery | FR-EXE-02; NFR-OBS-01–02, NFR-INT-01 | Control-plane interface; ErrorHandling; ObservabilityArchitecture | Every success/reuse/no-change/rejection/failure/interruption fixture emits canonical correlated evidence; result replay has no second transition. |
-| Continuous compatibility | NFR-TST-01–02, NFR-CFG-02 | ADR-007; InterfaceArchitecture conformance | Organization-owned fixture drift/public-API incompatibility blocks merge; ordinary CI needs no Codex credential or external writes. |
+| Continuous compatibility | NFR-TST-01–02, NFR-CFG-02 | ADR-007; InterfaceArchitecture conformance | TC-MVP-CI-001 scenarios map to planned local fakes; missing shared payloads prevent executable shared-fixture claims; ordinary CI needs no Codex credential or external writes. |
 
 This trace claims planned acceptance coverage, not current implementation
 conformance or cross-repository compatibility.

@@ -58,7 +58,7 @@ ADR-005–008/010–011, Target Policy, bounded Executor, Repository Validator,
 Publication Coordinator, and the control-plane/portfolio/Git ports. It excludes
 AC-01–07 consulting runtime implementation. FR-EXE-01–02 and the profile's listed
 NFRs trace through UC-10 and Sequences 6–7 to deterministic fake-executor,
-fake-publication, duplicate/result-replay, failure, and shared-fixture conformance
+fake-publication, duplicate/result-replay, failure, and shared-manifest alignment
 evidence. The terminal boundary is one validated draft or reuse/no-change and one
 canonical correlated result; no merge or downstream lifecycle is included.
 

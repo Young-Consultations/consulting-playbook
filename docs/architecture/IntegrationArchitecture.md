@@ -8,8 +8,8 @@ External systems are authoritative only for their owned state. Anti-corruption a
 
 | Collaborator | Known | Assumed (must validate) | Unknown / decision required |
 |---|---|---|---|
-| Organization `.github` control plane | Owner context says it owns AI-SDLC contracts, routing, registry, compatibility and shared verification. | Canonical identities remain stable across retry. | Immutable release/public API, approval proof, result transport, fixtures, registry enablement, lifecycle vocabulary, auth, SLA and incidents require external confirmation. |
-| `portfolio-tasks` | Owner context says it owns intake, governance, priority, approval and initiation. | Stable canonical proof can represent an authorized decision despite mutable queue labels. | Exact proof/revocation/edit semantics, schema/events/states, permissions and retention require external confirmation. |
+| Organization `.github` control plane | Supplied compatibility unit fixes release 2.2.0, immutable schemas/workflows, v2 admission semantics, registry entry, and scenario manifest. | Canonical identities remain stable across retry. | Receiver implementation, complete executable fixtures, registry enablement, auth operations, SLA and incidents remain external dependencies. |
+| `portfolio-tasks` | Owner context says it owns intake, governance, priority, approval and initiation; router admission is canonical approval for this adapter. | Material edits produce a new task ID and approval. | Its implementation, permissions, and retention were not inspected. |
 | `slugger` | Owns AI Software Factory product. | None; direct interaction is not confirmed. | Whether integration exists and every contract detail. |
 | Client evidence systems | Own source evidence. | Can provide authorized access-safe references. | Systems, formats, jurisdictions, authentication, retention and availability. |
 | Identity/authority provider | Needed only for an application runtime. | Can assert principal and scoped roles. | Provider, tenancy, federation, freshness and break-glass model. |
@@ -18,8 +18,8 @@ External systems are authoritative only for their owned state. Anti-corruption a
 
 ## Patterns
 
-- **Synchronous query:** freshness/revocation validation only when required by the
-  approved contract; a mutable label query cannot replace stable approval proof.
+- **Admission validation:** authenticate the admitted caller and validate canonical
+  input/local policy; never query a mutable label for authorization.
 - **Asynchronous command with acknowledgement:** handoff and execution result where external processing may outlive request.
 - **Domain event:** local audit/projection fact. External delivery is not assumed unless a contract says so.
 - **File/artifact exchange:** portable knowledge, reports and contract payloads, with schema/version/checksum/classification.

@@ -101,23 +101,26 @@ retry and reports canonical recovery guidance.
 **Consequences:** AI cannot invoke decision transitions; evaluation/security tests are required.
 **Open questions:** Approved models, evaluation thresholds, residency/retention and disclosure formats.
 
-## ADR-011 — Stable approval proof across mutable workflow state
+## ADR-011 — Canonical approval at router admission
 
-**Context:** Portfolio approval truth and routing admission have different owners,
-and queue processing may replace an approval label after admission.
-**Decision:** Treat control-plane admission as necessary but insufficient. Validate
-stable canonical repository-change approval evidence plus local policy; never use
-a mutable label as the sole proof. Bind proof to authority, approved revision/scope,
-target and decision time and fail closed for edits, staleness, withdrawal,
-revocation, invalid authority or mismatch.
-**Alternatives:** Recheck only `status:approved`; trust routing without target checks;
-reuse consulting recommendation approval.
-**Tradeoffs:** Race-safe accountability over simpler label checks; depends on an
-organization decision if the canonical contract lacks sufficient evidence.
-**Consequences:** Live registry enablement is blocked until proof and revocation
-semantics are externally confirmed. Consulting and execution approvals remain
-distinct audit records.
+**Context:** Organization approval is canonical at router admission; queue state
+may subsequently project as `queued`.
+**Decision:** Authenticate and authorize the admitted caller and validate local
+repository policy. Do not query a mutable approval label or require a second
+organization approval record. Every material change requires a new `task_id` and
+new approval. Keep organization task approval, repository-change authorization,
+consulting-content approval, draft review, and final publication independent.
+**Alternatives:** Live `status:approved` recheck; target-created approval evidence;
+reuse consulting-content approval.
+**Tradeoffs:** Removes a mutable-state race and stays within the v2 contract while
+deferring rich approval provenance to v3.
+**Consequences:** Local fake implementation may proceed. Live use remains blocked
+only by the disabled registry and organization-owned receiver implementation, not
+by a repository-owned approval design question.
 
 ## ADR governance
 
-Each accepted change records status, date, deciders and supersession links when the architecture is operationalized. A decision may be superseded but not silently edited. Open questions remain explicit validation work and cannot be treated as acceptance.
+Each accepted change records status, date, deciders and supersession links when
+the architecture is operationalized. A decision may be superseded but not
+silently edited. Open questions remain explicit validation work and cannot be
+treated as acceptance.

@@ -54,7 +54,7 @@
 | BR-28 | Verify-mode execution is non-mutating; implement-mode target publication is draft-only, validates/tests changes, never pushes directly to `main`, and never merges automatically. |
 | BR-29 | One logical delivery identity permits at most one completed managed publication effect; ambiguity blocks automation and preserves evidence for manual recovery. |
 | BR-30 | Retrying the same delivery does not renew revoked authority, clear sensitivity, authorize replacement, or create a new logical delivery. |
-| BR-31 | Portfolio-tasks owns repository-change approval truth; the control plane owns routing admission; this target validates stable canonical proof and local policy. A mutable label alone grants no authority. |
+| BR-31 | Organization task approval is canonical at router admission; this target authenticates the caller and validates local repository policy without a live label recheck or second organization approval. A material change requires a new task ID and approval. |
 | BR-32 | Consulting recommendation approval and repository-change execution approval are distinct decisions and audit evidence; neither implies the other. |
 | BR-33 | Every terminal delivery uses the organization canonical result and idempotent visible effect; no local result vocabulary may compete with it. |
 

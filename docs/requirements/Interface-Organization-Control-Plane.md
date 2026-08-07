@@ -27,9 +27,9 @@ versioned logical contract MUST provide:
 - executor, execution mode (`verify` or `implement`), authorized concurrency group;
 - explicit draft-only/no-auto-merge requirements;
 - sufficient task component/context or an authorized source reference; and
-- stable approval evidence (including authority, approved revision/scope, target,
-  decision time, freshness and revocation semantics), assignment, and sensitivity
-  data suitable for independent target validation.
+- canonical router-admission status, task type, assignment, and sensitivity data.
+  Material changes require a new `task_id` and a new approval; the target does not
+  reconstruct or recheck organization approval.
 
 Transport may carry inline content or an immutable artifact reference. Transport
 selection is owned by the control plane and MUST preserve identical validated
@@ -55,9 +55,11 @@ cause a second lifecycle transition.
 
 ## Behavioral contract
 
-- The target MUST validate contract compatibility before use, then validate stable
-  canonical approval evidence and repository-local authority. Routing admission
-  is necessary but not sufficient target authorization.
+- The target MUST authenticate and authorize the admitted caller, validate contract
+  compatibility, and apply repository-local policy. Canonical router admission is
+  the organization approval decision; the target MUST NOT recheck a mutable issue
+  label or demand a second organization approval. Local repository authorization
+  and consulting-content approval remain separate decisions.
 - `verify` MUST be non-mutating and non-publishing.
 - `implement` MUST remain target-bound, draft-only, non-merging, and subject to
   repository validation/tests and human review.
@@ -79,11 +81,12 @@ reduction mechanism, not the idempotency guarantee.
 
 ## Versioning and compatibility
 
-The target MUST consume only the documented public API of an explicitly supported
-immutable organization contract release. Package, schema, workflow interface,
-registry expectations, and shared fixtures MUST be pinned and qualified as one
-compatible release unit; internal paths and unverified modules MUST NOT be used.
-Consumer-driven fixtures MUST demonstrate that public API before enablement.
+The target MUST directly consume the three documented schema files at
+`f2491872976a4dcc1633997954c03c07cbc4fced`. Schema, workflow interface, registry
+expectations, and shared-fixture manifest form release `2.2.0`; internal paths,
+unverified modules/packages, mutable `main`, and the unavailable release tag MUST
+NOT be used. The incomplete fixture payload set prevents an executable shared-
+fixture conformance claim before enablement.
 Upgrades require reviewed compatibility evidence and rollback instructions.
 Producers MUST NOT silently change field semantics within a version. Consumers
 MUST reject unsupported versions. Results MUST use a version compatible with the
@@ -96,20 +99,13 @@ maintainers approve target policy changes. Joint contract tests SHALL cover
 valid input/result, unsupported versions, missing authority, sensitivity,
 wrong target, retries, partial failure, and sanitized failures.
 
-## Known assumptions, unknowns, and validation
+## Confirmed interface limitations
 
-**Implementation evidence, not an approved dependency:** repository automation
-currently references a contract version/release and package paths and constructs a
-result artifact. Those observations do not prove a documented public API,
-compatible release unit, approval-proof semantics, or accepted return channel.
-
-**Unknown / external confirmation required:** immutable release, documented public
-package API, stable approval-proof semantics, result-return transport, shared
-fixture locations, registry enablement, canonical lifecycle vocabulary, external
-schema source, retention/SLA, authentication lifecycle, compatibility window,
-result consumer behavior, incident ownership, and recovery authorization.
-
-**Required validation:** control-plane owners SHALL confirm fields, state
-semantics, transport, authentication, permissions, timeouts, error taxonomy,
-retention, support/incident process, test fixtures, upgrade, and rollback before
-a new interface version is accepted.
+The exact target and receiver interfaces, schemas, registry entry, and manifest
+are recorded in [NextMVP.md](NextMVP.md). The registry is disabled. The result
+receiver is an organization-owned fail-closed skeleton, so successful live return
+is unavailable and transport acceptance cannot be reported as execution success.
+The shared scenario manifest lacks complete executable input/expected-output
+fixtures. Organization owners must implement the receiver, complete fixtures, and
+enable the registry before live use. This repository must not fill those gaps by
+inventing a package/API, competing receiver, fixture, or contract extension.

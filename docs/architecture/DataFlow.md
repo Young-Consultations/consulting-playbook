@@ -127,9 +127,9 @@ flowchart TD
   NoChange --> Result
 ```
 
-Routing admission and mutable portfolio labels are not authorization proof. The
-proof binds authority, approved revision/scope and target and is checked under the
-canonical freshness/revocation rules. Result delivery uses the organization-owned
+Router admission is the canonical organization approval. The target authenticates
+the admitted caller and applies local policy without a mutable label recheck; each
+material change requires a new task ID and approval. Result delivery uses the organization-owned
 transport and an idempotent result identity; a lost acknowledgement is reconciled
 without repeating the visible lifecycle transition.
 

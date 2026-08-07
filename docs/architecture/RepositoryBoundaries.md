@@ -58,9 +58,9 @@ This repository owns knowledge asset proposal through deprecation. The engagemen
 
 ## Boundary enforcement
 
-Adapters validate incoming identities, stable approval proof, local authority and
-versions, translate without importing external domain models or internal package
-paths, and store only necessary references. Outgoing flows use the canonical result
+Adapters validate incoming identities, canonical router admission, local policy and
+versions, translate without importing external domain models or undocumented
+package paths, and store only necessary references. Outgoing flows use the canonical result
 with classification, version, correlation and idempotency. No cached value or
 mutable label grants authority. Unknown capability blocks dependent acceptance.
 

@@ -35,17 +35,17 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
 ## External interface: Organization AI-SDLC control plane
 
 - **Responsibility:** external owner supplies canonical execution input schemas, contract versions, routing, repository registration, shared validation/failure taxonomy and result consumption. This repository supplies only target policy and effect/result.
-- **Inbound:** supported version, source and target, executor/mode, stable approval
-  evidence, classification, delivery/result/correlation identities, publication
-  constraints, and the organization-defined freshness/revocation material.
+- **Inbound:** supported version, admitted caller, source and target, task type,
+  executor/mode, canonical admission status, classification, delivery/correlation
+  identities, concurrency, and publication constraints.
 - **Outbound:** the canonical result only, covering every terminal outcome with
   identities, target, timestamps, validation evidence, safe failure/reconciliation
   detail, and branch/draft metadata when applicable.
-- **Assumptions:** immutable release, public API, approval-proof semantics, result
-  transport, fixtures, registry enablement and lifecycle vocabulary are all
-  externally unconfirmed; observed implementation imports are not contracts.
-- **Validation:** documented public schema/API first, then proof/target, supported
-  executor/mode, sensitivity, repository policy, and effect reconciliation.
+- **Limitations:** immutable release `2.2.0` is pinned at the full SHA; the registry
+  is disabled, the receiver is a fail-closed skeleton, and shared executable
+  fixtures are incomplete. No package or observed import is a contract.
+- **Validation:** exact immutable schemas first, then caller/target/type, supported
+  executor/mode, sensitivity, repository policy, concurrency, and reconciliation.
 - **Retries/idempotency:** router retries retain logical delivery identity; concurrency is optimization only. Results are correlated and safe to re-consume.
 - **Ownership:** `Young-Consultations/.github` owns contract and routing; this repository owns local acceptance and publication policy.
 
