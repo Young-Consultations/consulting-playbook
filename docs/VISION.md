@@ -210,6 +210,17 @@ The currently implemented target-executor workflow is an enabling mechanism at t
 
 ## Evolution Strategy
 
+### Bounded next-MVP contribution
+
+The next organization MVP does not implement this product vision. Its repository
+contribution is only the target-adapter slice defined in
+[the next-MVP profile](requirements/NextMVP.md): accept one authorized canonical
+request, safely propose the approved repository change, validate it, create or
+reuse exactly one draft pull request, and expose a correlated canonical result.
+Ordinary conformance CI uses fakes and never calls Codex or publishes. Merge,
+consulting-guidance publication, release, deployment, and production use remain
+human-controlled; the broader consulting capabilities remain deferred.
+
 Evolution should be modular and evidence-led. First, validate the assumptions and capability boundaries below; then define requirements and an information architecture; next, implement a small coherent core method with governance and maintenance guidance; and finally, add assessment domains, engagement variants, and reusable patterns as use demonstrates value. Versioning and review should let methods evolve without silently changing the meaning of prior engagement records.
 
 The playbook should support consistent delivery while preserving professional judgment and engagement context. Lessons learned should improve shared knowledge without exposing confidential client information or turning engagement-specific conclusions into universal prescriptions. Existing execution infrastructure should continue to be treated as a delivery enabler rather than evidence that the consulting content system is complete.

@@ -60,7 +60,15 @@ Before AI use: classify data, verify purpose/destination authorization, minimize
 
 ## Target executor security
 
-Validate shared schema then local target/executor/mode policy; query the open source issue and current explicit approval/assignment/sensitivity immediately before execution. Run bounded tooling with minimal credentials and no direct network/secrets unless explicitly controlled. Validate paths, secrets and tests. Permit only deterministic draft publication; never direct `main`, auto-merge or automatic merge. Sanitize result messages and preserve ambiguous evidence for manual recovery.
+Validate the immutable release's documented public schema/API, stable portfolio
+repository-change approval proof, exact target, and local executor/mode,
+classification and publication policy. Routing admission is not target authority;
+a mutable approval/queue label is not proof. Bind proof to authority, approved
+revision/scope, target and time and fail closed for material edits, stale evidence,
+withdrawal, revocation or mismatch. Run bounded tooling with minimal credentials
+and no uncontrolled network/secrets. Validate paths, secrets and tests. Permit only
+deterministic draft publication; never direct `main`, auto-merge or automatic
+merge. Sanitize canonical result messages and preserve ambiguity for reconciliation.
 
 ## Security verification
 

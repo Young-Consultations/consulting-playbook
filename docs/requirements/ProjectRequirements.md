@@ -70,6 +70,10 @@ quality, and follow-up measurement while retaining expert discretion.
 - Existing repository-target verification and bounded draft-publication
   responsibilities while that delivery mechanism remains active.
 
+For the next organization MVP, only the narrow target-adapter release profile in
+[NextMVP.md](NextMVP.md) is in scope. The consulting capabilities above remain the
+long-term product scope and are not prerequisites for that proof slice.
+
 ### Out of scope
 
 - Owning the organization backlog, approval state, routing, shared contracts, or

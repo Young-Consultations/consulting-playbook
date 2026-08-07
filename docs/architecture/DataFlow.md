@@ -108,8 +108,8 @@ AI cannot write authoritative state directly. Provider prompts/responses are not
 ```mermaid
 flowchart TD
   Dispatch[Canonical dispatch] --> Schema[Control-plane contract validation]
-  Schema --> Fresh[Fresh source issue, approval, assignment, sensitivity check]
-  Fresh --> Mode{Mode}
+  Schema --> Proof[Stable portfolio approval proof + target local policy]
+  Proof --> Mode{Mode}
   Mode -- verify --> Checks[Non-mutating policy/repository checks]
   Checks --> Result[Canonical result]
   Mode -- implement --> Preflight[Inspect deterministic branch and all PR states]
@@ -118,12 +118,20 @@ flowchart TD
   State -- ambiguity/prior closed/orphan --> Block[Fail closed; preserve evidence]
   State -- new --> Change[Bounded AI change]
   Change --> Validate[Repository validation and tests]
+  Validate -- no changes --> NoChange[Canonical no-change result]
   Validate --> Commit[Deterministic branch publication attempt]
   Commit --> Draft[Create/requery one managed draft]
   Reuse --> Result
   Block --> Result
   Draft --> Result
+  NoChange --> Result
 ```
+
+Routing admission and mutable portfolio labels are not authorization proof. The
+proof binds authority, approved revision/scope and target and is checked under the
+canonical freshness/revocation rules. Result delivery uses the organization-owned
+transport and an idempotent result identity; a lost acknowledgement is reconciled
+without repeating the visible lifecycle transition.
 
 ## Transformation rules
 

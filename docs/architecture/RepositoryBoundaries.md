@@ -34,8 +34,8 @@
 |---|---|---|---|
 | Client sponsor/authority | Outcomes, boundaries, authority and decisions | Findings, options, recommendations, reports | Identity, scope, decision authority, handling. |
 | Evidence custodian | Authorized references/source access | Purposeful minimal requests | Provenance, classification, permitted use, access. |
-| Portfolio Tasks | Intake acknowledgement and authoritative task state | Approved/conditional action proposals | Schema, authority, classification, idempotency, state freshness. |
-| Organization control plane | Canonical dispatch/validation/routing | Canonical execution result | Supported contract, exact target, current source authority. |
+| Portfolio Tasks | Intake acknowledgement, approval truth and stable repository-change approval evidence | Approved/conditional action proposals | Proof authority/revision/target, classification, idempotency, revocation/freshness. |
+| Organization control plane | Canonical contract, routing admission and result transport | Canonical execution result | Immutable public API/release, exact target, registry and shared fixtures. |
 | Target repository/human reviewer | Repository rules and review decision | One bounded managed draft | Repository policy, tests, marker ownership; human merge. |
 | Slugger (unconfirmed) | Defined result only if contracted | Authorized product proposal only | Entire contract and ownership relation remain to validate. |
 
@@ -58,7 +58,11 @@ This repository owns knowledge asset proposal through deprecation. The engagemen
 
 ## Boundary enforcement
 
-Adapters validate incoming identities and versions, translate without importing external domain models, and store only necessary references. Outgoing flows carry classification, purpose, version, correlation and idempotency. No cached external value grants authority. Cross-repository work is decomposed by target ownership. Unknown capability is documented and blocks dependent acceptance rather than prompting invention.
+Adapters validate incoming identities, stable approval proof, local authority and
+versions, translate without importing external domain models or internal package
+paths, and store only necessary references. Outgoing flows use the canonical result
+with classification, version, correlation and idempotency. No cached value or
+mutable label grants authority. Unknown capability blocks dependent acceptance.
 
 ## Change-control rule
 

@@ -415,20 +415,23 @@ otherwise, acceptance criteria apply to every supported engagement type.
 ### FR-EXE-01 — Validate target execution authorization
 
 - **Description:** While the repository accepts organization-routed execution, it
-  MUST validate a supported canonical contract, correct target, open approved
-  source issue, assigned executor, non-sensitive status, allowed execution mode,
-  draft-only publication, and prohibition of automatic merge immediately before
-  any mutating execution.
+  MUST validate a supported canonical contract, correct target, stable approval
+  evidence issued by the portfolio authority, routing admission, repository-local
+  authorization, assigned executor, non-sensitive status, allowed execution mode,
+  draft-only publication, and prohibition of automatic merge before execution.
 - **Rationale:** Current delivery infrastructure must remain bounded.
 - **Priority:** P0
 - **Dependencies:** Interface-Organization-Control-Plane,
   Interface-Portfolio-Tasks.
-- **Inputs:** Versioned execution request and live authoritative issue state.
+- **Inputs:** Versioned execution request, immutable approval evidence, and any
+  freshness/revocation evidence required by the canonical contract.
 - **Outputs:** Authorization decision and sanitized failure category.
 - **Preconditions:** An organization router dispatches a request.
 - **Postconditions:** Unauthorized work has no mutation/publication effect.
-- **Acceptance criteria:** Failure of any condition fails closed; verify mode does
-  not invoke an executor or mutate/publish; state is revalidated at execution time.
+- **Acceptance criteria:** Unsupported versions, malformed evidence, wrong target,
+  invalid authority, stale evidence, material source edits, withdrawal or revocation
+  fail closed without executor or publication effects. A mutable workflow label is
+  never the sole proof. Verify mode does not invoke Codex or mutate/publish.
 - **Related vision goals:** VG-08, VG-10.
 
 ### FR-EXE-02 — Publish an idempotent draft result
@@ -447,5 +450,12 @@ otherwise, acceptance criteria apply to every supported engagement type.
 - **Acceptance criteria:** Orphaned branches, conflicting ownership, multiple
   drafts, or closed/merged prior deliveries fail closed for manual recovery;
   redelivery reuses exactly one valid managed draft; no direct push to `main` or
-  automatic merge occurs.
+  automatic merge occurs. Every terminal attempt produces or durably exposes the
+  organization canonical result (not a local schema) for verify success, implement
+  success, reused draft, no changes, contract/authorization/policy rejection,
+  validation/execution/publication failure, or interrupted/ambiguous execution.
+  The result carries correlation and delivery identities, target, timestamps,
+  validation evidence, safe failure details, reconciliation guidance, and PR
+  metadata when applicable. Duplicate delivery/result processing creates neither
+  a second draft nor a second externally visible lifecycle transition.
 - **Related vision goals:** VG-08, VG-10.

@@ -10,7 +10,7 @@ Errors are typed outcomes with stable safe codes, ownership and recovery guidanc
 |---|---|---|---|
 | Input validation | Missing required field, malformed reference | Return field/path and requirement; no mutation. | After correction only. |
 | Business rule | Insufficient finding support, unauthorized roadmap item | Explain violated invariant and allowed next state. | No blind retry. |
-| Authentication/authorization | Invalid principal, unresolved authority | Deny and audit safely; reauthenticate/resolve owner. | Only after explicit state change. |
+| Authentication/authorization | Invalid principal, stale/revoked proof, edited approved scope, mutable-label-only claim | Deny and emit canonical safe evidence; resolve with portfolio authority. | Only after a new explicit authoritative decision. |
 | Classification/privacy | Unknown class, prohibited destination | Restrict/quarantine; minimize or obtain specific authorization. | Only after policy decision. |
 | Concurrency/conflict | Stale aggregate revision, external divergence | Return current revision; human/application reconciles. | Reload then deliberate resubmit. |
 | Contract/compatibility | Unknown version, invalid external payload | Reject/quarantine safe metadata; notify owners. | After compatible upgrade/correction. |
@@ -20,9 +20,15 @@ Errors are typed outcomes with stable safe codes, ownership and recovery guidanc
 | AI quality/safety | Unsupported claim, unsafe content, prompt injection | Discard/quarantine as permitted; human workflow continues. | Re-prompt only after reviewed correction. |
 | Publication ambiguity | Orphan branch, conflicting marker, prior closed PR | Block; inspect ancestry/markers; new authority/identity if replacement. | Same identity does not authorize replacement. |
 
-## Error envelope
+## Canonical error result
 
-A public error result includes `code`, `category`, safe `message`, `correlationId`, `retryability` (`never`, `after-correction`, `after-reconcile`, `transient`), optional field violations/current revision and owner-facing remediation. Internal causes/stack traces remain diagnostic only. External failures are mapped to canonical codes without losing the external correlation/reference.
+The organization contract owns the error/result shape and lifecycle vocabulary;
+this repository defines no envelope or field names. A failure must preserve
+delivery/result correlation, target, timestamps, validation evidence, a safe
+category/detail, and organization-defined retry/reconciliation guidance. Internal
+causes, stack traces, secrets, prompts, and sensitive content remain diagnostic-only.
+Contract, authorization, local policy, validation, execution, publication, and
+interrupted/ambiguous outcomes remain distinguishable using canonical semantics.
 
 ## Propagation and fault isolation
 

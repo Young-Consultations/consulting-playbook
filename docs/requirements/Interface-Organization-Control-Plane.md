@@ -27,7 +27,9 @@ versioned logical contract MUST provide:
 - executor, execution mode (`verify` or `implement`), authorized concurrency group;
 - explicit draft-only/no-auto-merge requirements;
 - sufficient task component/context or an authorized source reference; and
-- approval, assignment, and sensitivity indicators suitable for pre-validation.
+- stable approval evidence (including authority, approved revision/scope, target,
+  decision time, freshness and revocation semantics), assignment, and sensitivity
+  data suitable for independent target validation.
 
 Transport may carry inline content or an immutable artifact reference. Transport
 selection is owned by the control plane and MUST preserve identical validated
@@ -36,16 +38,26 @@ semantics. No undocumented field may grant authority.
 ## Required outbound result
 
 For every terminal path where platform operation permits, consulting-playbook
-SHALL produce a version-compatible result containing input/delivery and
-correlation identities, source, target, execution mode, branch if allocated,
-draft pull-request URL if published/reused, workflow evidence URL, terminal
-status, and a shared sanitized failure category/message on failure. Prompts,
-tokens, secrets, and raw sensitive evidence MUST NOT be returned.
+SHALL produce or durably expose the canonical, version-compatible organization
+result; it SHALL NOT define a competing local result schema. Canonical outcomes
+must distinguish verify success, implement success, existing draft reuse, no
+changes, contract rejection, authorization rejection, repository-policy rejection,
+validation failure, execution failure, publication failure, and interrupted or
+ambiguous execution.
+
+The result MUST contain correlation and delivery identity, result/delivery identity
+needed for deduplication, source and target identity, mode, lifecycle timestamps,
+terminal outcome, validation evidence, safe failure category/details, and
+reconciliation/retry guidance. Branch and draft-PR identity, URL, state, and reuse
+disposition are required when applicable. Prompts, tokens, secrets, and raw
+sensitive evidence MUST NOT be returned. Re-consuming the same result MUST NOT
+cause a second lifecycle transition.
 
 ## Behavioral contract
 
-- The target MUST validate contract compatibility before use and revalidate live
-  issue authorization before mutation.
+- The target MUST validate contract compatibility before use, then validate stable
+  canonical approval evidence and repository-local authority. Routing admission
+  is necessary but not sufficient target authorization.
 - `verify` MUST be non-mutating and non-publishing.
 - `implement` MUST remain target-bound, draft-only, non-merging, and subject to
   repository validation/tests and human review.
@@ -67,7 +79,11 @@ reduction mechanism, not the idempotency guarantee.
 
 ## Versioning and compatibility
 
-Both parties MUST pin an explicitly supported immutable contract release.
+The target MUST consume only the documented public API of an explicitly supported
+immutable organization contract release. Package, schema, workflow interface,
+registry expectations, and shared fixtures MUST be pinned and qualified as one
+compatible release unit; internal paths and unverified modules MUST NOT be used.
+Consumer-driven fixtures MUST demonstrate that public API before enablement.
 Upgrades require reviewed compatibility evidence and rollback instructions.
 Producers MUST NOT silently change field semantics within a version. Consumers
 MUST reject unsupported versions. Results MUST use a version compatible with the
@@ -82,12 +98,16 @@ wrong target, retries, partial failure, and sanitized failures.
 
 ## Known assumptions, unknowns, and validation
 
-**Known:** the current repository documentation names `ai-sdlc-contract/v2`, a
-pinned organization release, two execution modes, and canonical result behavior.
+**Implementation evidence, not an approved dependency:** repository automation
+currently references a contract version/release and package paths and constructs a
+result artifact. Those observations do not prove a documented public API,
+compatible release unit, approval-proof semantics, or accepted return channel.
 
-**Unknown:** external schema source, retention/SLA, artifact availability,
-authentication lifecycle, compatibility window, result consumer behavior,
-incident ownership, and formal recovery authorization.
+**Unknown / external confirmation required:** immutable release, documented public
+package API, stable approval-proof semantics, result-return transport, shared
+fixture locations, registry enablement, canonical lifecycle vocabulary, external
+schema source, retention/SLA, authentication lifecycle, compatibility window,
+result consumer behavior, incident ownership, and recovery authorization.
 
 **Required validation:** control-plane owners SHALL confirm fields, state
 semantics, transport, authentication, permissions, timeouts, error taxonomy,
