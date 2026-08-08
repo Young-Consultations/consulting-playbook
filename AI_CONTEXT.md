@@ -120,8 +120,8 @@ their subject is affected rather than treating this index as a substitute.
 
 ## Implementation authority and compatibility policy
 
-- This project is pre-production, has one current user, and currently has no
-  backward-compatibility requirement.
+- Backward-compatibility requirements are defined only by approved requirements
+  and architecture sources listed above.
 - Existing implementation is a blueprint, not product authority. Reuse an
   artifact only when it conforms to approved requirements and design.
 - A later authorized implementation task may modify, replace, or remove
@@ -254,9 +254,12 @@ must:
 - The authoritative [Next-MVP profile](docs/requirements/NextMVP.md) specifies
   organization release `2.2.0`, an immutable commit, exactly two routing inputs,
   direct schema consumption, a disabled registry, and an organization-owned
-  fail-closed result receiver. Current workflow and test artifacts contain older
-  or additional behavior. They are unaligned blueprint evidence, not competing
-  active contracts; later adapter implementation must assess and align them.
+  fail-closed result receiver. For example, `.github/workflows/codex-execute.yml`
+  currently clones `Young-Consultations/.github` using branch
+  `ai-sdlc-v2.1.0` instead of the Next-MVP-required immutable commit.
+  These workflow and test artifacts are unaligned blueprint evidence, not
+  competing active contracts; later adapter implementation must assess and align
+  them.
 - `scripts/validate_repository.py` allows selected root paths but not the required
   root `AI_CONTEXT.md`, so repository validation rejects this context-only change.
   This task may not modify the validator.
