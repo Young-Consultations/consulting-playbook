@@ -12,19 +12,22 @@ Use only evidence available in this repository. References to other repositories
 describe boundaries or dependencies, not access to or knowledge of their current
 implementation.
 
-## Authority hierarchy
+## Implementation authority (documentation first)
 
 Apply this order, from highest to lowest authority:
 
 1. The approved [vision](docs/VISION.md) defines product direction, purpose,
    intended outcomes, scope, and boundaries.
-2. The approved [requirements baseline](docs/requirements/README.md) defines the
-   behavior, constraints, interfaces, and acceptance conditions to implement.
+2. The approved [next-MVP baseline](docs/requirements/NextMVP.md) controls the
+   narrow release slice, and the approved [requirements baseline](docs/requirements/README.md)
+   defines the behavior, constraints, interfaces, and acceptance conditions to
+   implement.
 3. Approved [architecture and design](docs/architecture/README.md) and
    [ADRs](docs/architecture/ADR.md) define system structure, responsibility
    allocation, security boundaries, and architectural decisions.
-4. Current organization and repository interface documentation defines
-   cross-repository interactions and ownership boundaries.
+4. Approved, versioned organization and repository interface/release documents
+   present in this repository define cross-repository interactions and ownership
+   boundaries.
 5. Code, workflows, schemas, tests, fixtures, packages, examples, and all other
    implementation artifacts are implementation blueprints and evidence only.
 
@@ -40,6 +43,11 @@ not infer a resolution from implementation. Record the sources and applicable
 requirement or decision IDs, constrain the change to noncontroversial work, and
 report the conflict for owner resolution. Never silently change approved
 requirements, architecture, security boundaries, or the active contract.
+
+Do not invent requirements, architecture, external behavior, or placeholder
+contracts to make an implementation appear complete. When required external
+information, authorization, or capability is absent, fail closed and report the
+dependency as a blocker.
 
 ## Repository role and ownership
 
@@ -71,33 +79,34 @@ Do not assume any sibling repository is available. Unknown external schemas,
 transports, capabilities, and state remain unknown until their owners validate
 them through an approved interface.
 
-## Ordered reading path
+## Mandatory reading order for every implementation task
 
-Read only as far as necessary for the task, but never skip a source that governs
-the proposed change:
+Load and read this file completely before every implementation task. Then read
+the repository sources below in order before proposing or making changes; within
+an indexed documentation set, follow its index and read every document relevant
+to the task rather than using this file as a substitute:
 
 1. [Vision](docs/VISION.md) — always read for product direction, boundaries,
    intended versus implemented capability, and the bounded next-MVP contribution.
-2. [Requirements index and interpretation](docs/requirements/README.md), then
+2. [Next-MVP target-adapter profile](docs/requirements/NextMVP.md) — the approved,
+   controlling release baseline for the narrow current MVP slice.
+3. All requirements documentation, starting with the
+   [requirements index and interpretation](docs/requirements/README.md), then
    [Project Requirements](docs/requirements/ProjectRequirements.md) and the
    [Software Requirements Specification](docs/requirements/SoftwareRequirementsSpecification.md)
    — read for the approved baseline, scope, constraints, and acceptance language.
-3. [Functional Requirements](docs/requirements/FunctionalRequirements.md),
+   This includes [Functional Requirements](docs/requirements/FunctionalRequirements.md),
    [Nonfunctional Requirements](docs/requirements/NonFunctionalRequirements.md),
    [Business Rules](docs/requirements/BusinessRules.md), and
    [Requirements Traceability](docs/requirements/RequirementsTraceability.md) —
    identify applicable IDs and required verification before implementation.
-4. [Repository Context](docs/requirements/RepositoryContext.md) — consult for
-   ownership, data, lifecycle, and external-dependency boundaries.
-5. [Next-MVP target-adapter profile](docs/requirements/NextMVP.md) — controlling
-   repository-owned implementation baseline for the narrow current MVP slice,
-   including inclusions, deferrals, immutable compatibility unit, external gates,
-   and planned fake conformance.
-6. Interface requirements: [organization control plane](docs/requirements/Interface-Organization-Control-Plane.md),
+   Read [Repository Context](docs/requirements/RepositoryContext.md) and the
+   interface requirements for the [organization control plane](docs/requirements/Interface-Organization-Control-Plane.md),
    [Portfolio Tasks](docs/requirements/Interface-Portfolio-Tasks.md), and
-   [Slugger](docs/requirements/Interface-Slugger.md) — consult only for the
-   applicable external relationship and retain every stated limitation or unknown.
-7. [Architecture index](docs/architecture/README.md), beginning with
+   [Slugger](docs/requirements/Interface-Slugger.md) without treating an unknown
+   or conditional interface as approved.
+4. All architecture/design documentation and ADRs, starting with the
+   [architecture index](docs/architecture/README.md) and
    [Software Architecture](docs/architecture/SoftwareArchitecture.md), followed
    as applicable by [High-Level Design](docs/architecture/HighLevelDesign.md),
    [Low-Level Design](docs/architecture/LowLevelDesign.md),
@@ -105,12 +114,16 @@ the proposed change:
    [Repository Boundaries](docs/architecture/RepositoryBoundaries.md),
    [Interface Architecture](docs/architecture/InterfaceArchitecture.md), and
    [Integration Architecture](docs/architecture/IntegrationArchitecture.md).
-8. [ADRs](docs/architecture/ADR.md), [Security Architecture](docs/architecture/SecurityArchitecture.md),
+   Include [ADRs](docs/architecture/ADR.md), [Security Architecture](docs/architecture/SecurityArchitecture.md),
    and [Architecture Traceability](docs/architecture/ArchitectureTraceability.md)
    — consult for decisions, trust boundaries, applicable controls, and the trace
    from requirement to future implementation evidence.
-9. [README](README.md) — use for repository orientation and operational context,
+5. [README](README.md) — use for repository orientation and operational context,
    but resolve any conflict by the authority hierarchy above.
+6. Re-read this `AI_CONTEXT.md` policy against the task before implementation.
+7. Relevant source code, workflows, tests, configuration, release records, and
+   interface documents — use these to assess implementation conformance, never
+   to manufacture requirements.
 
 The requirements directory also contains approved supporting use cases, stories,
 glossary, and assumptions indexed by its README; the architecture index similarly
@@ -128,8 +141,9 @@ their subject is affected rather than treating this index as a substitute.
   conflicting, duplicated, obsolete, or out-of-scope code, workflows, schemas,
   tests, fixtures, packages, and examples. Git history is the recovery mechanism
   for removed implementation and historical behavior.
-- The organization supports exactly **one active cross-repository contract** and
-  **one current execution path**. For the current next-MVP target-adapter slice,
+- The repository must converge on exactly **one supported MVP contract** and
+  **one active implementation path for each responsibility**. For the current
+  next-MVP target-adapter slice,
   the locally authoritative interface is the `ai-sdlc-contract/v2` payload shape
   and organization compatibility release `2.2.0` at the immutable commit recorded
   in the [Next-MVP profile](docs/requirements/NextMVP.md).
@@ -145,9 +159,6 @@ their subject is affected rather than treating this index as a substitute.
 - Historical-record readability requirements apply to governed records and
   published knowledge as their canonical sources specify; they do not create an
   obligation to keep multiple active execution contracts or code paths.
-- This context-only task authorizes no deletion, contract change, workflow change,
-  or other implementation work.
-
 Legacy-looking artifacts are not automatically disposable. Determine their
 disposition in the implementation task that is authorized to change them.
 
@@ -170,6 +181,11 @@ publication, release, deployment, production operation, and broader platform
 automation. Live routing is prohibited while the external registry is disabled;
 successful live result return and executable shared-fixture conformance remain
 blocked by the external gates identified in the profile.
+
+Do not add automatic approval, merge, deployment, production operations, or
+autonomous decision-making, and do not make production-readiness claims. A draft
+pull request and passing local fake checks are review evidence, not release or
+production evidence.
 
 ## Security and change boundaries
 
@@ -217,9 +233,9 @@ The contract test is required for target-adapter behavior changes, not every
 documentation-only change. No separate Markdown linter or documentation test is
 configured in this repository. Validate relative Markdown links for changed
 documentation. The repository validator currently omits `AI_CONTEXT.md` from its
-root-path allowlist; therefore it cannot pass for a change that creates this
-required file. This known policy gap must be resolved only by a later task that
-is authorized to modify the validator.
+root-path allowlist; therefore it cannot pass while this required root file is
+changed. This known policy gap requires a separately authorized validator
+change.
 
 ## Rules for future AI implementation tasks
 
