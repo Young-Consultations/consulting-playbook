@@ -227,6 +227,7 @@ evidence defines these commands:
 git diff --check
 python scripts/validate_repository.py
 python scripts/test_codex_execute_contract.py
+python scripts/test_next_mvp_readiness.py
 ```
 
 The contract test is required for target-adapter behavior changes, not every
@@ -280,6 +281,8 @@ must:
   external fail-closed skeleton, and the shared fixture payload set as incomplete.
   These external gates block live routing, successful live return, and a shared
   executable-fixture conformance claim, but not local fake implementation.
+  `scripts/check_next_mvp_readiness.py` provides a read-only, fail-closed audit of
+  the immutable external gates without copying organization-owned contracts.
 - Portfolio Tasks interface details remain explicitly unknown and owner
   validation is required. The Slugger interface is conditional and unapproved;
   no direct interaction is active. Do not invent either interface.
