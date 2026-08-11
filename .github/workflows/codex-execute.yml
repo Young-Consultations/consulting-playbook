@@ -1,281 +1,37 @@
-name: Execute approved Codex task
+name: Validate consulting-playbook target availability
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       execution_input_json:
-        description: Canonical execution-input.json content
-        required: false
-        type: string
-      execution_input_artifact:
-        description: Router-produced execution-input artifact
-        required: false
-        type: string
-      execution_input_run_id:
-        description: Router workflow run containing the artifact
-        required: false
-        type: string
-      concurrency_group:
-        description: Router-authorized concurrency key
+        description: Complete canonical execution-input/v2 JSON string
         required: true
         type: string
+      concurrency_group:
+        description: Router-provided transport concurrency value
+        required: true
+        type: string
+    secrets:
+      CODEX_RESULT_TOKEN:
+        required: true
 
 concurrency:
-  # Serialization reduces simultaneous attempts; publication preflight provides idempotency.
+  # This transport control is not authorization or an idempotency identity.
   group: ${{ inputs.concurrency_group }}
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  pull-requests: write
-  actions: read
+  contents: read
 
 jobs:
-  execute:
+  registry-disabled:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      GH_TOKEN: ${{ github.token }}
-      SOURCE_ISSUE_TOKEN: ${{ secrets.PORTFOLIO_TASKS_TOKEN }}
-      RESULT_FILE: ${{ runner.temp }}/execution-result.json
-      EXECUTION_INPUT_FILE: ${{ runner.temp }}/execution-input.json
-      POLICY_OUTPUT_FILE: ${{ runner.temp }}/repository-policy.env
-      PUBLICATION_METADATA_FILE: ${{ runner.temp }}/publication-metadata.json
+    timeout-minutes: 5
     steps:
-      - name: Check out consulting-playbook
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Check out canonical AI-SDLC control plane
-        shell: bash
-        env:
-          ORG_CONTROL_PLANE_TOKEN: ${{ secrets.ORG_CONTROL_PLANE_TOKEN }}
-        run: |
-          set -euo pipefail
-          test -n "${ORG_CONTROL_PLANE_TOKEN:-}" || { echo '::error::Organization control-plane token is unavailable.'; exit 1; }
-          auth_header="$(printf 'x-access-token:%s' "$ORG_CONTROL_PLANE_TOKEN" | base64 -w0)"
-          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth_header" \
-            clone --depth 1 --branch ai-sdlc-v2.1.0 \
-            https://github.com/Young-Consultations/.github.git \
-            "$RUNNER_TEMP/shared-platform"
-
-      - name: Install canonical AI-SDLC contracts
+      - name: Reject routing while the canonical registry entry is disabled
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --disable-pip-version-check --no-input "$RUNNER_TEMP/shared-platform/ai_sdlc_contracts"
-
-      - name: Materialize canonical execution input
-        shell: bash
-        env:
-          EXECUTION_INPUT_JSON: ${{ inputs.execution_input_json }}
-          EXECUTION_INPUT_ARTIFACT: ${{ inputs.execution_input_artifact }}
-          EXECUTION_INPUT_RUN_ID: ${{ inputs.execution_input_run_id }}
-        run: |
-          set -euo pipefail
-          python -m ai_sdlc_contracts.execution_input materialize \
-            --json "$EXECUTION_INPUT_JSON" \
-            --artifact "$EXECUTION_INPUT_ARTIFACT" \
-            --run-id "$EXECUTION_INPUT_RUN_ID" \
-            --repository "$GITHUB_REPOSITORY" \
-            --out "$EXECUTION_INPUT_FILE"
-
-      - name: Validate canonical execution input
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m ai_sdlc_contracts.execution_input validate \
-            --file "$EXECUTION_INPUT_FILE" \
-            --require-version ai-sdlc-contract/v2
-
-      - name: Apply consulting-playbook execution policy
-        id: policy
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/codex_repository_policy.py validate \
-            --input "$EXECUTION_INPUT_FILE" \
-            --expected-repository Young-Consultations/consulting-playbook \
-            --github-output "$GITHUB_OUTPUT" \
-            --env-output "$POLICY_OUTPUT_FILE"
-
-      - name: Confirm source issue remains approved
-        shell: bash
-        env:
-          SOURCE_REPOSITORY: ${{ steps.policy.outputs.source_repository }}
-          SOURCE_ISSUE_NUMBER: ${{ steps.policy.outputs.source_issue_number }}
-        run: |
-          set -euo pipefail
-          test -n "${SOURCE_ISSUE_TOKEN:-}" || { echo '::error::Source issue token is unavailable.'; exit 1; }
-          response="$(GH_TOKEN="$SOURCE_ISSUE_TOKEN" gh api "/repos/$SOURCE_REPOSITORY/issues/$SOURCE_ISSUE_NUMBER")"
-          jq -e '.state == "open" and (has("pull_request") | not)' >/dev/null <<<"$response" || {
-            echo '::error::Source issue is not an open issue.'; exit 1;
-          }
-          jq -e '[.labels[].name] | index("status:approved") != null' >/dev/null <<<"$response" || {
-            echo '::error::Source issue is no longer approved.'; exit 1;
-          }
-          jq -e '[.labels[].name] | index("executor:codex") != null' >/dev/null <<<"$response" || {
-            echo '::error::Source issue is no longer assigned to Codex.'; exit 1;
-          }
-          jq -e '[.labels[].name] | index("sensitivity:sensitive") == null and index("sensitive") == null' >/dev/null <<<"$response" || {
-            echo '::error::Source issue is marked sensitive.'; exit 1;
-          }
-          jq -r '{title, body: (.body // "")} | @json' <<<"$response" > "$RUNNER_TEMP/source-issue.json"
-
-      - name: Materialize publication ownership metadata
-        shell: bash
-        env:
-          DELIVERY_ID: ${{ steps.policy.outputs.delivery_id }}
-          CORRELATION_ID: ${{ steps.policy.outputs.correlation_id }}
-          SOURCE_ISSUE: ${{ steps.policy.outputs.source_issue }}
-          TARGET_REPOSITORY: ${{ steps.policy.outputs.target_repository }}
-          CONTRACT_VERSION: ${{ steps.policy.outputs.contract_version }}
-          BRANCH: ${{ steps.policy.outputs.branch }}
-        run: |
-          set -euo pipefail
-          jq -n --arg delivery_id "$DELIVERY_ID" --arg correlation_id "$CORRELATION_ID" \
-            --arg source_issue "$SOURCE_ISSUE" --arg target_repository "$TARGET_REPOSITORY" \
-            --arg contract_version "$CONTRACT_VERSION" --arg branch "$BRANCH" \
-            '{delivery_id:$delivery_id,correlation_id:$correlation_id,source_issue:$source_issue,target_repository:$target_repository,contract_version:$contract_version,branch:$branch}' \
-            > "$PUBLICATION_METADATA_FILE"
-
-      - name: Preflight deterministic publication
-        if: steps.policy.outputs.execution_mode == 'implement'
-        id: preflight
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/codex_publication.py preflight --metadata "$PUBLICATION_METADATA_FILE" --github-output "$GITHUB_OUTPUT"
-
-      - name: Run verify-mode repository checks
-        if: steps.policy.outputs.execution_mode == 'verify'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git diff --check
-          python scripts/validate_repository.py
-          python scripts/test_codex_execute_contract.py
-
-      - name: Stop after verify mode
-        if: steps.policy.outputs.execution_mode == 'verify'
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo 'Verify mode completed without Codex invocation, branch creation, push, or pull request publication.'
-
-      - name: Create one task branch
-        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
-        env:
-          BRANCH: ${{ steps.policy.outputs.branch }}
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git checkout -b "$BRANCH"
-
-      - name: Run Codex through controlled wrapper
-        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
-        id: codex
-        uses: ./.github/actions/run-codex
-        with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          execution-input-file: ${{ runner.temp }}/execution-input.json
-          source-issue-file: ${{ runner.temp }}/source-issue.json
-
-      - name: Validate repository changes
-        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
-        id: validation
-        shell: bash
-        run: |
-          set -euo pipefail
-          git status --porcelain | grep -q . || { echo '::error::Codex made no changes after one retry.'; exit 1; }
-          git diff --check
-          python scripts/validate_repository.py
-          echo 'validation=passed' >> "$GITHUB_OUTPUT"
-
-      - name: Run repository tests
-        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
-        id: tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/test_codex_execute_contract.py
-          echo 'tests=passed' >> "$GITHUB_OUTPUT"
-
-      - name: Commit deterministic delivery
-        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
-        env:
-          BRANCH: ${{ steps.policy.outputs.branch }}
-        run: |
-          set -euo pipefail
-          git add --all
-          git commit -m "Codex: ${{ steps.policy.outputs.project_component }}"
-
-      - name: Push and recover publication create races
-        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
-        id: publish
-        shell: bash
-        env:
-          BRANCH: ${{ steps.policy.outputs.branch }}
-        run: |
-          set -euo pipefail
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          branch_created=false
-          if git push --set-upstream origin "$BRANCH"; then branch_created=true; fi
-          git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}.git"
-          extra=(); if [ "$branch_created" = true ]; then extra+=(--branch-created); fi
-          python scripts/codex_publication.py publish --metadata "$PUBLICATION_METADATA_FILE" \
-            --title "Consulting: ${{ steps.policy.outputs.project_component }}" --github-output "$GITHUB_OUTPUT" "${extra[@]}"
-
-      - name: Build canonical execution result
-        if: always()
-        shell: bash
-        env:
-          PR_URL: ${{ steps.publish.outputs.pr_url || steps.preflight.outputs.pr_url }}
-          BRANCH: ${{ steps.policy.outputs.branch }}
-          EXECUTION_STATUS: ${{ job.status }}
-        run: |
-          set -euo pipefail
-          status="failure"
-          failure_args=(--failure-category execution_failed --failure-message "Target publication or execution failed; inspect the workflow logs.")
-          if [ "$EXECUTION_STATUS" = "success" ]; then
-            status="success"
-            failure_args=()
-          fi
-          python -m ai_sdlc_contracts.execution_result build \
-            --input "$EXECUTION_INPUT_FILE" \
-            --out "$RESULT_FILE" \
-            --status "$status" \
-            --branch "$BRANCH" \
-            --pull-request-url "$PR_URL" \
-            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
-            "${failure_args[@]}"
-
-      - name: Validate canonical execution result
-        if: always()
-        run: python -m ai_sdlc_contracts.execution_result validate --file "$RESULT_FILE" --require-version ai-sdlc-contract/v2
-
-      - name: Upload canonical execution result
-        if: always()
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
-        with:
-          name: execution-result
-          path: ${{ runner.temp }}/execution-result.json
-          if-no-files-found: error
-
-      - name: Post result to source issue
-        if: always()
-        env:
-          SOURCE_REPOSITORY: ${{ steps.policy.outputs.source_repository }}
-          SOURCE_ISSUE_NUMBER: ${{ steps.policy.outputs.source_issue_number }}
-        run: |
-          set -euo pipefail
-          test -s "$RESULT_FILE"
-          body="### Codex execution result
-
-          \`$(jq -r '.status' "$RESULT_FILE")\` — [workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
-
-          Result contract: \`ai-sdlc-contract/v2\`. Human review is required; target execution cannot merge automatically."
-          GH_TOKEN="$SOURCE_ISSUE_TOKEN" gh api --method POST "/repos/$SOURCE_REPOSITORY/issues/$SOURCE_ISSUE_NUMBER/comments" -f body="$body"
+          echo '::error::Young-Consultations/consulting-playbook is disabled in organization compatibility release 2.2.0 (f2491872976a4dcc1633997954c03c07cbc4fced).'
+          echo '::error::No request validation, Codex execution, repository mutation, publication, or result delivery was attempted.'
+          exit 1

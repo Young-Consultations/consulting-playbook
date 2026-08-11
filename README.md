@@ -1,6 +1,8 @@
 # consulting-playbook
 
-`Young-Consultations/consulting-playbook` is a target executor repository for approved consulting-playbook implementation work.
+`Young-Consultations/consulting-playbook` is the authoritative home for reusable
+consulting knowledge and its product requirements. Its current next-MVP
+contribution is a deliberately disabled target-adapter boundary.
 
 ## Repository direction
 
@@ -12,11 +14,28 @@ The shared AI-SDLC execution control plane is owned by `Young-Consultations/.git
 
 `Young-Consultations/portfolio-tasks` owns portfolio backlog issues, structured intake and governance metadata, explicit human approval, and initiating the organization router. It does not own shared execution schemas or target execution-result contracts.
 
-The next-MVP adapter will consume `ai-sdlc-contract/v2` as dispatched by the organization router to `.github/workflows/codex-execute.yml`. Its approved compatibility unit is release `2.2.0` at immutable commit `f2491872976a4dcc1633997954c03c07cbc4fced`. It will consume `contracts/task-contract.schema.json`, `contracts/execution-input.schema.json`, and `contracts/execution-result.schema.json` directly at that commit. No published package, undocumented module, mutable branch, or unavailable tag is assumed. The existing workflow is blueprint evidence only and is not aligned or enabled by this documentation change.
+The next-MVP adapter interface is `.github/workflows/codex-execute.yml`. It has
+exactly the two routing inputs `execution_input_json` and `concurrency_group`.
+Its approved compatibility unit is release `2.2.0` at immutable commit
+`f2491872976a4dcc1633997954c03c07cbc4fced`. A future enabled implementation
+must consume `contracts/task-contract.schema.json`,
+`contracts/execution-input.schema.json`, and
+`contracts/execution-result.schema.json` directly at that commit. No published
+package, undocumented module, mutable branch, unavailable tag, artifact/run-ID
+transport, or local contract copy is supported.
+
+The authoritative organization registry entry is currently `enabled: false`.
+Accordingly, the checked-in workflow is a read-only, fail-closed reusable
+boundary: it cannot invoke Codex, mutate the repository, create a pull request,
+or deliver a result. The former partial executor, mutable source-label approval
+check, local policy aliases, and publication implementation were removed rather
+than presented as a supported MVP. Enabling routing and implementing the adapter
+requires a separately reviewed change after the external gates in the
+[next-MVP profile](docs/requirements/NextMVP.md) are satisfied.
 
 Upgrades to the organization control-plane release require an explicit reviewed repository change. Rollback must pin the workflow to the previous immutable known-good organization release.
 
-## Target execution responsibilities
+## Planned target execution responsibilities
 
 The consulting-playbook target workflow owns only repository-specific behavior:
 
@@ -30,9 +49,12 @@ The consulting-playbook target workflow owns only repository-specific behavior:
 
 Verify mode is non-mutating: it validates the canonical contract, routing authorization, repository policy, and safe repository checks, but it does not invoke Codex, create a branch, commit, push, or create a pull request.
 
-Implement mode may run Codex through the controlled wrapper and may create or update one deterministic draft pull request. Target execution can never merge automatically; human review and merge are always required.
+Once the external registry and receiver gates are satisfied and the adapter is
+implemented, implement mode may run one bounded executor and create or reuse one
+deterministic draft pull request. Target execution can never merge
+automatically; human review and merge are always required.
 
-## Idempotent publication protocol
+## Required future idempotent publication protocol
 
 The canonical `delivery_id` is
 the logical publication identity. It must be stable across dispatch retries and
