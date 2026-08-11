@@ -19,6 +19,7 @@ REQUIRED_FILES = (
     "config/codex-repositories.json",
     ".github/workflows/codex-result-receiver.yml",
 )
+RECEIVER_IMPLEMENTATION_MARKER = "# codex-result-receiver-readiness: implemented"
 
 
 class ReadinessError(RuntimeError):
@@ -68,13 +69,34 @@ def assess(files: ReleaseFiles) -> list[str]:
     blockers: list[str] = []
     if matches[0].get("enabled") is not True:
         blockers.append("organization registry entry is disabled")
-    receiver = files.values[".github/workflows/codex-result-receiver.yml"].decode("utf-8", "strict").lower()
-    if any(signal in receiver for signal in ("not implemented", "fail-closed", "exit 1")):
+    try:
+        receiver_lines = files.values[".github/workflows/codex-result-receiver.yml"].decode(
+            "utf-8", "strict"
+        ).splitlines()
+    except (KeyError, UnicodeDecodeError) as error:
+        raise ReadinessError("immutable result receiver is not valid UTF-8") from error
+    if RECEIVER_IMPLEMENTATION_MARKER not in (line.strip() for line in receiver_lines):
         blockers.append("organization result receiver is fail-closed")
-    manifest_text = json.dumps(files.json("tests/fixtures/mvp-v2/manifest.json"), sort_keys=True).lower()
-    if "tc-mvp-ci-001" not in manifest_text:
+
+    manifest = files.json("tests/fixtures/mvp-v2/manifest.json")
+    if not isinstance(manifest, dict) or manifest.get("id") != "TC-MVP-CI-001":
         raise ReadinessError("immutable fixture manifest does not identify TC-MVP-CI-001")
-    if any(value in manifest_text for value in ('"complete": false', '"executable": false')):
+    scenarios = manifest.get("scenarios")
+    scenarios_are_executable = (
+        isinstance(scenarios, list)
+        and bool(scenarios)
+        and all(
+            isinstance(scenario, dict)
+            and scenario.get("input") is not None
+            and scenario.get("expected_output") is not None
+            for scenario in scenarios
+        )
+    )
+    if (
+        manifest.get("complete") is not True
+        or manifest.get("executable") is not True
+        or not scenarios_are_executable
+    ):
         blockers.append("shared executable fixture set is incomplete")
     return blockers
 
