@@ -270,15 +270,12 @@ must:
 - The authoritative [Next-MVP profile](docs/requirements/NextMVP.md) specifies
   organization release `2.2.0`, an immutable commit, exactly two routing inputs,
   direct schema consumption, a disabled registry, and an organization-owned
-  fail-closed result receiver. For example, `.github/workflows/codex-execute.yml`
-  currently clones `Young-Consultations/.github` using branch
-  `ai-sdlc-v2.1.0` instead of the Next-MVP-required immutable commit.
-  These workflow and test artifacts are unaligned blueprint evidence, not
-  competing active contracts; later adapter implementation must assess and align
-  them.
-- `scripts/validate_repository.py` allows selected root paths but not the required
-  root `AI_CONTEXT.md`, so repository validation rejects this context-only change.
-  This task may not modify the validator.
+  fail-closed result receiver. `.github/workflows/codex-execute.yml` exposes only
+  that reusable routing boundary and currently rejects every request without an
+  effect. The former partial adapter was removed because it depended on an
+  undocumented package, legacy transport inputs, and a mutable approval recheck.
+  A later implementation change must add direct immutable schema consumption and
+  complete fake conformance before the registry may be enabled.
 - The control-plane registry is documented as disabled, the result receiver as an
   external fail-closed skeleton, and the shared fixture payload set as incomplete.
   These external gates block live routing, successful live return, and a shared
