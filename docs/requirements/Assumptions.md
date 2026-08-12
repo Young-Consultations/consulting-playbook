@@ -69,10 +69,11 @@ upgrade, and rollback. See
 [Interface-Organization-Control-Plane.md](Interface-Organization-Control-Plane.md).
 
 The next-MVP compatibility unit is release `2.2.0` at immutable commit
-`f2491872976a4dcc1633997954c03c07cbc4fced`; direct schema-file consumption is
-required and no package API is assumed. Live use remains blocked by the disabled
-registry and organization-owned receiver skeleton. Executable shared fixture
-payloads are incomplete; their completion is an external dependency.
+`c6090e5bbadcc2102a1cb91875466e9decdada1e`; direct schema-file consumption is
+required and no package API is assumed. It supplies immutable target-capability,
+executable fixture, and canonical result-receiver semantics. Current target
+activation is separate mutable organization-router state and is neither pinned
+nor administered by this repository.
 
 ### `Young-Consultations/portfolio-tasks`
 

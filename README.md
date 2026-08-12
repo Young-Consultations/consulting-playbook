@@ -2,7 +2,7 @@
 
 `Young-Consultations/consulting-playbook` is the authoritative home for reusable
 consulting knowledge and its product requirements. Its current next-MVP
-contribution is a deliberately disabled target-adapter boundary.
+contribution is one bounded organization-routed target adapter.
 
 ## Repository direction
 
@@ -17,25 +17,25 @@ The shared AI-SDLC execution control plane is owned by `Young-Consultations/.git
 The next-MVP adapter interface is `.github/workflows/codex-execute.yml`. It has
 exactly the two routing inputs `execution_input_json` and `concurrency_group`.
 Its approved compatibility unit is release `2.2.0` at immutable commit
-`f2491872976a4dcc1633997954c03c07cbc4fced`. A future enabled implementation
+`c6090e5bbadcc2102a1cb91875466e9decdada1e`. The adapter
 must consume `contracts/task-contract.schema.json`,
 `contracts/execution-input.schema.json`, and
 `contracts/execution-result.schema.json` directly at that commit. No published
 package, undocumented module, mutable branch, unavailable tag, artifact/run-ID
 transport, or local contract copy is supported.
 
-The authoritative organization registry entry is currently `enabled: false`.
-Accordingly, the checked-in workflow is a read-only, fail-closed reusable
-boundary: it cannot invoke Codex, mutate the repository, create a pull request,
-or deliver a result. The former partial executor, mutable source-label approval
-check, local policy aliases, and publication implementation were removed rather
-than presented as a supported MVP. Enabling routing and implementing the adapter
-requires a separately reviewed change after the external gates in the
-[next-MVP profile](docs/requirements/NextMVP.md) are satisfied.
+The immutable compatibility unit contains protocol and target-capability
+semantics, not current operational activation. Mutable activation is owned and
+enforced by the organization router before dispatch. This target must not reject
+an authenticated, otherwise valid routed request because historical compatibility
+content predates activation, and it must not enable or disable itself. The current
+checked-in workflow remains an implementation blueprint until the issue #114
+adapter replaces its rejecting stub; that replacement does not itself activate
+live routing.
 
 Upgrades to the organization control-plane release require an explicit reviewed repository change. Rollback must pin the workflow to the previous immutable known-good organization release.
 
-## Planned target execution responsibilities
+## Target execution responsibilities
 
 The consulting-playbook target workflow owns only repository-specific behavior:
 
@@ -45,16 +45,16 @@ The consulting-playbook target workflow owns only repository-specific behavior:
 - enforcing draft-only publication, no automatic merge, and no direct push to `main`;
 - deriving deterministic implementation branches from canonical delivery identity;
 - running repository validation and tests before publication;
-- producing canonical execution-result/v2 and separately invoking the organization-owned fail-closed result-receiver interface.
+- producing canonical execution-result/v2 and separately invoking the organization-owned canonical result-receiver interface.
 
 Verify mode is non-mutating: it validates the canonical contract, routing authorization, repository policy, and safe repository checks, but it does not invoke Codex, create a branch, commit, push, or create a pull request.
 
-Once the external registry and receiver gates are satisfied and the adapter is
-implemented, implement mode may run one bounded executor and create or reuse one
+Once the adapter is implemented and an admitted request is dispatched by the
+organization router, implement mode may run one bounded executor and create or reuse one
 deterministic draft pull request. Target execution can never merge
 automatically; human review and merge are always required.
 
-## Required future idempotent publication protocol
+## Required idempotent publication protocol
 
 The canonical `delivery_id` is
 the logical publication identity. It must be stable across dispatch retries and
@@ -112,11 +112,11 @@ and secrets are never included.
 
 ### Rollout and rollback
 
-Live rollout is prohibited while the organization registry entry is disabled and
-while its result receiver remains an interface skeleton. The exact target inputs
-are `execution_input_json` and `concurrency_group`; see the
+Operational activation remains separate organization control-plane state and is
+not changed by this repository. The exact target inputs are
+`execution_input_json` and `concurrency_group`; see the
 [next-MVP profile](docs/requirements/NextMVP.md) for the complete immutable
-interface, approval/content boundaries, planned fake tests, and external gates.
+interface, approval/content boundaries, and fake conformance requirements.
 Existing run-ID branches are legacy and are not adopted automatically. Rollback
 must disable dispatch first and must not redeliver identities already published
 until operators reconcile their managed PRs.
