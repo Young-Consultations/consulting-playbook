@@ -41,7 +41,7 @@ The project repeatedly exposed defects downstream of code generation: event sema
 
 ## Requirement or architecture implications
 
-The current single-active-contract, immutable-compatibility/mutable-activation, bounded-repository-authority architecture already captures most resolved decisions. The current required correction is to reconcile consulting-playbook `AI_CONTEXT.md` with the completed #114 adapter.
+The current single-active-contract, immutable-compatibility/mutable-activation, bounded-repository-authority architecture already captures most resolved decisions. This change reconciled consulting-playbook `AI_CONTEXT.md` with the completed #114 adapter and resolved DEF-0011.
 
 ## Lessons learned
 
