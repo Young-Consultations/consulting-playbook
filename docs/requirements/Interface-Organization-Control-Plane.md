@@ -82,11 +82,12 @@ reduction mechanism, not the idempotency guarantee.
 ## Versioning and compatibility
 
 The target MUST directly consume the three documented schema files at
-`f2491872976a4dcc1633997954c03c07cbc4fced`. Schema, workflow interface, registry
-expectations, and shared-fixture manifest form release `2.2.0`; internal paths,
-unverified modules/packages, mutable `main`, and the unavailable release tag MUST
-NOT be used. The incomplete fixture payload set prevents an executable shared-
-fixture conformance claim before enablement.
+`c6090e5bbadcc2102a1cb91875466e9decdada1e`. Schemas, workflow interfaces,
+immutable target-capability semantics, and the executable shared-fixture oracle
+form compatibility release `2.2.0`; internal paths, unverified modules/packages,
+and mutable references MUST NOT be used. Current operational activation is
+separate router-owned mutable state and MUST NOT be inferred from or enforced by
+the target's immutable compatibility pin.
 Upgrades require reviewed compatibility evidence and rollback instructions.
 Producers MUST NOT silently change field semantics within a version. Consumers
 MUST reject unsupported versions. Results MUST use a version compatible with the
@@ -101,11 +102,11 @@ wrong target, retries, partial failure, and sanitized failures.
 
 ## Confirmed interface limitations
 
-The exact target and receiver interfaces, schemas, registry entry, and manifest
-are recorded in [NextMVP.md](NextMVP.md). The registry is disabled. The result
-receiver is an organization-owned fail-closed skeleton, so successful live return
-is unavailable and transport acceptance cannot be reported as execution success.
-The shared scenario manifest lacks complete executable input/expected-output
-fixtures. Organization owners must implement the receiver, complete fixtures, and
-enable the registry before live use. This repository must not fill those gaps by
-inventing a package/API, competing receiver, fixture, or contract extension.
+The exact target and receiver interfaces, schemas, immutable capability
+semantics, and executable fixture oracle are recorded in
+[NextMVP.md](NextMVP.md). The organization router owns current activation and
+enforces it before dispatch. The canonical receiver owns result transport;
+transport acceptance cannot be reported as execution success. This repository
+must consume those interfaces without inventing a package/API, competing
+receiver, fixture expectation, activation rule, or contract extension. Target
+implementation does not enable live routing.

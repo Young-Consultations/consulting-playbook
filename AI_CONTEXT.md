@@ -178,9 +178,10 @@ the slice from existing code. The consulting content platform and its `FR-ENG`
 through `FR-KM` capabilities are deferred, as are rich v3 approval evidence,
 cross-repository modification, automatic merge, automatic consulting-content
 publication, release, deployment, production operation, and broader platform
-automation. Live routing is prohibited while the external registry is disabled;
-successful live result return and executable shared-fixture conformance remain
-blocked by the external gates identified in the profile.
+automation. Immutable compatibility and target-capability semantics are pinned to
+the organization release, while current activation is separate mutable
+organization-router state. This repository neither enforces historical
+activation nor enables itself.
 
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft
@@ -227,7 +228,6 @@ evidence defines these commands:
 git diff --check
 python scripts/validate_repository.py
 python scripts/test_codex_execute_contract.py
-python scripts/test_next_mvp_readiness.py
 ```
 
 The contract test is required for target-adapter behavior changes, not every
@@ -269,20 +269,15 @@ must:
 ## Known gaps or conflicts
 
 - The authoritative [Next-MVP profile](docs/requirements/NextMVP.md) specifies
-  organization release `2.2.0`, an immutable commit, exactly two routing inputs,
-  direct schema consumption, a disabled registry, and an organization-owned
-  fail-closed result receiver. `.github/workflows/codex-execute.yml` exposes only
-  that reusable routing boundary and currently rejects every request without an
-  effect. The former partial adapter was removed because it depended on an
-  undocumented package, legacy transport inputs, and a mutable approval recheck.
-  A later implementation change must add direct immutable schema consumption and
-  complete fake conformance before the registry may be enabled.
-- The control-plane registry is documented as disabled, the result receiver as an
-  external fail-closed skeleton, and the shared fixture payload set as incomplete.
-  These external gates block live routing, successful live return, and a shared
-  executable-fixture conformance claim, but not local fake implementation.
-  `scripts/check_next_mvp_readiness.py` provides a read-only, fail-closed audit of
-  the immutable external gates without copying organization-owned contracts.
+  organization release `2.2.0` at immutable commit
+  `c6090e5bbadcc2102a1cb91875466e9decdada1e`, exactly two routing inputs, direct
+  schema consumption, executable shared-fixture conformance, and the canonical
+  organization result receiver. Current activation is separate mutable
+  organization-router state and must not be consumed from the compatibility pin.
+  `.github/workflows/codex-execute.yml` still rejects every request based on the
+  obsolete historical activation model and must be replaced in place by the one
+  issue #114 adapter. The readiness auditor and its tests are likewise obsolete;
+  they must be removed rather than retained beside conformance tests.
 - Portfolio Tasks interface details remain explicitly unknown and owner
   validation is required. The Slugger interface is conditional and unapproved;
   no direct interaction is active. Do not invent either interface.
