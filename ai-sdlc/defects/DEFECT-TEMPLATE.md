@@ -6,8 +6,9 @@
 | --- | --- |
 | Defect ID | `DEF-YYYY-NNN` |
 | Title |  |
-| Status | open / investigating / resolved / accepted |
-| Origin / type / severity |  |
+| Status | open / investigating / resolved / accepted-risk / invalid |
+| Origin / origin phase |  |
+| Type / severity |  |
 | Detection phase / method |  |
 
 ## Expected behavior

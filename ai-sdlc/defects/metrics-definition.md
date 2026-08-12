@@ -23,17 +23,17 @@ Map interface design to `architecture-design`, configuration creation to `implem
 
 ### Total Defects Found
 
-Count distinct `defect_id` values detected in the reporting window. Count only evidence-backed discrepancies; investigations with no discrepancy are excluded.
+Count distinct `defect_id` values detected in the reporting window. Count only evidence-backed discrepancies; investigations with no discrepancy and rows with `status = invalid` are excluded.
 
 ### Upstream Defects Found
 
-Count defects whose origin is `requirement`, `architecture-design`, `interface-integration`, or authoritative `documentation-context`, rather than implementation or verification. Report count and percentage of total defects.
+Count defects whose `origin` is `requirement`, `architecture-design`, `interface-integration`, or authoritative `documentation-context`, rather than implementation or verification. Report count and percentage of total defects.
 
 ### Defect Escape Distance
 
 The number of phase boundaries crossed before detection:
 
-`escape_distance = detected phase index - origin phase index`
+`escape_distance = index(detected_phase) - index(origin_phase)`
 
 Zero means detection in the phase of origin. Do not use negative values; re-evaluate the classification instead. Report distribution and median as well as the mean so outliers remain visible.
 
@@ -51,11 +51,11 @@ Count rows where `ai_context_update_required = true` after the affected reposito
 
 ### Rework Actual
 
-Total decimal person-hours spent diagnosing, correcting, verifying, and reconciling the defect. Prefer measured time. If estimated, prefix the ledger value with `estimate:` and use a conservative value (for example, `estimate:2.5`). State the method in notes.
+Total decimal person-hours spent diagnosing, correcting, verifying, and reconciling the defect. Keep `rework_actual_hours` numeric. Prefer measured time; when it is conservatively estimated, set `rework_actual_is_estimate = true` and state the method in notes.
 
 ### Rework Avoided
 
-Conservative estimated person-hours of additional downstream correction avoided because detection occurred before a later phase. Store as `estimate:<hours>` in `rework_avoided_estimate`; never present it as measured savings. State the assumed later phase and basis in notes. Leave blank when no defensible estimate exists.
+Conservative estimated person-hours of additional downstream correction avoided because detection occurred before a later phase. Keep the numeric estimate in `rework_avoided_estimate_hours`; the column name makes its estimated nature explicit. Never present it as measured savings. State the assumed later phase and basis in notes. Leave blank when no defensible estimate exists.
 
 ## Distributions
 
