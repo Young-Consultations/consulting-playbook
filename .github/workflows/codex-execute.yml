@@ -1,4 +1,4 @@
-name: Validate consulting-playbook target availability
+name: Execute admitted consulting-playbook task
 
 on:
   workflow_call:
@@ -12,11 +12,15 @@ on:
         required: true
         type: string
     secrets:
+      OPENAI_API_KEY:
+        required: true
+      TARGET_PUBLICATION_TOKEN:
+        required: true
       CODEX_RESULT_TOKEN:
         required: true
 
 concurrency:
-  # This transport control is not authorization or an idempotency identity.
+  # Transport serialization reduces races; delivery_id remains the ownership identity.
   group: ${{ inputs.concurrency_group }}
   cancel-in-progress: false
 
@@ -24,14 +28,164 @@ permissions:
   contents: read
 
 jobs:
-  registry-disabled:
+  execute:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    outputs:
+      execution_result: ${{ steps.result.outputs.execution_result }}
+      source_issue: ${{ steps.policy.outputs.source_issue }}
+    env:
+      INPUT_FILE: ${{ runner.temp }}/execution-input.json
+      METADATA_FILE: ${{ runner.temp }}/publication.json
     steps:
-      - name: Reject routing while the canonical registry entry is disabled
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          repository: Young-Consultations/consulting-playbook
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Authenticate organization router
+        shell: bash
+        env:
+          CALLER_REPOSITORY: ${{ github.repository }}
+          CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: |
+          set -euo pipefail
+          test "$CALLER_REPOSITORY" = "Young-Consultations/.github" || exit 1
+          case "$CALLER_WORKFLOW_REF" in
+            Young-Consultations/.github/.github/workflows/codex-router.yml@*) ;;
+            *) echo '::error::unauthorized reusable-workflow caller'; exit 1 ;;
+          esac
+
+      - name: Validate concurrency transport
+        shell: bash
+        env:
+          CONCURRENCY_GROUP: ${{ inputs.concurrency_group }}
+        run: |
+          set -euo pipefail
+          [[ "$CONCURRENCY_GROUP" =~ ^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$ ]] || {
+            echo '::error::invalid concurrency transport'; exit 1;
+          }
+
+      - name: Materialize canonical input and immutable schemas
+        shell: bash
+        env:
+          EXECUTION_INPUT_JSON: ${{ inputs.execution_input_json }}
+          COMPATIBILITY_SHA: c6090e5bbadcc2102a1cb91875466e9decdada1e
+        run: |
+          set -euo pipefail
+          printf '%s' "$EXECUTION_INPUT_JSON" > "$INPUT_FILE"
+          mkdir "$RUNNER_TEMP/contracts"
+          for schema in task-contract execution-input execution-result; do
+            curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+              "https://raw.githubusercontent.com/Young-Consultations/.github/$COMPATIBILITY_SHA/contracts/$schema.schema.json" \
+              --output "$RUNNER_TEMP/contracts/$schema.schema.json"
+          done
+
+      - name: Schema and target-policy validation
+        id: policy
         shell: bash
         run: |
           set -euo pipefail
-          echo '::error::Young-Consultations/consulting-playbook is disabled in organization compatibility release 2.2.0 (f2491872976a4dcc1633997954c03c07cbc4fced).'
-          echo '::error::No request validation, Codex execution, repository mutation, publication, or result delivery was attempted.'
-          exit 1
+          python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]>=4.23,<5'
+          python - <<'PY'
+          import json, os
+          from jsonschema import Draft202012Validator, FormatChecker
+          payload=json.load(open(os.environ['INPUT_FILE'], encoding='utf-8'))
+          schema=json.load(open(os.path.join(os.environ['RUNNER_TEMP'],'contracts/execution-input.schema.json'), encoding='utf-8'))
+          Draft202012Validator(schema, format_checker=FormatChecker()).validate(payload)
+          PY
+          python scripts/codex_repository_policy.py validate --input "$INPUT_FILE" \
+            --expected-repository Young-Consultations/consulting-playbook \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Bind publication ownership metadata
+        if: steps.policy.outputs.execution_mode == 'implement'
+        env:
+          DELIVERY_ID: ${{ steps.policy.outputs.delivery_id }}
+          PAYLOAD_DIGEST: ${{ steps.policy.outputs.payload_digest }}
+          TARGET_REPOSITORY: ${{ steps.policy.outputs.target_repository }}
+          BRANCH: ${{ steps.policy.outputs.branch }}
+          SOURCE_ISSUE: ${{ steps.policy.outputs.source_issue }}
+        run: |
+          jq -n --arg delivery_id "$DELIVERY_ID" --arg payload_digest "$PAYLOAD_DIGEST" \
+            --arg target_repository "$TARGET_REPOSITORY" --arg branch "$BRANCH" --arg source_issue "$SOURCE_ISSUE" \
+            '{delivery_id:$delivery_id,payload_digest:$payload_digest,target_repository:$target_repository,branch:$branch,source_issue:$source_issue}' > "$METADATA_FILE"
+
+      - name: Preflight managed draft ownership
+        if: steps.policy.outputs.execution_mode == 'implement'
+        id: preflight
+        env:
+          GH_TOKEN: ${{ secrets.TARGET_PUBLICATION_TOKEN }}
+        run: python scripts/codex_publication.py preflight --metadata "$METADATA_FILE" --github-output "$GITHUB_OUTPUT"
+
+      - name: Verify repository without effects
+        if: steps.policy.outputs.execution_mode == 'verify'
+        run: |
+          git diff --check
+          python scripts/validate_repository.py
+          python scripts/test_codex_execute_contract.py
+
+      - name: Create deterministic local branch
+        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
+        env:
+          BRANCH: ${{ steps.policy.outputs.branch }}
+        run: git switch --create "$BRANCH"
+
+      - name: Run isolated Codex executor
+        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
+        uses: ./.github/actions/run-codex
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          execution-input-file: ${{ runner.temp }}/execution-input.json
+          source-issue-file: ${{ runner.temp }}/execution-input.json
+
+      - name: Validate candidate before publication
+        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
+        run: |
+          test -n "$(git status --porcelain)"
+          git diff --check
+          python scripts/validate_repository.py
+          python scripts/test_codex_execute_contract.py
+
+      - name: Publish deterministic managed draft
+        if: steps.policy.outputs.execution_mode == 'implement' && steps.preflight.outputs.state == 'new-delivery'
+        id: publish
+        env:
+          GH_TOKEN: ${{ secrets.TARGET_PUBLICATION_TOKEN }}
+          BRANCH: ${{ steps.policy.outputs.branch }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all && git commit -m "Codex: ${{ steps.policy.outputs.project_component }}"
+          header="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $header" push origin "HEAD:refs/heads/$BRANCH"
+          python scripts/codex_publication.py publish --metadata "$METADATA_FILE" --branch-created \
+            --title "Consulting: ${{ steps.policy.outputs.project_component }}" --github-output "$GITHUB_OUTPUT"
+
+      - name: Build bounded canonical-result transport value
+        if: always() && steps.policy.outcome == 'success'
+        id: result
+        env:
+          MODE: ${{ steps.policy.outputs.execution_mode }}
+          BRANCH: ${{ steps.policy.outputs.branch }}
+          PR_URL: ${{ steps.publish.outputs.pr_url || steps.preflight.outputs.pr_url }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          result="$(jq -c --arg mode "$MODE" --arg branch "$BRANCH" --arg pr_url "$PR_URL" \
+            --arg run_url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg status "$JOB_STATUS" '. + {execution_mode:$mode,branch:($branch|select(length>0)),pull_request_url:($pr_url|select(length>0)),workflow_url:$run_url,execution_status:$status}' "$INPUT_FILE")"
+          echo "execution_result=$result" >> "$GITHUB_OUTPUT"
+
+  receive-result:
+    needs: execute
+    if: always() && needs.execute.outputs.execution_result != ''
+    uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@c6090e5bbadcc2102a1cb91875466e9decdada1e
+    with:
+      execution_result: ${{ needs.execute.outputs.execution_result }}
+      source_issue: ${{ needs.execute.outputs.source_issue }}
+    secrets:
+      CODEX_RESULT_TOKEN: ${{ secrets.CODEX_RESULT_TOKEN }}
