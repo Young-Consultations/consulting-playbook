@@ -41,9 +41,11 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
 - **Outbound:** the canonical result only, covering every terminal outcome with
   identities, target, timestamps, validation evidence, safe failure/reconciliation
   detail, and branch/draft metadata when applicable.
-- **Limitations:** immutable release `2.2.0` is pinned at the full SHA; the registry
-  is disabled, the receiver is a fail-closed skeleton, and shared executable
-  fixtures are incomplete. No package or observed import is a contract.
+- **Compatibility and activation:** immutable release `2.2.0` is pinned at
+  `c6090e5bbadcc2102a1cb91875466e9decdada1e` for schemas, target capabilities,
+  executable fixtures, and the receiver interface. Current activation is separate
+  mutable router state; the target neither consumes historical activation nor
+  administers it. No package or observed import is a contract.
 - **Validation:** exact immutable schemas first, then caller/target/type, supported
   executor/mode, sensitivity, repository policy, concurrency, and reconciliation.
 - **Retries/idempotency:** router retries retain logical delivery identity; concurrency is optimization only. Results are correlated and safe to re-consume.

@@ -6,7 +6,7 @@ This profile is the normative repository-owned implementation baseline. It uses
 organization compatibility release `2.2.0`, payload contract
 `ai-sdlc-contract/v2`, and fixture-set manifest `TC-MVP-CI-001`, all identified
 by the immutable `Young-Consultations/.github` commit
-`f2491872976a4dcc1633997954c03c07cbc4fced`. These supplied interface facts are
+`c6090e5bbadcc2102a1cb91875466e9decdada1e`. These supplied interface facts are
 requirements, not a claim that this repository inspected or conforms with a
 sibling repository.
 
@@ -17,9 +17,12 @@ validates. This slice preserves the broader consulting-playbook vision but does
 not implement the consulting content platform, publish consulting guidance, or
 perform production work.
 
-The registry entry is deliberately disabled (`enabled: false`). Local interface
-alignment and fake implementation testing may proceed; every live routed request
-must fail closed until the organization owner enables the entry.
+The immutable compatibility unit defines protocol and target-capability
+semantics. Current target activation is separate mutable organization
+control-plane state: the organization router owns and enforces it before
+dispatch. This target neither consumes historical activation from the pinned
+unit nor enables, disables, or otherwise administers routing. Merging or testing
+the adapter does not enable live routing.
 
 ## Included and deferred requirement IDs
 
@@ -39,16 +42,18 @@ operations, and broader content-platform automation not needed by this adapter.
 
 ## Immutable compatibility unit
 
-All organization file references use this complete SHA (never `main` or the
-declared but unavailable `ai-sdlc-v2.2.0` tag):
+All organization file references use this complete SHA (never `main` or a
+mutable reference):
 
-`Young-Consultations/.github@f2491872976a4dcc1633997954c03c07cbc4fced`
+`Young-Consultations/.github@c6090e5bbadcc2102a1cb91875466e9decdada1e`
 
 The compatibility unit comprises `release/release-manifest.json`,
 `docs/interfaces/mvp-v2-compatibility.md`, `docs/releases/next-mvp.md`,
-`config/codex-repositories.json`, the three schemas below,
-`tests/fixtures/mvp-v2/manifest.json`, `.github/workflows/codex-router.yml`, and
-`.github/workflows/codex-result-receiver.yml` at that SHA.
+the target-capability registry, the three schemas below, the executable
+`TC-MVP-CI-001` fixture oracle, `.github/workflows/codex-router.yml`, and
+`.github/workflows/codex-result-receiver.yml` at that SHA. The final commit SHA
+is a consumer pin; the organization repository is not required to embed that
+SHA inside the compatibility contents.
 
 The adapter shall directly consume the immutable schema files:
 
@@ -61,12 +66,11 @@ undocumented module/path, sibling checkout, or local contract fork is therefore
 not an MVP dependency. A documented public validation API is a possible future
 organization-owned improvement, not a current design decision.
 
-The authoritative target registry values are:
+The immutable target-capability values consumed by this target are:
 
 | Property | Value |
 | --- | --- |
 | target | `Young-Consultations/consulting-playbook` |
-| enabled | `false` |
 | permitted task types | `automation`, `documentation`, `feature`, `testing` |
 | contract | `ai-sdlc-contract/v2` |
 | draft_pr_only | `true` |
@@ -88,18 +92,18 @@ The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
 It shall invoke
-`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@f2491872976a4dcc1633997954c03c07cbc4fced`
+`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@c6090e5bbadcc2102a1cb91875466e9decdada1e`
 with inputs `execution_result` and `source_issue` and secret
 `CODEX_RESULT_TOKEN`. Receiver outputs are `accepted`, `delivery_id`,
 `correlation_id`, `execution_status`, `failure_category`, and
 `diagnostic_summary`.
 
-The receiver is an approved **fail-closed interface skeleton**. Alignment may
-proceed, but successful live result return is unavailable until its organization
-owner implements it. Consulting Playbook shall not build a competing receiver.
+The receiver is the canonical organization-owned result transport. Consulting
+Playbook shall invoke that interface and shall not build a competing receiver.
 Transport acceptance and receiver outputs are acknowledgement evidence, never a
 replacement for the target's canonical execution outcome or proof of execution
-success.
+success. Receiver failure and result redelivery follow the pinned organization
+contract and must not replay a completed target publication effect.
 
 ## Authorization and content boundaries
 
@@ -132,8 +136,10 @@ against the exact immutable schema; require target
 `Young-Consultations/consulting-playbook`, `ai-sdlc-contract/v2`, an allowed task
 type (`automation`, `documentation`, `feature`, or `testing`), local repository
 and consulting-content policy, and `draft_pr_only: true`; validate and use the
-supplied `concurrency_group`; and fail closed while the registry is disabled or
-when routing is stale/improper.
+supplied `concurrency_group`; and fail closed when caller authentication,
+authorization, or routing evidence is stale or improper. It shall not read or
+enforce mutable activation state: receipt from the authenticated organization
+router is downstream of the router's current activation decision.
 
 `delivery_id` is the sole idempotency identity and stays stable across retries;
 `correlation_id` is the observability identity. Processing is at least once with
@@ -152,7 +158,7 @@ production operation, or reads/modifies another repository.
 
 ### Verify mode
 
-Verify validates request format/schema, caller, registry and repository/content
+Verify validates request format/schema, caller, capability and repository/content
 policy. It does not invoke Codex, create a branch, or create a PR. Success uses
 `execution_status: verified` and the authoritative null-field requirements.
 
@@ -166,30 +172,33 @@ automatically published consulting guidance.
 
 ## Planned no-Codex conformance coverage
 
-Local tests shall align with the `TC-MVP-CI-001` manifest and cover: valid verify;
-valid fake implement; wrong target; disabled target; invalid contract version;
+Local tests shall consume the organization-owned executable `TC-MVP-CI-001`
+fixture oracle and cover: valid verify; valid fake implement; wrong target;
+invalid contract version;
 invalid schema or format; unauthorized caller; unsupported task type; invalid
 concurrency value; stale or improperly routed request; duplicate delivery;
 conflicting payload under one delivery ID; existing matching managed draft PR;
 ambiguous PR ownership; create-race requery; repository-policy rejection;
 consulting-content validation failure; fake executor failure; validation failure;
-test failure; publication failure; valid canonical result; receiver fail-closed
+test failure; publication failure; timeout; valid canonical result; receiver failure
 response; identical result redelivery; conflicting result redelivery; no Codex
 call; no real branch; and no real pull request.
 
-The manifest is the authoritative shared scenario list, but release `2.2.0` does
-not supply executable inputs and expected outputs for every scenario. Planned
-coverage may map to the manifest; it must not invent missing fixtures or claim
-executable shared-fixture conformance. Fixture completion is an external
-`Young-Consultations/.github` implementation dependency.
+The pinned fixture oracle supplies the organization contract inputs and expected
+results. Conformance tests shall consume those exact semantics without copying,
+rewriting, or supplementing organization-owned expectations. Separate local
+tests may cover genuinely consulting-playbook-specific repository and content
+policy, but they shall not redefine schema, status, activation, delivery,
+ownership, or result behavior. Ordinary conformance uses fakes and makes zero
+real Codex calls, branches, or pull requests.
 
-## Readiness and external dependencies
+## Implementation readiness and operational activation
 
-No further repository-owned architecture decision blocks implementation: scope,
-interfaces, authorization boundaries, idempotency, ownership, results, and test
-intent are fixed above. Live execution remains blocked on organization-owned
-registry enablement and receiver implementation. Executable shared-fixture
-completion is required for the eventual shared conformance claim. The unavailable
-tag must not be used; the full SHA remains authoritative. These limitations do
-not block local fake adapter implementation and testing, but they do block live
-routing and any claim of cross-repository conformance or successful live return.
+No known organization- or repository-owned contract prerequisite blocks the
+target-adapter implementation: the merged baseline supplies immutable schemas,
+capabilities, executable fixtures, delivery/ownership semantics, and the
+canonical result receiver. Implementation and fake conformance may therefore
+proceed against the full SHA. Current operational activation remains mutable
+organization control-plane state and is neither pinned nor enforced here. This
+repository must not enable itself, and implementation completion alone is not a
+claim that live routing is active or production-ready.
