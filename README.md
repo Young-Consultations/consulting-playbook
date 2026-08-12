@@ -8,6 +8,14 @@ contribution is one bounded organization-routed target adapter.
 
 The [Consulting Playbook Vision](docs/VISION.md) defines the intended direction for this repository as Young Consultations' reusable consulting operating system. The target-executor workflow described below is an enabling delivery mechanism for approved implementation work; it is not the full consulting-playbook product vision, and the envisioned consulting methods and assets still require requirements development and implementation.
 
+## Consulting knowledge
+
+- [AI-SDLC learning](ai-sdlc/README.md) captures organization-wide learning and consulting evidence without replacing product requirements or architecture.
+- [Defect metrics](ai-sdlc/defects/metrics-definition.md) define the initial quantitative measures and their interpretation.
+- [Engineering Journal](ai-sdlc/engineering-journal/README.md) preserves material discoveries and lessons that need narrative context.
+- [Consulting content](ai-sdlc/content/README.md) separates ideas, drafts, and published posts.
+- [Consulting operating system](consulting/README.md) contains engagement methods, assessments, reports, and client-facing templates.
+
 ## AI-SDLC control plane
 
 The shared AI-SDLC execution control plane is owned by `Young-Consultations/.github`. That organization repository owns canonical schemas, task and execution validation, contract versioning, repository registry, routing policy, shared failure categories, and correlation behavior.
