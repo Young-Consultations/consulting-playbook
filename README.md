@@ -36,10 +36,9 @@ The immutable compatibility unit contains protocol and target-capability
 semantics, not current operational activation. Mutable activation is owned and
 enforced by the organization router before dispatch. This target must not reject
 an authenticated, otherwise valid routed request because historical compatibility
-content predates activation, and it must not enable or disable itself. The current
-checked-in workflow remains an implementation blueprint until the issue #114
-adapter replaces its rejecting stub; that replacement does not itself activate
-live routing.
+content predates activation, and it must not enable or disable itself. The checked-in issue #114 adapter implements this repository's
+canonical target workflow and repository-local contract checks. Its presence does not itself
+activate live routing or prove the mutable organization-router state.
 
 Upgrades to the organization control-plane release require an explicit reviewed repository change. Rollback must pin the workflow to the previous immutable known-good organization release.
 
@@ -57,9 +56,9 @@ The consulting-playbook target workflow owns only repository-specific behavior:
 
 Verify mode is non-mutating: it validates the canonical contract, routing authorization, repository policy, and safe repository checks, but it does not invoke Codex, create a branch, commit, push, or create a pull request.
 
-Once the adapter is implemented and an admitted request is dispatched by the
-organization router, implement mode may run one bounded executor and create or reuse one
-deterministic draft pull request. Target execution can never merge
+When an admitted request is dispatched by the organization router, implement
+mode may run one bounded executor and create or reuse one deterministic draft
+pull request. Target execution can never merge
 automatically; human review and merge are always required.
 
 ## Required idempotent publication protocol

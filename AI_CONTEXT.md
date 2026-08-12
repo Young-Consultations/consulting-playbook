@@ -282,10 +282,14 @@ must:
   schema consumption, executable shared-fixture conformance, and the canonical
   organization result receiver. Current activation is separate mutable
   organization-router state and must not be consumed from the compatibility pin.
-  `.github/workflows/codex-execute.yml` still rejects every request based on the
-  obsolete historical activation model and must be replaced in place by the one
-  issue #114 adapter. The readiness auditor and its tests are likewise obsolete;
-  they must be removed rather than retained beside conformance tests.
+  The issue #114 canonical target adapter is now implemented in
+  `.github/workflows/codex-execute.yml`, including the two-input interface,
+  immutable schema pin, bounded verify/implement paths, managed draft-PR reuse,
+  and the canonical organization result-receiver call. Its repository-local
+  contract checks are in `scripts/test_codex_execute_contract.py`. This resolved
+  implementation state does not prove or administer current organization-router
+  activation; consult the Next-MVP profile and interface/architecture documents
+  for the authoritative compatibility and activation boundaries.
 - Portfolio Tasks interface details remain explicitly unknown and owner
   validation is required. The Slugger interface is conditional and unapproved;
   no direct interaction is active. Do not invent either interface.
