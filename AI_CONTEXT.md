@@ -64,6 +64,15 @@ client evidence systems, implementation in other repositories, merge decisions,
 releases, deployment, production authorization, or external owners' behavior.
 Advice, roadmaps, task proposals, and AI output do not grant authority.
 
+The [`ai-sdlc/`](ai-sdlc/README.md) area is the authoritative location for
+organization-wide AI-SDLC consulting learning and evidence in this repository.
+Record evidence-backed discrepancies in its Defect Ledger; use an Engineering
+Journal entry when an important discovery needs narrative context. Product
+requirements and architecture remain authoritative only in their owning
+repositories and approved documents. Do not present unresolved architectural
+speculation in this file as resolved truth; label it as unresolved in the
+Engineering Journal while the proper authority reconciles it.
+
 Locally documented dependencies are:
 
 - `Young-Consultations/.github`, owner of the canonical AI-SDLC contracts,
@@ -233,10 +242,9 @@ python scripts/test_codex_execute_contract.py
 The contract test is required for target-adapter behavior changes, not every
 documentation-only change. No separate Markdown linter or documentation test is
 configured in this repository. Validate relative Markdown links for changed
-documentation. The repository validator currently omits `AI_CONTEXT.md` from its
-root-path allowlist; therefore it cannot pass while this required root file is
-changed. This known policy gap requires a separately authorized validator
-change.
+documentation. The repository validator allowlists the repository's governed
+documentation and implementation roots, including `AI_CONTEXT.md` and
+`ai-sdlc/`.
 
 ## Rules for future AI implementation tasks
 
