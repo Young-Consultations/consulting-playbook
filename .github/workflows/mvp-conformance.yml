@@ -1,0 +1,30 @@
+name: Immutable MVP conformance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  offline-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          persist-credentials: false
+      - name: Run repository checks and immutable fixture oracle
+        env:
+          NO_NETWORK: "1"
+        run: |
+          git diff --check
+          python scripts/validate_repository.py
+          python scripts/test_codex_execute_contract.py
+          python scripts/mvp_conformance.py --report conformance/report-v1.json
+      - name: Prove the report contains no effect or readiness claim
+        run: |
+          jq -e '.production_readiness_claim == false and .activation_requested == false' conformance/report-v1.json
+          jq -e '.effects | all(. == 0)' conformance/report-v1.json
