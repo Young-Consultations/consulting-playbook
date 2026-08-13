@@ -41,20 +41,20 @@ a claim that its entries have been drafted or published.
 
 ### CONTENT-001 — The Code Fallacy: Why AI Tools Aren't Making Your Engineering Team Any Faster
 
-- **status:** `developing`
+- **status:** `published`
 - **content_type:** long-form post
-- **primary_channel:** Substack (intended)
+- **primary_channel:** Substack
 - **theme:** engineering leadership; AI-SDLC; engineering productivity
 - **series:** —
 - **summary_or_thesis:** AI coding tools accelerate code generation without necessarily increasing engineering-system throughput. As generation becomes cheaper, constraints move into requirements, architecture, validation, integration, security, testing, decisions, and release.
 - **source_or_evidence:** [Retrospective defect-ledger seed](../../engineering-journal/2026-08-12-retrospective-defect-ledger-seed.md); [PR #39 CI-hardening journal](../../engineering-journal/2026-07-28-pr39-ci-hardening.md); [Defect Ledger](../../defects/defect-ledger.csv)
 - **related_project:** consulting-playbook; portfolio-tasks evidence referenced by the journal
-- **published_date:** —
-- **published_url:** —
+- **published_date:** 2026-08-10
+- **published_url:** https://mightyjoe909.substack.com/p/the-code-fallacy-why-ai-tools-arent?r=8w0hfw&utm_medium=ios
 - **draft_path:** —
 - **supporting_assets:** Planned diagram: “Traditional bottleneck → writing code” contrasted with “AI-native bottlenecks → upstream and downstream work”; no repository asset exists yet.
 - **derivative_content:** `CONTENT-003`
-- **notes:** Flagship candidate and intended first Substack post. Developed concept, but no full repository draft or publication evidence was found; publication status needs human verification.
+- **notes:** Flagship consulting thought leadership and first Substack post. Publication date and public URL were provided by the author on 2026-08-13; no repository-local Markdown copy exists yet.
 
 ### CONTENT-002 — Why I'm Starting a Software Engineering Consulting Practice
 
