@@ -1,0 +1,155 @@
+{
+  "activation_requested": false,
+  "adapter_revision": "target-adapter/v1",
+  "compatibility_sha": "c6090e5bbadcc2102a1cb91875466e9decdada1e",
+  "effects": {
+    "branches": 0,
+    "codex": 0,
+    "commits": 0,
+    "merge_release_deploy_production": 0,
+    "pull_requests": 0,
+    "pushes": 0,
+    "secret_output": 0
+  },
+  "fixture_digest": "ed326175d5b1f7fecf12c446469e49fb6cca9f86dba4afea359790460c83eaee",
+  "fixture_set": "TC-MVP-CI-001",
+  "production_readiness_claim": false,
+  "report_version": "1.0",
+  "repository": "Young-Consultations/consulting-playbook",
+  "scenarios": [
+    {
+      "execution_status": "verified",
+      "id": "valid-verify",
+      "status": "pass"
+    },
+    {
+      "execution_status": "succeeded",
+      "id": "valid-fake-implement",
+      "status": "pass"
+    },
+    {
+      "execution_status": "validation-failed",
+      "id": "wrong-target",
+      "status": "pass"
+    },
+    {
+      "execution_status": "validation-failed",
+      "id": "invalid-contract-version",
+      "status": "pass"
+    },
+    {
+      "execution_status": "validation-failed",
+      "id": "invalid-schema-format",
+      "status": "pass"
+    },
+    {
+      "execution_status": "authorization-failed",
+      "id": "unauthorized-caller",
+      "status": "pass"
+    },
+    {
+      "execution_status": "validation-failed",
+      "id": "unsupported-task-type",
+      "status": "pass"
+    },
+    {
+      "execution_status": "validation-failed",
+      "id": "invalid-concurrency",
+      "status": "pass"
+    },
+    {
+      "execution_status": "authorization-failed",
+      "id": "stale-routing",
+      "status": "pass"
+    },
+    {
+      "execution_status": "duplicate-reused",
+      "id": "duplicate-delivery",
+      "status": "pass"
+    },
+    {
+      "execution_status": "blocked",
+      "id": "conflicting-delivery-payload",
+      "status": "pass"
+    },
+    {
+      "execution_status": "duplicate-reused",
+      "id": "matching-managed-draft",
+      "status": "pass"
+    },
+    {
+      "execution_status": "blocked",
+      "id": "ambiguous-ownership",
+      "status": "pass"
+    },
+    {
+      "execution_status": "duplicate-reused",
+      "id": "create-race-requery",
+      "status": "pass"
+    },
+    {
+      "execution_status": "failed",
+      "id": "repository-policy-rejection",
+      "status": "pass"
+    },
+    {
+      "execution_status": "failed",
+      "id": "content-validation-failure",
+      "status": "pass"
+    },
+    {
+      "execution_status": "failed",
+      "id": "fake-executor-failure",
+      "status": "pass"
+    },
+    {
+      "execution_status": "failed",
+      "id": "candidate-validation-failure",
+      "status": "pass"
+    },
+    {
+      "execution_status": "failed",
+      "id": "test-failure",
+      "status": "pass"
+    },
+    {
+      "execution_status": "failed",
+      "id": "publication-failure",
+      "status": "pass"
+    },
+    {
+      "execution_status": "failed",
+      "id": "timeout",
+      "status": "pass"
+    },
+    {
+      "execution_status": "verified",
+      "id": "canonical-result",
+      "status": "pass"
+    },
+    {
+      "execution_status": "succeeded",
+      "id": "receiver-failure-response",
+      "status": "pass"
+    },
+    {
+      "execution_status": "succeeded",
+      "id": "identical-result-redelivery",
+      "status": "pass"
+    },
+    {
+      "execution_status": "blocked",
+      "id": "conflicting-result-redelivery",
+      "status": "pass"
+    },
+    {
+      "execution_status": "verified",
+      "id": "effect-traps",
+      "status": "pass"
+    }
+  ],
+  "summary": {
+    "failed": 0,
+    "passed": 26
+  }
+}

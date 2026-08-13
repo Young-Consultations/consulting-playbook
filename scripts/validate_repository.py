@@ -12,6 +12,7 @@ ALLOWED_ROOTS = {
     "AI_CONTEXT.md",
     "README.md",
     "ai-sdlc",
+    "conformance",
     "docs",
     "playbooks",
     "scripts",
