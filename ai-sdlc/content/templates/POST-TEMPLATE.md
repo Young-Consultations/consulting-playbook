@@ -1,13 +1,26 @@
 ---
 title: ""
 status: draft
-publication_date:
-publication_platform:
-url:
-related_records: []
+content_type: long-form post
+primary_channel:
+theme:
+series:
+summary_or_thesis:
+source_or_evidence: []
+related_project:
+published_date:
+published_url:
+draft_path:
+supporting_assets: []
+derivative_content: []
+notes:
 ---
 
 # Title
+
+Record and maintain this post in the canonical content inventory at
+`ai-sdlc/content/ideas/ideas-backlog.md`. Front matter in a draft does not
+establish publication status.
 
 ## Audience and purpose
 

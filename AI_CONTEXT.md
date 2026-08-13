@@ -66,6 +66,10 @@ Advice, roadmaps, task proposals, and AI output do not grant authority.
 
 The [`ai-sdlc/`](ai-sdlc/README.md) area is the authoritative location for
 organization-wide AI-SDLC consulting learning and evidence in this repository.
+Its [canonical consulting content inventory](ai-sdlc/content/ideas/ideas-backlog.md)
+records the lifecycle, publication evidence, series, derivatives, and research
+links for posts and post ideas; draft or published directory membership does not
+override that inventory.
 Record evidence-backed discrepancies in its Defect Ledger; use an Engineering
 Journal entry when an important discovery needs narrative context. Product
 requirements and architecture remain authoritative only in their owning
