@@ -17,6 +17,9 @@ ROOT = Path(__file__).resolve().parents[1]
 ORACLE = ROOT / "conformance/TC-MVP-CI-001.json"
 PIN = "c6090e5bbadcc2102a1cb91875466e9decdada1e"
 TARGET = "Young-Consultations/consulting-playbook"
+# SHA-256 of the byte-for-byte TC-MVP-CI-001 artifact vendored from PIN.  Keep
+# this trust anchor in code rather than in the fixture it authenticates.
+ORACLE_SHA256 = "ed326175d5b1f7fecf12c446469e49fb6cca9f86dba4afea359790460c83eaee"
 CONCURRENCY = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 
 
@@ -50,7 +53,59 @@ class FakeGitHub:
     def pull_requests(self, *_: Any) -> list[dict[str, Any]]: return list(self.prs)
     def create_draft(self, *_: Any) -> str:
         self.creates += 1
+        self.branch = True
         return "https://example.invalid/draft/42"
+
+
+class StageFailure(RuntimeError):
+    def __init__(self, category: str):
+        super().__init__(f"injected {category} failure")
+        self.category = category
+
+
+@dataclass
+class FakeAdapter:
+    """Observable, effect-free boundaries used by every behavioral fixture."""
+    executor_calls: int = 0
+    publication_calls: int = 0
+    receiver_results: dict[str, dict[str, Any]] = field(default_factory=dict)
+
+    def authorize(self, *, authorized: bool = True, current_route: bool = True) -> None:
+        if not authorized or not current_route:
+            raise StageFailure("authorization")
+
+    def execute(self, failure: str | None = None) -> None:
+        self.executor_calls += 1
+        if failure:
+            raise StageFailure(failure)
+
+    def publish(self, api: FakeGitHub, metadata: dict[str, str], *, race: bool = False,
+                failure: str | None = None) -> Any:
+        self.publication_calls += 1
+        if failure:
+            raise StageFailure(failure)
+        decision = classify(api, metadata)
+        if decision.state == "new-delivery":
+            if not race:
+                api.create_draft(TARGET, metadata["branch"], "fake", marker(metadata))
+            else:
+                # A competing publisher wins between preflight and creation.
+                api.branch = True
+            api.prs.append({"url":"https://example.invalid/draft/42", "state":"OPEN",
+                            "isDraft":True, "body":marker(metadata)})
+            # This immediate classification is also the create-race requery boundary.
+            decision = classify(api, metadata)
+        return decision
+
+    def deliver(self, result: dict[str, Any], *, receiver_available: bool = True) -> bool:
+        if not receiver_available:
+            return False
+        delivery = result["delivery_id"]
+        previous = self.receiver_results.get(delivery)
+        if previous is not None and previous != result:
+            return False
+        self.receiver_results[delivery] = result
+        return True
 
 
 def canonical_result(status: str, *, category: str | None = None,
@@ -66,11 +121,16 @@ def canonical_result(status: str, *, category: str | None = None,
 
 def run_scenario(case: dict[str, Any], effects: Effects) -> dict[str, Any]:
     kind = case["kind"]
+    adapter = FakeAdapter()
     if kind == "verify":
         validate_policy(request(execution_mode="verify"), TARGET)
         result = canonical_result("verified")
     elif kind == "implement":
         data = validate_policy(request(), TARGET)
+        metadata = {"delivery_id":data["delivery_id"], "payload_digest":data["payload_digest"],
+                    "target_repository":TARGET, "branch":data["branch"], "source_issue":data["source_issue"]}
+        adapter.execute()
+        assert adapter.publish(FakeGitHub(), metadata).state == "reuse-completed-delivery"
         result = canonical_result("succeeded", branch=data["branch"], pr_url="https://example.invalid/draft/42")
     elif kind == "reject":
         try: validate_policy(request(**{case["field"]: case["value"]}), TARGET)
@@ -80,25 +140,59 @@ def run_scenario(case: dict[str, Any], effects: Effects) -> dict[str, Any]:
         assert not CONCURRENCY.fullmatch("bad concurrency\n")
         result = canonical_result("validation-failed", category="validation")
     elif kind in {"unauthorized", "stale-routing"}:
-        result = canonical_result("authorization-failed", category="authorization")
+        try:
+            adapter.authorize(authorized=kind != "unauthorized", current_route=kind != "stale-routing")
+        except StageFailure as exc:
+            result = canonical_result("authorization-failed", category=exc.category)
+        else: raise AssertionError("invalid caller was authorized")
     elif kind in {"duplicate", "race"}:
         data = validate_policy(request(), TARGET)
         metadata = {"delivery_id":data["delivery_id"], "payload_digest":data["payload_digest"],
                     "target_repository":TARGET, "branch":data["branch"],
                     "source_issue":data["source_issue"]}
-        remote = FakeGitHub(True, [{"url":"https://example.invalid/draft/42", "state":"OPEN",
-                                   "isDraft":True, "body":marker(metadata)}])
-        assert classify(remote, metadata).state == "reuse-completed-delivery"
+        existing = {"url":"https://example.invalid/draft/42", "state":"OPEN",
+                    "isDraft":True, "body":marker(metadata)}
+        remote = FakeGitHub(kind != "race", [] if kind == "race" else [existing])
+        assert adapter.publish(remote, metadata, race=kind == "race").state == "reuse-completed-delivery"
         result = canonical_result("duplicate-reused", branch=data["branch"],
                                   pr_url="https://example.invalid/draft/42")
-    elif kind in {"conflict", "ambiguous", "redelivery-conflict"}:
+    elif kind in {"conflict", "ambiguous"}:
+        data = validate_policy(request(), TARGET)
+        metadata = {"delivery_id":data["delivery_id"], "payload_digest":data["payload_digest"],
+                    "target_repository":TARGET, "branch":data["branch"], "source_issue":data["source_issue"]}
+        conflicting = dict(metadata, payload_digest="0" * 64)
+        prs = [{"url":"https://example.invalid/draft/1", "state":"OPEN", "isDraft":True,
+                "body":marker(conflicting)}]
+        if kind == "ambiguous":
+            prs = [{"url":f"https://example.invalid/draft/{n}", "state":"OPEN", "isDraft":True,
+                    "body":marker(metadata)} for n in (1, 2)]
+        decision = adapter.publish(FakeGitHub(True, prs), metadata)
+        assert decision.terminal_status == "blocked"
         result = canonical_result("blocked", category="conflict")
     elif kind == "failure":
-        result = canonical_result("failed", category=case["category"])
+        try:
+            if case["category"] in {"executor", "timeout"}:
+                adapter.execute(case["category"])
+            else:
+                adapter.publish(FakeGitHub(), {"target_repository":TARGET, "branch":"fake"},
+                                failure=case["category"])
+        except StageFailure as exc:
+            result = canonical_result("failed", category=exc.category)
+        else: raise AssertionError("injected stage failure did not fail")
     elif kind in {"receiver-failure", "redelivery"}:
-        # Receiver acknowledgement never changes/replays the target outcome.
         result = canonical_result("succeeded", branch="consulting-codex/delivery-42",
                                   pr_url="https://example.invalid/draft/42")
+        if kind == "receiver-failure": assert not adapter.deliver(result, receiver_available=False)
+        else:
+            assert adapter.deliver(result)
+            assert adapter.deliver(result)
+        # A failed acknowledgement does not alter or replay the target result.
+    elif kind == "redelivery-conflict":
+        completed = canonical_result("succeeded", branch="consulting-codex/delivery-42",
+                                     pr_url="https://example.invalid/draft/42")
+        assert adapter.deliver(completed)
+        assert not adapter.deliver(canonical_result("failed", category="executor"))
+        result = canonical_result("blocked", category="conflict")
     elif kind == "effects":
         assert not any(vars(effects).values())
         workflow = (ROOT / ".github/workflows/mvp-conformance.yml").read_text(encoding="utf-8")
@@ -115,7 +209,10 @@ def run_scenario(case: dict[str, Any], effects: Effects) -> dict[str, Any]:
 
 
 def conformance() -> dict[str, Any]:
-    oracle = json.loads(ORACLE.read_text(encoding="utf-8"))
+    oracle_bytes = ORACLE.read_bytes()
+    fixture_digest = hashlib.sha256(oracle_bytes).hexdigest()
+    assert fixture_digest == ORACLE_SHA256, "vendored oracle does not match the trusted compatibility artifact"
+    oracle = json.loads(oracle_bytes)
     assert oracle["compatibility_sha"] == PIN and oracle["target"] == TARGET
     effects = Effects()
     rows = []
@@ -127,7 +224,7 @@ def conformance() -> dict[str, Any]:
             rows.append({"id":case["id"], "status":"fail", "detail":f"{type(exc).__name__}: {exc}"})
     return {"report_version":"1.0", "repository":TARGET, "adapter_revision":"target-adapter/v1",
             "compatibility_sha":PIN, "fixture_set":oracle["fixture_set"],
-            "fixture_digest":hashlib.sha256(ORACLE.read_bytes()).hexdigest(),
+            "fixture_digest":fixture_digest,
             "production_readiness_claim":False, "activation_requested":False,
             "effects":vars(effects), "scenarios":rows,
             "summary":{"passed":sum(x["status"] == "pass" for x in rows),
