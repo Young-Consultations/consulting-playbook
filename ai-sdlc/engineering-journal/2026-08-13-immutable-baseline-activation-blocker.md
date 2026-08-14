@@ -172,3 +172,74 @@ than in code generation itself. It illustrates immutable-release circularity,
 locally green but globally incompatible adapters, skipped-test false assurance,
 and the value of treating cross-repository workflows as a single versioned
 product interface.
+
+## 2026-08-14 addendum — Evidence identity was self-referential
+
+The control-plane recovery in
+[`.github` PR #45](https://github.com/Young-Consultations/.github/pull/45)
+was merged as
+[`e27b8a5`](https://github.com/Young-Consultations/.github/commit/e27b8a541afbd27b4be5606a19ffa43637ad312a).
+The first target-specific readiness pass then exposed a second-order release
+defect, recorded as DEF-0020.
+
+The merged verifier required a committed conformance report's
+`adapter_revision` to equal the registry's `adapter_commit_sha`, while the
+report itself had to exist at that adapter commit. This requirement cannot be
+constructed: Git derives a commit SHA from its tree, the tree includes the
+report, and changing the report to name the new SHA changes the tree and SHA
+again. A review gate that no artifact can satisfy is fail-closed, but it is not
+a usable recovery control.
+
+[`.github` draft PR #46](https://github.com/Young-Consultations/.github/pull/46)
+proposes ADR-015 and separates the identities:
+
+1. a canonical v2 conformance pin records the compatibility SHA plus exact Git
+   blob identities for organization schemas/fixtures and target
+   workflow/adapter/harness files;
+2. the pin's `adapter_revision` is a SHA-256 over canonical pin contents with
+   that revision field treated as null, so the pin does not hash itself;
+3. the report records the pin revision, complete scenario results, and effect
+   counters, but never predicts its containing commit;
+4. after review and merge, the registry independently records the immutable
+   adapter tag, the commit resolved from that tag, and the committed report
+   SHA-256; and
+5. live verification recomputes all three relationships and rejects pins that
+   include either the pin or report in their target-file set.
+
+The draft also corrects the `.github` target receiver call and create-race
+ambiguity handling. Its deterministic candidate report runs all 29
+`TC-MVP-CI-001` scenarios; 22 reach the real repository adapter seam, while the
+remaining cases preserve router-only or missing-result boundaries. Codex,
+branch, commit, push, pull-request, merge, release, deployment, production, and
+secret-output counters are all zero. The report explicitly says the adapter tag
+is unpublished and live receiver verification remains pending the reviewed
+`ai-sdlc-v2.3.1` tag.
+
+This is reviewable target evidence, not activation or production-readiness
+evidence. PR #46 is draft, the registry evidence remains null, no adapter or
+compatibility tag has been created, the receiver allowlist remains deny-all,
+and every target remains disabled.
+
+### Prevention rule added by this discovery
+
+- Never require an artifact to contain the digest or commit identity whose
+  calculation includes that artifact.
+- Separate identities by lifecycle stage: pre-commit content manifest,
+  post-commit immutable object, and externally recorded adoption/evidence
+  binding.
+- Add a release-construction test that produces the exact evidence package in
+  the documented order; schema validation alone cannot prove constructibility.
+- Verify each relationship independently at the immutable ref: tag to commit,
+  report bytes to report digest, report to pin revision, and pin entries to file
+  blobs.
+- Exclude the pin and report from their own bound file set, and make that a
+  negative test.
+- State pending operational gates in the evidence itself so a complete
+  no-effects oracle is not mistaken for a published tag, live receiver proof,
+  credential readiness, or activation approval.
+
+The recovery sequence therefore remains unchanged at the governance level:
+review and merge the constructible evidence model, correct each target, review
+real-adapter zero-effect reports, publish immutable adapter tags only after
+their evidence gates pass, finalize the `.github` compatibility release, and
+then return to issue #117 one disabled-first target at a time.
