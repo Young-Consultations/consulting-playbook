@@ -286,14 +286,22 @@ must:
   schema consumption, executable shared-fixture conformance, and the canonical
   organization result receiver. Current activation is separate mutable
   organization-router state and must not be consumed from the compatibility pin.
-  The issue #114 canonical target adapter is now implemented in
-  `.github/workflows/codex-execute.yml`, including the two-input interface,
-  immutable schema pin, bounded verify/implement paths, managed draft-PR reuse,
-  and the canonical organization result-receiver call. Its repository-local
-  contract checks are in `scripts/test_codex_execute_contract.py`. This resolved
-  implementation state does not prove or administer current organization-router
-  activation; consult the Next-MVP profile and interface/architecture documents
-  for the authoritative compatibility and activation boundaries.
+  The 2026-08-13 [activation-readiness review](ai-sdlc/engineering-journal/2026-08-13-immutable-baseline-activation-blocker.md)
+  found that this baseline cannot safely activate any core target: its registry,
+  router, target trigger, receiver, and conformance-evidence expectations do not
+  form one executable compatibility unit. Preserve `c6090e5` as historical and
+  keep this target disabled while the organization owner publishes a corrected
+  immutable baseline; do not repin this repository before that exact replacement
+  commit is reviewed.
+- The issue #114 implementation exists in
+  `.github/workflows/codex-execute.yml`, and its local checks are in
+  `scripts/test_codex_execute_contract.py`. It is not activation-ready evidence.
+  The readiness review confirmed a `workflow_call`/dynamic-dispatch mismatch,
+  repository-defined input/branch/result semantics, an incomplete receiver call,
+  and a 26-case local 2.2.0 fixture rather than the complete organization-owned
+  2.3.0 oracle. Do not describe the checked-in workflow or green local report as
+  canonical conformance until those defects are fixed and the exact shared oracle
+  passes through the real adapter seam with zero real effects.
 - Portfolio Tasks interface details remain explicitly unknown and owner
   validation is required. The Slugger interface is conditional and unapproved;
   no direct interaction is active. Do not invent either interface.
@@ -302,7 +310,7 @@ must:
   retain their documented unresolved status. They do not authorize scope or
   implementation decisions.
 
-No other material context-policy conflict was identified during this review.
+No additional material context-policy conflict was identified during this review.
 
 ## Maintenance rule
 
