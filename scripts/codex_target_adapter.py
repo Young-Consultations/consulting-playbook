@@ -339,9 +339,21 @@ class GitHubEffects:
         subprocess.run(["git", "-c", "user.name=ai-sdlc-target", "-c", "user.email=ai-sdlc@users.noreply.github.com",
                         "commit", "-m", f"AI-SDLC delivery {delivery_id}"], check=True, cwd=ROOT, env=env,
                        timeout=budget())
-        remote = f"https://x-access-token:{token}@github.com/{TARGET}.git"
-        pushed = subprocess.run(["git", "push", remote, f"HEAD:refs/heads/{branch}"], cwd=ROOT, env=env,
-                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=budget())
+        remote = f"https://github.com/{TARGET}.git"
+        askpass_script = f"#!/bin/sh\necho 'x-access-token:{token}'\n"
+        askpass_path = os.path.join(ROOT, ".git", "ai_sdlc_askpass.sh")
+        try:
+            with open(askpass_path, "w", encoding="utf-8") as askpass_file:
+                askpass_file.write(askpass_script)
+            os.chmod(askpass_path, 0o700)
+            push_env = {**env, "GIT_ASKPASS": askpass_path, "GIT_USERNAME": "x-access-token"}
+            pushed = subprocess.run(["git", "push", remote, f"HEAD:refs/heads/{branch}"], cwd=ROOT, env=push_env,
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=budget())
+        finally:
+            try:
+                os.remove(askpass_path)
+            except OSError:
+                pass
         if pushed.returncode:
             raise AdapterError("publication", "create-race")
         body = f"<!-- {MARKER}: {delivery_id}; payload-sha256: {digest} -->\n\nAutomated draft; human review and merge are required."
@@ -367,8 +379,9 @@ def main() -> int:
     output = json.dumps(outcome.result, sort_keys=True, separators=(",", ":"))
     path = os.environ.get("GITHUB_OUTPUT")
     if path:
-        with open(path, "a") as handle:
-            handle.write(f"execution_result={output}\nsource_issue={outcome.source_issue or ''}\n")
+        safe_issue = (outcome.source_issue or "").replace("\r", "").replace("\n", " ").strip()
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write(f"execution_result={output}\nsource_issue={safe_issue}\n")
     print(output)
     return 0
 

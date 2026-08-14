@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       execution_input_json:
-        description: Complete canonical execution-input/v2 JSON object.
+        description: Complete canonical execution-input/v2 JSON string (serialized JSON, not an object).
         required: true
         type: string
       concurrency_group:
