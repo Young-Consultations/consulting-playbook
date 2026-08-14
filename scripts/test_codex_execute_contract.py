@@ -1,78 +1,181 @@
 #!/usr/bin/env python3
-"""Offline contract and target-policy tests for the canonical adapter."""
+"""Offline contract, adapter, evidence, and security regression checks."""
 from __future__ import annotations
-import importlib.util, sys
+
+import json
 from pathlib import Path
+from typing import Any
 
-ROOT=Path(__file__).resolve().parents[1]
-WORKFLOW=(ROOT/'.github/workflows/codex-execute.yml').read_text()
+from codex_target_adapter import (
+    AdapterError,
+    Ownership,
+    TARGET,
+    canonical_digest,
+    run_adapter,
+)
+from run_tc_mvp_ci_001 import EXPECTED_COMPATIBILITY_BLOBS, git_blob_sha1, validate_pin
 
-def load(name,path):
-    spec=importlib.util.spec_from_file_location(name,path); module=importlib.util.module_from_spec(spec)
-    assert spec.loader; sys.modules[name]=module; spec.loader.exec_module(module); return module
-policy=load('policy',ROOT/'scripts/codex_repository_policy.py')
-publication=load('publication',ROOT/'scripts/codex_publication.py')
+ROOT = Path(__file__).resolve().parents[1]
+WORKFLOW = (ROOT / ".github/workflows/codex-execute.yml").read_text(encoding="utf-8")
 
-def payload(**changes):
-    value={'contract_version':'ai-sdlc-contract/v2','target_repository':'Young-Consultations/consulting-playbook','executor':'codex','execution_mode':'implement','task_type':'documentation','draft_pr_only':True,'delivery_id':'delivery-42','correlation_id':'corr-42','task_id':'TASK-42','source_issue':'Young-Consultations/portfolio-tasks#42','project_component':'documentation'}
-    value.update(changes); return value
 
-def validate(value): return policy.validate_policy(value,'Young-Consultations/consulting-playbook')
-def rejected(**changes):
-    try: validate(payload(**changes))
-    except ValueError: return
-    raise AssertionError('request was not rejected')
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise ValueError(message)
 
-def metadata(**changes):
-    result={'delivery_id':'delivery-42','payload_digest':validate(payload())['payload_digest'],'target_repository':'Young-Consultations/consulting-playbook','branch':policy.delivery_branch('delivery-42'),'source_issue':'Young-Consultations/portfolio-tasks#42'}; result.update(changes); return result
 
-def pr(data,**changes):
-    value={'url':'https://example.test/1','state':'OPEN','isDraft':True,'body':publication.marker(data)}; value.update(changes); return value
+def payload(**changes: Any) -> dict[str, Any]:
+    delivery_id = "delivery-42"
+    value = {
+        "contract_version": "ai-sdlc-contract/v2",
+        "correlation_id": "correlation-42",
+        "delivery_id": delivery_id,
+        "source_issue": "Young-Consultations/portfolio-tasks#135",
+        "target_repository": TARGET,
+        "task_type": "documentation",
+        "execution_mode": "implement",
+        "project": "consulting-playbook",
+        "priority": "p0",
+        "executor": "codex",
+        "parallel_safe": False,
+        "draft_pr_only": True,
+        "instructions": "Update the approved consulting artifact.",
+        "requested_branch": f"codex/{delivery_id}",
+        "concurrency_group": "ai-sdlc.consulting.delivery-42",
+        "timeout_minutes": 40,
+    }
+    value.update(changes)
+    return value
 
-class Fake:
-    def __init__(self,branch=False,prs=()): self.branch,self.prs,self.creates=branch,list(prs),0
-    def branch_exists(self,*_): return self.branch
-    def pull_requests(self,*_): return list(self.prs)
-    def create_draft(self,*_): self.creates+=1; return 'https://example.test/1'
 
-def test_pin_and_single_interface():
-    assert WORKFLOW.count('c6090e5bbadcc2102a1cb91875466e9decdada1e')==2
-    inputs=WORKFLOW.split('    inputs:',1)[1].split('    secrets:',1)[0]
-    assert 'execution_input_json:' in inputs and 'concurrency_group:' in inputs
-    assert 'enabled' not in WORKFLOW and 'registry-disabled' not in WORKFLOW
+class FakeEffects:
+    def __init__(
+        self,
+        *,
+        found: list[dict[str, Any]] | None = None,
+        race: list[dict[str, Any]] | None = None,
+        publish_failure: str | None = None,
+        branch_exists: bool | None = None,
+        race_branch_exists: bool | None = None,
+    ) -> None:
+        self.found = found or []
+        self.race = race
+        self.publish_failure = publish_failure
+        self.branch_exists = bool(self.found) if branch_exists is None else branch_exists
+        self.race_branch_exists = (
+            bool(race) if race_branch_exists is None else race_branch_exists
+        )
+        self.discoveries = 0
+        self.codex_calls = 0
+        self.publish_calls = 0
 
-def test_target_policy_rejections():
-    for change in ({'target_repository':'x/y'},{'contract_version':'v1'},{'executor':'other'},{'execution_mode':'run'},{'task_type':'unknown'},{'draft_pr_only':False}): rejected(**change)
+    def discover(self, *_: Any) -> Ownership:
+        self.discoveries += 1
+        if self.discoveries > 1 and self.race is not None:
+            return Ownership(self.race_branch_exists, self.race)
+        return Ownership(self.branch_exists, self.found)
 
-def test_branch_and_digest_are_delivery_bound():
-    first=validate(payload()); second=validate(payload(project_component='changed'))
-    assert first['branch']==second['branch'] and first['payload_digest']!=second['payload_digest']
-    assert policy.delivery_branch('a/b')!=policy.delivery_branch('a-b')
+    def codex(self, *_: Any) -> None:
+        self.codex_calls += 1
+        return None
 
-def test_matching_draft_reuse_and_conflicts():
-    data=metadata(); decision=publication.classify(Fake(True,[pr(data)]),data)
-    assert decision.state=='reuse-completed-delivery'
-    changed=metadata(payload_digest='0'*64)
-    assert publication.classify(Fake(True,[pr(changed)]),data).state=='ambiguous'
-    assert publication.classify(Fake(True,[pr(data),pr(data,url='https://example.test/2')]),data).state=='ambiguous'
+    def validate_candidate(self, *_: Any) -> tuple[bool, str]:
+        return True, "passed"
 
-def test_ambiguous_remote_states_fail_closed():
-    data=metadata()
-    assert publication.classify(Fake(True),data).failure_category=='orphaned_branch'
-    assert publication.classify(Fake(True,[pr(data,state='CLOSED')]),data).failure_category=='manual_recovery_required'
+    def publish(self, *_: Any) -> str:
+        self.publish_calls += 1
+        if self.publish_failure:
+            raise AdapterError("publication", self.publish_failure, "failed")
+        return "https://github.com/Young-Consultations/consulting-playbook/pull/7"
 
-def test_verify_has_no_codex_or_publication_path():
-    verify=WORKFLOW.split('Verify repository without effects',1)[1].split('Create deterministic local branch',1)[0]
-    assert 'run-codex' not in verify and 'git push' not in verify and 'codex_publication.py publish' not in verify
 
-def test_security_and_receiver_boundaries():
-    assert 'secrets: inherit' not in WORKFLOW
-    assert 'gh pr merge' not in WORKFLOW and 'git push origin main' not in WORKFLOW
-    assert 'timeout-minutes: 40' in WORKFLOW
-    assert 'jsonschema[format]' in WORKFLOW
-    assert 'codex-result-receiver.yml@c6090e5bbadcc2102a1cb91875466e9decdada1e' in WORKFLOW
+def execute(value: dict[str, Any], effects: FakeEffects | None = None) -> dict[str, Any]:
+    return run_adapter(
+        json.dumps(value),
+        value["concurrency_group"],
+        "router-app",
+        {"router-app"},
+        effects or FakeEffects(),
+    ).result
 
-if __name__=='__main__':
-    tests=[v for k,v in sorted(globals().items()) if k.startswith('test_')]
-    for test in tests: test()
-    print(f'passed {len(tests)} target-adapter checks')
+
+def managed(value: dict[str, Any], *, digest: str | None = None) -> dict[str, Any]:
+    return {
+        "url": "https://github.com/Young-Consultations/consulting-playbook/pull/7",
+        "state": "OPEN",
+        "draft": True,
+        "digest": digest or canonical_digest(value),
+    }
+
+
+def test_exact_dispatch_and_receiver_boundary() -> None:
+    trigger = WORKFLOW.split("on:", 1)[1].split("permissions:", 1)[0]
+    inputs = trigger.split("inputs:", 1)[1]
+    require("workflow_dispatch:" in trigger and "workflow_call:" not in WORKFLOW, "target must expose only workflow_dispatch")
+    require(inputs.count("execution_input_json:") == 1 and inputs.count("concurrency_group:") == 1, "target inputs differ")
+    require("codex-result-receiver.yml@ai-sdlc-v2.3.1" in WORKFLOW, "receiver is not immutably pinned")
+    require("CODEX_TRUSTED_JOURNAL_AUTHORS" not in WORKFLOW, "target supplies control-plane trust policy")
+    require("secrets: inherit" not in WORKFLOW, "workflow broadly inherits secrets")
+    receiver = WORKFLOW.split("  report:", 1)[1]
+    require(receiver.count("CODEX_RESULT_TOKEN:") == 1, "receiver must receive only its delivery token")
+
+
+def test_security_and_publication_guards() -> None:
+    require("persist-credentials: false" in WORKFLOW, "checkout persists credentials")
+    require("permissions:\n  contents: read" in WORKFLOW, "workflow permissions are broader than read-only")
+    require("environment: consulting-playbook-codex" in WORKFLOW, "target environment boundary is missing")
+    require("gh pr merge" not in WORKFLOW and "git push origin main" not in WORKFLOW, "workflow can bypass draft review")
+    require("CODEX_TARGET_TRUSTED_CALLERS" in WORKFLOW, "dispatch caller allowlist is missing")
+
+
+def test_canonical_policy_and_result() -> None:
+    result = execute(payload(execution_mode="verify"))
+    require(result["execution_status"] == "verified", "verify mode did not complete canonically")
+    require(result["branch_name"] is None and result["pull_request_url"] is None, "verify mode published state")
+    require(result["validation_result"] == "passed" and result["test_result"] == "passed", "verify evidence is incomplete")
+    rejected = execute(payload(target_repository="Young-Consultations/slugger"))
+    require(rejected["execution_status"] == "rejected" and rejected["failure_category"] == "repository-routing", "wrong target was admitted")
+    old_shape = payload(task_id="TASK-42")
+    require(execute(old_shape)["failure_category"] == "contract-validation", "obsolete input field was admitted")
+
+
+def test_idempotency_and_create_race() -> None:
+    value = payload()
+    reused = execute(value, FakeEffects(found=[managed(value)]))
+    require(reused["execution_status"] == "duplicate-reused", "managed draft was not reused")
+    conflict = execute(value, FakeEffects(found=[managed(value, digest="0" * 64)]))
+    require(conflict["execution_status"] == "ambiguous-rejected", "ownership conflict did not fail closed")
+    orphan_effects = FakeEffects(branch_exists=True)
+    orphan = execute(value, orphan_effects)
+    require(orphan["execution_status"] == "ambiguous-rejected", "orphan branch did not fail closed")
+    require(
+        orphan_effects.codex_calls == 0 and orphan_effects.publish_calls == 0,
+        "orphan branch reached executor or publication",
+    )
+    race = execute(
+        value,
+        FakeEffects(
+            publish_failure="create-race",
+            race=[managed(value), managed(value)],
+        ),
+    )
+    require(race["execution_status"] == "ambiguous-rejected", "ambiguous create race did not fail closed")
+
+
+def test_exact_shared_blobs_and_evidence() -> None:
+    pin = json.loads((ROOT / "config/mvp-conformance-pin.json").read_text(encoding="utf-8"))
+    require(validate_pin(pin) == [], "conformance pin is invalid")
+    for relative, expected in EXPECTED_COMPATIBILITY_BLOBS.items():
+        require(git_blob_sha1((ROOT / relative).read_bytes()) == expected, f"shared file differs: {relative}")
+    report = json.loads((ROOT / ".ai-sdlc/conformance/tc-mvp-ci-001.json").read_text(encoding="utf-8"))
+    require(report["adapter_revision"] == pin["adapter_revision"], "report and pin revisions differ")
+    require(len(report["scenario_results"]) == 29, "report does not contain the complete oracle")
+    require(all(row["result"] == "pass" for row in report["scenario_results"]), "report contains a failed scenario")
+    require(all(value == 0 for value in report["effect_traps"].values()), "report records a prohibited effect")
+
+
+if __name__ == "__main__":
+    tests = [value for name, value in sorted(globals().items()) if name.startswith("test_")]
+    for test in tests:
+        test()
+    print(f"passed {len(tests)} target-adapter checks")

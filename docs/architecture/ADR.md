@@ -107,16 +107,41 @@ retry and reports canonical recovery guidance.
 may subsequently project as `queued`.
 **Decision:** Authenticate and authorize the admitted caller and validate local
 repository policy. Do not query a mutable approval label or require a second
-organization approval record. Every material change requires a new `task_id` and
-new approval. Keep organization task approval, repository-change authorization,
+organization approval record. Every material change requires a new approved
+source revision and delivery identity. Keep organization task approval, repository-change authorization,
 consulting-content approval, draft review, and final publication independent.
 **Alternatives:** Live `status:approved` recheck; target-created approval evidence;
 reuse consulting-content approval.
 **Tradeoffs:** Removes a mutable-state race and stays within the v2 contract while
 deferring rich approval provenance to v3.
 **Consequences:** Local fake implementation may proceed. Live use remains blocked
-only by the disabled registry and organization-owned receiver implementation, not
-by a repository-owned approval design question.
+by the disabled registry, unpublished immutable identities, receiver proof, and
+credentials, not by a repository-owned approval design question.
+
+## ADR-012 — Adopt exact dispatch and executable non-recursive target evidence
+
+**Context:** Issue #135 found that the former target exposed `workflow_call`
+while the router dynamically dispatches workflows, used repository-defined
+input/branch/result semantics, and passed a 26-case local oracle rather than the
+complete organization fixture. The first corrected consumer pass also found
+that wrapper keyword checks cannot prove adapter idempotency and that pull-request
+discovery alone misses an orphaned branch before paid execution.
+**Decision:** The sole target entry point is exact two-input
+`workflow_dispatch`. The adapter validates byte-exact v2 schemas, emits the
+canonical result, calls only the planned immutable 2.3.1 receiver, and derives
+`codex/<lowercase-delivery-id>`. A non-recursive pin binds exact organization
+schema/fixture blobs and target workflow/adapter/harness blobs. The complete
+29-scenario oracle executes the exact adapter with deterministic effect traps.
+Branch existence and all pull-request state are observed independently before
+Codex and after create races; disagreement returns `ambiguous-rejected`.
+**Alternatives:** preserve workflow_call; maintain a local contract fork; use
+comments as idempotency evidence; infer branch ownership from pull requests.
+**Tradeoffs:** the repository carries byte-exact evidence copies and performs an
+additional read-only branch query, but compatibility is independently
+reproducible and paid execution is protected from orphaned state.
+**Consequences:** obsolete issue #114 adapter/conformance artifacts are removed.
+The evidence is reviewable but cannot activate the target, create its adapter
+tag, prove live receiver/credentials, or publish the organization release.
 
 ## ADR governance
 

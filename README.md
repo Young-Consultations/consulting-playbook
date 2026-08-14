@@ -22,32 +22,37 @@ The shared AI-SDLC execution control plane is owned by `Young-Consultations/.git
 
 `Young-Consultations/portfolio-tasks` owns portfolio backlog issues, structured intake and governance metadata, explicit human approval, and initiating the organization router. It does not own shared execution schemas or target execution-result contracts.
 
-The intended next-MVP adapter interface is
-`.github/workflows/codex-execute.yml` with exactly the two routing inputs
-`execution_input_json` and `concurrency_group`. The checked-in workflow currently
-exposes only `workflow_call`, while the dynamic organization router uses workflow
-dispatch; that mismatch is an open activation blocker, not a supported alternate
-entry point.
-Its approved compatibility unit is release `2.2.0` at immutable commit
-`c6090e5bbadcc2102a1cb91875466e9decdada1e`. The adapter
-must consume `contracts/task-contract.schema.json`,
-`contracts/execution-input.schema.json`, and
-`contracts/execution-result.schema.json` directly at that commit. No published
-package, undocumented module, mutable branch, unavailable tag, artifact/run-ID
-transport, or local contract copy is supported.
+The sole next-MVP target interface is
+`.github/workflows/codex-execute.yml` using `workflow_dispatch` with exactly
+the two required string inputs `execution_input_json` and
+`concurrency_group`. No `workflow_call`, artifact/run-ID, field-by-field, or
+fallback entry point is active.
+
+The recovery evidence is bound to
+`Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
+`config/mvp-conformance-pin.json` records the exact Git blob identities for the
+three canonical schemas, complete 2.3.0 `TC-MVP-CI-001` fixture set, and this
+repository's workflow, adapter, and harness. The checked-in organization files
+are byte-exact evidence copies, not a locally redefined contract. No package,
+undocumented module, mutable branch, or unavailable compatibility behavior is
+supported.
 
 The immutable compatibility unit contains protocol and target-capability
 semantics, not current operational activation. Mutable activation is owned and
 enforced by the organization router before dispatch. This target must not reject
 an authenticated, otherwise valid routed request because historical compatibility
 content predates activation, and it must not enable or disable itself. The
-checked-in issue #114 adapter is implementation evidence, not proof of canonical
-conformance. The 2026-08-13
+former issue #114 workflow_call adapter and repository-defined 26-case fixture
+have been removed from the active path. The replacement runs the complete
+29-scenario organization oracle through `scripts/codex_target_adapter.py`; 22
+scenarios reach that real adapter seam and every prohibited effect counter is
+zero. The 2026-08-13
 [activation-readiness review](ai-sdlc/engineering-journal/2026-08-13-immutable-baseline-activation-blocker.md)
 found cross-repository trigger, payload/result, receiver, branch, fixture, and
-baseline-release blockers. Keep this target disabled until a corrected immutable
-organization baseline is published and the exact shared oracle passes through
-the real adapter seam.
+baseline-release blockers. Keep this target disabled until the corrected
+organization release and adapter tag are reviewed, the receiver is
+live-verified, and the registry records the separately bound tag, commit, and
+report digest.
 
 Upgrades to the organization control-plane release require an explicit reviewed repository change. Rollback must pin the workflow to the previous immutable known-good organization release.
 
@@ -73,35 +78,31 @@ automatically; human review and merge are always required.
 ## Required idempotent publication protocol
 
 The canonical `delivery_id` is the logical publication identity. It must be
-stable across dispatch retries and must not be a workflow run ID. The checked-in
-implementation currently uses this target branch convention:
+stable across dispatch retries and must not be a workflow run ID. The active
+target branch convention is:
 
 ```
-consulting-codex/<normalized-delivery-id, at most 40 characters>-<first 16 hex characters of SHA-256(delivery-id)>
+codex/<lowercase-delivery-id>
 ```
 
-The hash prevents values that normalize or truncate to the same readable slug
-from colliding. A router-supplied `requested_branch` is accepted only when it is
-exactly the branch this convention derives for the supplied delivery identity.
-The readiness review found that the current router derives a different branch
-form. Treat this convention as unreconciled implementation evidence until the
-organization-owned recovery establishes and tests one canonical branch identity;
-do not use it as activation evidence.
+A router-supplied `requested_branch` is accepted only when it is null or
+exactly the branch derived from the schema-valid delivery identity.
 
 Every managed pull request body contains exactly one machine-readable ownership
 marker. The canonical marker is embedded as:
 
 ```
-<!-- ai-sdlc-delivery-id: delivery-id -->
+<!-- ai-sdlc-delivery-id: delivery-id; payload-sha256: canonical-payload-digest -->
 ```
 
-Before Codex is invoked, the target queries the remote branch and all open,
-closed, and merged pull requests with that head. A missing branch and no pull
-requests is a new delivery. Exactly one open draft with a valid, exactly matching
-marker and the deterministic branch is a completed publication: redelivery
-returns that pull request URL and skips Codex, branch creation, and PR creation.
-This also handles a lost terminal acknowledgement. A newly pushed branch is
-eligible for PR creation only in the same attempt that successfully created it.
+Before Codex is invoked, the target independently queries branch existence and
+all open, closed, and merged pull requests with that head. A missing branch and
+no pull requests is a new delivery. Exactly one existing deterministic branch
+and one open draft with a valid, exactly matching marker is a completed
+publication: redelivery returns that pull request URL and skips Codex, branch
+creation, and PR creation. Branch/PR disagreement, including an orphaned branch
+or a PR whose branch is missing, fails `ambiguous-rejected` before paid
+execution. This also handles a lost terminal acknowledgement.
 
 Create conflicts are recovered without sleeps: the losing attempt immediately
 re-queries and may reuse exactly one valid managed draft. Concurrency using the

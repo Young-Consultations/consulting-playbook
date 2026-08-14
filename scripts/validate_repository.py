@@ -8,15 +8,19 @@ from pathlib import Path
 
 
 ALLOWED_ROOTS = {
+    ".ai-sdlc",
     ".github",
     "AI_CONTEXT.md",
     "README.md",
     "ai-sdlc",
+    "config",
     "conformance",
+    "contracts",
     "docs",
     "playbooks",
     "scripts",
     "templates",
+    "tests",
 }
 FORBIDDEN_NAMES = re.compile(r"(^|/)(\.env($|\.)|credentials|secrets?($|\.)|.*\.(pem|key)$)", re.I)
 SECRET_VALUE = re.compile(r"(sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9_]{20,})")

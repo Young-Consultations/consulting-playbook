@@ -3,12 +3,12 @@
 ## Authority and scope
 
 This profile is the normative repository-owned implementation baseline. It uses
-organization compatibility release `2.2.0`, payload contract
-`ai-sdlc-contract/v2`, and fixture-set manifest `TC-MVP-CI-001`, all identified
-by the immutable `Young-Consultations/.github` commit
-`c6090e5bbadcc2102a1cb91875466e9decdada1e`. These supplied interface facts are
-requirements, not a claim that this repository inspected or conforms with a
-sibling repository.
+payload contract `ai-sdlc-contract/v2` and fixture-set manifest
+`TC-MVP-CI-001` from the reviewed issue #135 recovery candidate at immutable
+`Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
+The final 2.3.1 compatibility release remains unpublished. These supplied
+interface facts are requirements; conformance is established only by the
+exact-file pin and executable report described below.
 
 The current MVP contribution accepts **one already admitted task**, validates it,
 and in implement mode produces or reuses **one validated managed draft pull
@@ -45,15 +45,15 @@ operations, and broader content-platform automation not needed by this adapter.
 All organization file references use this complete SHA (never `main` or a
 mutable reference):
 
-`Young-Consultations/.github@c6090e5bbadcc2102a1cb91875466e9decdada1e`
+`Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`
 
-The compatibility unit comprises `release/release-manifest.json`,
-`docs/interfaces/mvp-v2-compatibility.md`, `docs/releases/next-mvp.md`,
-the target-capability registry, the three schemas below, the executable
-`TC-MVP-CI-001` fixture oracle, `.github/workflows/codex-router.yml`, and
-`.github/workflows/codex-result-receiver.yml` at that SHA. The final commit SHA
-is a consumer pin; the organization repository is not required to embed that
-SHA inside the compatibility contents.
+The target evidence consumes the three schemas below and the exact executable
+`TC-MVP-CI-001` manifest, scenarios, and expected results at that SHA.
+`config/mvp-conformance-pin.json` binds their Git blob identities together
+with this target's workflow, adapter, and harness. Its revision is calculated
+non-recursively; the report and pin never predict their containing commit.
+The eventual registry separately binds the adapter tag, resolved commit, and
+report digest.
 
 The adapter shall directly consume the immutable schema files:
 
@@ -80,8 +80,8 @@ The immutable target-capability values consumed by this target are:
 
 ## Exact workflow interfaces
 
-The eventual reusable target workflow is `.github/workflows/codex-execute.yml`
-and has exactly these required routing inputs:
+The target workflow is `.github/workflows/codex-execute.yml`, exposes only
+`workflow_dispatch`, and has exactly these required routing inputs:
 
 | Input | Meaning |
 | --- | --- |
@@ -92,9 +92,10 @@ The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
 It shall invoke
-`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@c6090e5bbadcc2102a1cb91875466e9decdada1e`
+`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.3.1`
 with inputs `execution_result` and `source_issue` and secret
-`CODEX_RESULT_TOKEN`. Receiver outputs are `accepted`, `delivery_id`,
+`CODEX_RESULT_TOKEN`. That planned tag is not yet published; live receiver
+verification therefore remains a release gate. Receiver outputs are `accepted`, `delivery_id`,
 `correlation_id`, `execution_status`, `failure_category`, and
 `diagnostic_summary`.
 
@@ -107,9 +108,10 @@ contract and must not replay a completed target publication effect.
 
 ## Authorization and content boundaries
 
-Router admission canonically means `approved`. A material task change requires a
-new `task_id` and a new organization approval. `queued` is only a post-admission
-projection, not authorization. The target authenticates and authorizes the
+Router admission canonically means `approved`. A material task change requires
+a new approved source revision and new `delivery_id`; the target does not
+receive or reconstruct the router's source-task identifier. `queued` is only a
+post-admission projection, not authorization. The target authenticates and authorizes the
 admitted caller but does not re-read a mutable source-issue label and does not
 require a second organization approval record. Rich approval provenance belongs
 to v3 and must not be invented here.
@@ -170,7 +172,7 @@ reuses only a draft PR before emitting the canonical result. Normal CI substitut
 a fake executor and fake publisher. A draft repository change never becomes
 automatically published consulting guidance.
 
-## Planned no-Codex conformance coverage
+## Required no-Codex conformance coverage
 
 Local tests shall consume the organization-owned executable `TC-MVP-CI-001`
 fixture oracle and cover: valid verify; valid fake implement; wrong target;
@@ -192,13 +194,20 @@ policy, but they shall not redefine schema, status, activation, delivery,
 ownership, or result behavior. Ordinary conformance uses fakes and makes zero
 real Codex calls, branches, or pull requests.
 
+The checked-in `.ai-sdlc/conformance/tc-mvp-ci-001.json` executes all 29
+organization scenarios; 22 reach the real repository adapter seam. Every Codex,
+branch, commit, push, pull-request, merge, release, deployment, production, and
+secret-output counter is zero. The `ownership-conflict` case proves an orphaned
+branch is rejected before Codex, and create-race cases re-observe both branch and
+pull-request state.
+
 ## Implementation readiness and operational activation
 
-No known organization- or repository-owned contract prerequisite blocks the
-target-adapter implementation: the merged baseline supplies immutable schemas,
-capabilities, executable fixtures, delivery/ownership semantics, and the
-canonical result receiver. Implementation and fake conformance may therefore
-proceed against the full SHA. Current operational activation remains mutable
-organization control-plane state and is neither pinned nor enforced here. This
-repository must not enable itself, and implementation completion alone is not a
-claim that live routing is active or production-ready.
+The repository-owned adapter and no-effects evidence are implemented. Acceptance
+still requires review/merge, an immutable `codex-adapter-v*` tag, registry
+tag/commit/report bindings, the published and live-verified 2.3.1 receiver,
+credential confirmation, and organization compatibility validation. Current
+operational activation remains mutable organization control-plane state and is
+neither pinned nor enforced here. This repository must not enable itself, and
+implementation completion alone is not a claim that live routing is active or
+production-ready.

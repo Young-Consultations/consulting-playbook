@@ -5,8 +5,8 @@
 This contract defines required interaction between `consulting-playbook` (target
 consumer/result producer) and `Young-Consultations/.github` (organization
 control-plane owner). The external repository was not inspected for these
-requirements; its responsibilities are authoritative vision context and must be
-validated with its owner.
+requirements originally; issue #135 recovery artifacts now supply the exact
+transport, schema, fixture, receiver, and evidence boundaries adopted here.
 
 ## Responsibilities
 
@@ -21,19 +21,20 @@ repository checks, bounded execution, draft publication, and result production.
 The required event is an explicitly routed target-execution request. Its
 versioned logical contract MUST provide:
 
-- contract version and stable task, correlation, and delivery/idempotency identity;
+- contract version plus stable correlation and delivery/idempotency identity;
 - source issue repository and issue identity;
 - target repository and, if supplied, requested branch;
 - executor, execution mode (`verify` or `implement`), authorized concurrency group;
 - explicit draft-only/no-auto-merge requirements;
 - sufficient task component/context or an authorized source reference; and
 - canonical router-admission status, task type, assignment, and sensitivity data.
-  Material changes require a new `task_id` and a new approval; the target does not
-  reconstruct or recheck organization approval.
+  Material changes require a new approved source revision and delivery identity;
+  the target does not reconstruct or recheck organization approval.
 
-Transport may carry inline content or an immutable artifact reference. Transport
-selection is owned by the control plane and MUST preserve identical validated
-semantics. No undocumented field may grant authority.
+The active transport is `workflow_dispatch` with exactly
+`execution_input_json` and `concurrency_group`. Artifact references,
+field-by-field inputs, `workflow_call`, and fallback transports are not active.
+No undocumented field may grant authority.
 
 ## Required outbound result
 
@@ -81,13 +82,15 @@ reduction mechanism, not the idempotency guarantee.
 
 ## Versioning and compatibility
 
-The target MUST directly consume the three documented schema files at
-`c6090e5bbadcc2102a1cb91875466e9decdada1e`. Schemas, workflow interfaces,
-immutable target-capability semantics, and the executable shared-fixture oracle
-form compatibility release `2.2.0`; internal paths, unverified modules/packages,
-and mutable references MUST NOT be used. Current operational activation is
-separate router-owned mutable state and MUST NOT be inferred from or enforced by
-the target's immutable compatibility pin.
+The target MUST consume byte-exact copies of the three documented schemas and
+complete shared-fixture oracle at recovery candidate
+`e27b8a541afbd27b4be5606a19ffa43637ad312a`. Their blob identities and the
+target workflow/adapter/harness are bound by the non-recursive conformance pin.
+Internal paths, unverified modules/packages, locally redefined expectations, and
+mutable references MUST NOT be used. The final 2.3.1 compatibility release and
+receiver tag remain unpublished. Current operational activation is separate
+router-owned mutable state and MUST NOT be inferred from or enforced by the
+target's immutable compatibility pin.
 Upgrades require reviewed compatibility evidence and rollback instructions.
 Producers MUST NOT silently change field semantics within a version. Consumers
 MUST reject unsupported versions. Results MUST use a version compatible with the
