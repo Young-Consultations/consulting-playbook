@@ -7,7 +7,7 @@
   "fixture_version": "2.3.0",
   "production_readiness_claim": false,
   "activation_requested": false,
-  "activation_evidence_sufficient": true,
+  "activation_evidence_sufficient": false,
   "activation_evidence_reason": "complete shared oracle executed through the repository adapter with deterministic effect traps",
   "adapter_tag_published": false,
   "receiver_live_verification": "pending-ai-sdlc-v2.3.1-tag",
@@ -199,5 +199,8 @@
       "adapter_invoked": true
     }
   ],
-  "failures": []
+  "failures": [
+    "pinned target file is incompatible: .github/workflows/codex-execute.yml",
+    "pinned target file is incompatible: scripts/codex_target_adapter.py"
+  ]
 }
