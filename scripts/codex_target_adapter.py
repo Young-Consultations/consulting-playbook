@@ -161,6 +161,7 @@ def reconcile_ownership(snapshot: Ownership, digest: str) -> dict[str, Any] | No
 def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: set[str],
                 effects: Effects) -> Outcome:
     started, parsed, phase = _now(), {}, "admission"
+    source_issue = None
     validation_status, test_status = "not-run", "not-run"
     try:
         try:
@@ -170,6 +171,10 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
         except Exception:
             pass
         payload = admit(raw, transport_group, caller, trusted_callers)
+        # Only an admitted issue reference may cross the workflow output boundary.
+        # ``parsed`` remains useful for constructing a schema-safe rejection result,
+        # but its fields are otherwise untrusted transport data.
+        source_issue = payload["source_issue"]
         deadline = time.monotonic() + payload["timeout_minutes"] * 60
         def remaining() -> float:
             budget = deadline - time.monotonic()
@@ -188,8 +193,17 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
             return Outcome(_result(payload, started, "duplicate-reused", "none", None,
                                    branch=branch, pr=pr, validation="passed", tests="passed"), payload["source_issue"])
         if payload["execution_mode"] == "verify":
+            phase = "validation"
+            valid, phase = effects.validate_candidate(remaining())
+            remaining()
+            if not valid:
+                category = "tests" if phase == "tests" else "validation"
+                validation_status = "passed" if phase == "tests" else "failed"
+                test_status = "failed" if phase == "tests" else "not-run"
+                raise AdapterError(category, "Repository did not pass policy checks", "failed")
+            validation_status = test_status = "passed"
             return Outcome(_result(payload, started, "verified", "none", None,
-                                   validation="passed", tests="passed"), payload["source_issue"])
+                                   validation=validation_status, tests=test_status), source_issue)
         phase = "codex"
         effects.codex(payload["instructions"], remaining())
         remaining()
@@ -224,10 +238,10 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
                                branch=branch, pr=pr, validation="passed", tests="passed"), payload["source_issue"])
     except AdapterError as exc:
         return Outcome(_result(parsed, started, exc.status, exc.category, exc.safe_message,
-                               validation=validation_status, tests=test_status), parsed.get("source_issue"))
+                               validation=validation_status, tests=test_status), source_issue)
     except subprocess.TimeoutExpired:
         return Outcome(_result(parsed, started, "failed", "timeout", "Admitted execution timeout expired",
-                               validation=validation_status, tests=test_status), parsed.get("source_issue"))
+                               validation=validation_status, tests=test_status), source_issue)
     except Exception as exc:
         # Effect failures are deliberately classified without reflecting command,
         # API, path, token, or exception text into the externally transported result.
@@ -248,7 +262,7 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
         else:
             category, message = "dependency", "Target execution dependency failed"
         return Outcome(_result(parsed, started, "failed", category, message,
-                               validation=validation_status, tests=test_status), parsed.get("source_issue"))
+                               validation=validation_status, tests=test_status), source_issue)
 
 
 class GitHubEffects:

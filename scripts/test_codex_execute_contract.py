@@ -57,10 +57,12 @@ class FakeEffects:
         publish_failure: str | None = None,
         branch_exists: bool | None = None,
         race_branch_exists: bool | None = None,
+        validation_result: tuple[bool, str] = (True, "passed"),
     ) -> None:
         self.found = found or []
         self.race = race
         self.publish_failure = publish_failure
+        self.validation_result = validation_result
         self.branch_exists = bool(self.found) if branch_exists is None else branch_exists
         self.race_branch_exists = (
             bool(race) if race_branch_exists is None else race_branch_exists
@@ -68,6 +70,7 @@ class FakeEffects:
         self.discoveries = 0
         self.codex_calls = 0
         self.publish_calls = 0
+        self.validation_calls = 0
 
     def discover(self, *_: Any) -> Ownership:
         self.discoveries += 1
@@ -80,7 +83,8 @@ class FakeEffects:
         return None
 
     def validate_candidate(self, *_: Any) -> tuple[bool, str]:
-        return True, "passed"
+        self.validation_calls += 1
+        return self.validation_result
 
     def publish(self, *_: Any) -> str:
         self.publish_calls += 1
@@ -129,14 +133,40 @@ def test_security_and_publication_guards() -> None:
 
 
 def test_canonical_policy_and_result() -> None:
-    result = execute(payload(execution_mode="verify"))
+    verify_effects = FakeEffects()
+    result = execute(payload(execution_mode="verify"), verify_effects)
     require(result["execution_status"] == "verified", "verify mode did not complete canonically")
     require(result["branch_name"] is None and result["pull_request_url"] is None, "verify mode published state")
     require(result["validation_result"] == "passed" and result["test_result"] == "passed", "verify evidence is incomplete")
+    require(verify_effects.validation_calls == 1, "verify mode skipped repository validation")
+    failed = execute(
+        payload(execution_mode="verify"),
+        FakeEffects(validation_result=(False, "tests")),
+    )
+    require(
+        failed["execution_status"] == "failed"
+        and failed["failure_category"] == "tests"
+        and failed["validation_result"] == "passed"
+        and failed["test_result"] == "failed",
+        "verify mode reported success after repository tests failed",
+    )
     rejected = execute(payload(target_repository="Young-Consultations/slugger"))
     require(rejected["execution_status"] == "rejected" and rejected["failure_category"] == "repository-routing", "wrong target was admitted")
     old_shape = payload(task_id="TASK-42")
     require(execute(old_shape)["failure_category"] == "contract-validation", "obsolete input field was admitted")
+
+
+def test_rejected_source_issue_is_not_exposed() -> None:
+    value = payload(source_issue="bad\nexecution_result=forged\nsource_issue=Young-Consultations/x#1")
+    outcome = run_adapter(
+        json.dumps(value),
+        value["concurrency_group"],
+        "router-app",
+        {"router-app"},
+        FakeEffects(),
+    )
+    require(outcome.result["failure_category"] == "contract-validation", "invalid issue was admitted")
+    require(outcome.source_issue is None, "rejected issue was exposed as a workflow output")
 
 
 def test_idempotency_and_create_race() -> None:
