@@ -175,22 +175,22 @@ a claim that its entries have been drafted or published.
 - **derivative_content:** —
 - **notes:** Evidence research required.
 
-### CONTENT-009 — What an AI-Assisted SDLC Needs Beyond a Coding Agent
+### CONTENT-009 — Stop Prompting AI to Code: Use This 5-Step Engineering Pipeline Instead
 
-- **status:** `idea`
-- **content_type:** backlog post idea
-- **primary_channel:** —
-- **theme:** AI-SDLC controls and lifecycle
+- **status:** `published`
+- **content_type:** long-form post
+- **primary_channel:** Substack
+- **theme:** AI-SDLC controls and lifecycle; engineering leadership; traceability
 - **series:** Building an AI-Native SDLC in Public
-- **summary_or_thesis:** Describe the requirements, architecture, verification, security, decision, and release controls needed around code generation.
-- **source_or_evidence:** [AI-SDLC learning system](../../README.md); `CONTENT-001`
-- **related_project:** consulting-playbook
-- **published_date:** —
-- **published_url:** —
+- **summary_or_thesis:** The quality of AI-assisted software is largely determined before the coding prompt. Use a five-stage pipeline—Vision → Requirements → Architecture → Context → Verification—with traceability across stages so that changes and discoveries can be reconciled through the system. AI does not make the SDLC obsolete; it makes the SDLC more important, and skipping steps more expensive.
+- **source_or_evidence:** `CONTENT-001`; [immutable-baseline activation-blocker journal](../../engineering-journal/2026-08-13-immutable-baseline-activation-blocker.md); related `DEF-0012`–`DEF-0019` in the [Defect Ledger](../../defects/defect-ledger.csv)
+- **related_project:** consulting-playbook; cross-repository evidence referenced by the engineering journal
+- **published_date:** 2026-08-14
+- **published_url:** https://mightyjoe909.substack.com/p/stop-prompting-ai-to-code-use-this?r=8w0hfw&utm_medium=ios
 - **draft_path:** —
-- **supporting_assets:** AI-SDLC learning lifecycle diagram in the linked README.
-- **derivative_content:** —
-- **notes:** Keep distinct from The Code Fallacy by focusing on operating controls and practices.
+- **supporting_assets:** Five-stage sequence in the post; no repository-local visual exists yet.
+- **derivative_content:** Potential five-stage checklist or diagram; none recorded.
+- **notes:** Second Substack post and part of the foundational publication sequence. It evolved from the original “What an AI-Assisted SDLC Needs Beyond a Coding Agent” idea. The author provided the publication date and public URL on 2026-08-14; no repository-local Markdown copy exists yet. Defect and rework measurement is introduced only as a bridge to later evidence-driven content rather than developed as a tangent here.
 
 ### CONTENT-010 — What an AI-SDLC Readiness Assessment Should Examine
 
@@ -463,3 +463,20 @@ a claim that its entries have been drafted or published.
 - **supporting_assets:** Defect records and narrative journal entries.
 - **derivative_content:** Potential “failure → control” short-form sequence; none recorded.
 - **notes:** New idea derived from project evidence, not a previously written post. `CONTENT-018` is the broad retrospective; this entry is the defect-led narrative angle.
+
+### CONTENT-026 — When AI Follows the Instructions and Still Builds the Wrong Thing
+
+- **status:** `developing`
+- **content_type:** announced follow-up post
+- **primary_channel:** Substack (intended)
+- **theme:** requirements quality; architecture; AI-correct/specification-wrong defects
+- **series:** Building an AI-Native SDLC in Public
+- **summary_or_thesis:** AI can faithfully implement the supplied instructions and still build the wrong system when requirements, architecture, or interfaces are ambiguous, incorrect, or mutually inconsistent. The correction must begin in the defective upstream source rather than only in generated code.
+- **source_or_evidence:** Closing bridge from `CONTENT-009`; [AI-Correct / Specification-Wrong metric](../../defects/metrics-definition.md#ai-correct--specification-wrong-defects); [immutable-baseline activation-blocker journal](../../engineering-journal/2026-08-13-immutable-baseline-activation-blocker.md); related defects in the [Defect Ledger](../../defects/defect-ledger.csv)
+- **related_project:** consulting-playbook; cross-repository evidence referenced by the engineering journal
+- **published_date:** —
+- **published_url:** —
+- **draft_path:** —
+- **supporting_assets:** Potential “instruction followed → wrong system outcome → upstream correction” traceability visual; none recorded.
+- **derivative_content:** Potential short-form example contrasting implementation defects with specification defects; none recorded.
+- **notes:** Announced as the next topic in `CONTENT-009`. Keep distinct from `CONTENT-021`, which concerns defect amplification as implementation accelerates; this item focuses on faithful implementation of a defective or conflicting source.
