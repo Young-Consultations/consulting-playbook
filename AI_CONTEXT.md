@@ -291,7 +291,8 @@ must:
   branch/result semantics, and 26-case local oracle are obsolete and removed.
   The active workflow calls `scripts/codex_target_adapter.py`; the checked-in
   report passes all 29 organization scenarios, invokes the real adapter seam in
-  22, and records zero prohibited effects. This is target evidence only. No
+  22, and records zero prohibited effects. The merged-main replacement
+  conformance run 31857176623 is green. This is target evidence only. No
   adapter tag exists, the planned `ai-sdlc-v2.3.1` receiver has not been
   live-verified, credentials have not been confirmed, the registry conformance
   record is null, and the target remains disabled.
@@ -299,15 +300,21 @@ must:
   harness blobs are bound by the pin and exercised by the shared oracle.
   Preflight must observe both branch existence and all pull-request state before
   Codex; branch/PR disagreement fails `ambiguous-rejected`.
-- Portfolio Tasks interface details remain explicitly unknown and owner
-  validation is required. The Slugger interface is conditional and unapproved;
-  no direct interaction is active. Do not invent either interface.
+- Portfolio recovery review found two additional source-side defects, recorded
+  as DEF-0023 and DEF-0024: the source producer could not emit an exact
+  task-contract/v2 object or bind approval to all routing authority, and its
+  direct target-to-source result path contradicted the corrected
+  receiver-to-source `repository_dispatch` interface. The candidate correction
+  and prevention rules are documented in the defect ledger and Engineering
+  Journal; they remain unverified external work until the portfolio change is
+  reviewed and merged. The Slugger interface is conditional and unapproved; no
+  direct interaction is active.
 - Architecture open questions concerning classification taxonomy, client-data
   storage/retention, identity, AI providers, and other future runtime choices
   retain their documented unresolved status. They do not authorize scope or
   implementation decisions.
 
-No additional material context-policy conflict was identified during this review.
+No other material context-policy conflict was identified during this review.
 
 ## Maintenance rule
 
