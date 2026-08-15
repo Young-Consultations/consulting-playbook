@@ -305,3 +305,107 @@ production, and secret-output counter is zero.
 This evidence remains pre-activation. Both corrective changes are draft review
 work; no adapter tag, compatibility tag/release, secret/setting change, Codex
 call, live receiver acceptance, or target activation is part of them.
+
+## 2026-08-14 third addendum — The target recovered, but the source could not produce or consume the contract
+
+The corrective control-plane and first-consumer work have now merged:
+
+- [`.github` PR #47](https://github.com/Young-Consultations/.github/pull/47)
+  merged at
+  [`4b0ff4f`](https://github.com/Young-Consultations/.github/commit/4b0ff4f86429412261ee2887d11a1c124c397a8b);
+- [consulting-playbook PR #25](https://github.com/Young-Consultations/consulting-playbook/pull/25)
+  merged at
+  [`3ee195c`](https://github.com/Young-Consultations/consulting-playbook/commit/3ee195c0866b903b0f0b7ecb7bd48a8e0f697025); and
+- the replacement consulting `Immutable MVP conformance` push run
+  [31857176623](https://github.com/Young-Consultations/consulting-playbook/actions/runs/31857176623)
+  completed successfully.
+
+Those merges resolve DEF-0021 and DEF-0022 at the central and first-consumer
+layers. Applying the same accepted adapter/evidence pattern to
+`portfolio-tasks` then exposed two source-side failures that target-only
+conformance could not reveal.
+
+### DEF-0023 — The source could not construct task-contract/v2
+
+The source lifecycle generated `task_id` as
+`owner/repository#issue@digest`. The exact task schema permits only letters,
+digits, dot, underscore, and hyphen, so every such identity was invalid. The
+constructed payload also omitted required `risk`, `scope`, and
+`created_by` fields and merged arbitrary material fields into a closed
+schema. Finally, generic lower-and-replace normalization converted issue-form
+choices such as `Refactor`, `Repository governance`, and `Investigation`
+to values that the canonical schema does not permit.
+
+The identity digest covered only a material mapping. Target, execution mode,
+executor, dependency state, and sensitivity could therefore change without
+changing the task identity or invalidating the earlier approval. The producer
+had local unit coverage, but no test validated its actual output against the
+exact shared task schema.
+
+### DEF-0024 — The source result path contradicted the corrected receiver
+
+The portfolio target directly called a source `workflow_call` and supplied a
+target-held `PORTFOLIO_RESULT_TOKEN`. The corrected organization receiver
+does neither: after validating the target, result schema, trusted admission
+journal, and replay state, it forwards a bounded
+`ai-sdlc-execution-result-v2` `repository_dispatch` to the source.
+
+The source journal was also incompatible. It wrote the older free-form
+`ai-sdlc-admission: task=...` marker, while the receiver accepts only the
+canonical `ai-sdlc-admission:v2` JSON binding. Even a correct target result
+therefore had no admission record the receiver could authorize. The local
+projection expected fields that are not present in the corrected closed result
+schema, so direct invocation did not merely bypass ownership; it implemented a
+different protocol.
+
+### Candidate correction and evidence
+
+The portfolio recovery candidate now:
+
+1. constructs exactly the closed task fields and validates them against the
+   exact shared schema;
+2. derives a schema-safe task hash from source material plus target, mode,
+   executor, dependencies, and sensitivity, so every authority change requires
+   fresh approval;
+3. explicitly maps issue-form values to canonical task types and rejects
+   obsolete or unknown categories;
+4. adds the reusable router's required `actions: read` permission;
+5. writes the exact v2 JSON admission binding after successful routing;
+6. removes direct target-to-source invocation and the target-held source token;
+7. accepts only an allowlisted receiver `repository_dispatch`, repeats exact
+   schema and admission checks, treats identical delivery replay as a no-op,
+   and quarantines conflicts; and
+8. replaces the parallel portfolio target/conformance implementation with the
+   same exact two-input adapter and non-recursive evidence pattern already
+   accepted in the central and consulting repositories.
+
+The candidate `TC-MVP-CI-001` report has SHA-256
+`0d3d062e29bace8e20c745bc6639d4205d007bc8813d936f4382f5ea85f18d66`.
+All 29 shared scenarios pass, 22 invoke the real portfolio adapter seam, and
+all ten prohibited-effect counters are zero. Its canonical pin revision is
+`sha256:de71418de78bcfdfffb1f4fc02ccf0a0da2fcc9eaf68a8d580526f4c89c4078c`.
+
+### Prevention rules added by this discovery
+
+- Test every producer, not only every consumer, against the exact closed schema
+  it claims to emit.
+- Require a content-derived identity to both satisfy its own schema and bind
+  every field that can change authority, routing, or effect semantics.
+- Map human-facing enumerations explicitly; generic string normalization is not
+  contract validation.
+- Exercise the complete receiver-to-source transport and journal marker in
+  interface tests. A schema-valid target result is insufficient if the source
+  cannot authenticate or project it.
+- A target may deliver a result to the organization receiver, but it must not
+  own receiver trust policy, hold a general source-write credential, or invoke
+  source projection directly.
+- When an interface owner changes forwarding semantics, search every producer,
+  marker, source consumer, secret declaration, and test assertion for the old
+  path before calling the compatibility unit complete.
+
+The portfolio candidate remains review work. DEF-0023 and DEF-0024 stay open
+until that change is reviewed and merged. DEF-0016 and DEF-0019 also remain
+open until the same merge supplies the canonical target and proves the repaired
+source workflow starts. No target, adapter tag, compatibility tag/release,
+receiver identity, secret/setting, paid Codex run, live result acceptance, or
+activation is created by this discovery record.
