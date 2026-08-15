@@ -13,18 +13,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - name: Run repository checks and immutable fixture oracle
+      - name: Install offline validation dependencies
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]>=4.23,<5'
+      - name: Run repository checks and exact shared oracle
         env:
           NO_NETWORK: "1"
         run: |
           git diff --check
           python scripts/validate_repository.py
           python scripts/test_codex_execute_contract.py
-          python scripts/mvp_conformance.py --report conformance/report-v1.json
-      - name: Prove the report contains no effect or readiness claim
+          python scripts/run_tc_mvp_ci_001.py
+          git diff --exit-code -- .ai-sdlc/conformance/tc-mvp-ci-001.json
+      - name: Prove complete no-effect evidence
         run: |
-          jq -e '.production_readiness_claim == false and .activation_requested == false' conformance/report-v1.json
-          jq -e '.effects | all(. == 0)' conformance/report-v1.json
+          jq -e '.activation_evidence_sufficient == true and .activation_requested == false and .production_readiness_claim == false' .ai-sdlc/conformance/tc-mvp-ci-001.json
+          jq -e '.adapter_tag_published == false and .receiver_live_verification == "pending-ai-sdlc-v2.3.1-tag"' .ai-sdlc/conformance/tc-mvp-ci-001.json
+          jq -e '(.scenario_results | length) == 29 and (.scenario_results | all(.result == "pass"))' .ai-sdlc/conformance/tc-mvp-ci-001.json
+          jq -e '.effect_traps | all(. == 0)' .ai-sdlc/conformance/tc-mvp-ci-001.json

@@ -190,8 +190,10 @@ report, and changing the report to name the new SHA changes the tree and SHA
 again. A review gate that no artifact can satisfy is fail-closed, but it is not
 a usable recovery control.
 
-[`.github` draft PR #46](https://github.com/Young-Consultations/.github/pull/46)
-proposes ADR-015 and separates the identities:
+[`.github` PR #46](https://github.com/Young-Consultations/.github/pull/46),
+merged as
+[`b3df35f`](https://github.com/Young-Consultations/.github/commit/b3df35f1d11da3bfed49f0e68b725f7f50936f10),
+implements ADR-015 and separates the identities:
 
 1. a canonical v2 conformance pin records the compatibility SHA plus exact Git
    blob identities for organization schemas/fixtures and target
@@ -216,7 +218,7 @@ is unpublished and live receiver verification remains pending the reviewed
 `ai-sdlc-v2.3.1` tag.
 
 This is reviewable target evidence, not activation or production-readiness
-evidence. PR #46 is draft, the registry evidence remains null, no adapter or
+evidence. The registry evidence remains null, no adapter or
 compatibility tag has been created, the receiver allowlist remains deny-all,
 and every target remains disabled.
 
@@ -243,3 +245,63 @@ review and merge the constructible evidence model, correct each target, review
 real-adapter zero-effect reports, publish immutable adapter tags only after
 their evidence gates pass, finalize the `.github` compatibility release, and
 then return to issue #117 one disabled-first target at a time.
+
+## 2026-08-14 second addendum — The verifier inspected the wrapper while preflight missed the branch
+
+After `.github` PR #46 and consulting-playbook PR #24 merged, the recovery moved
+to the first low-blast-radius consumer target: consulting-playbook. Translating
+the accepted adapter/evidence pattern into that repository exposed two more
+cross-layer defects, recorded as DEF-0021 and DEF-0022.
+
+First, `verify_target_workflows.py` searched the target workflow source for
+words including `preflight`, `ownership marker`, `create-race`, and
+`duplicate-reused`. The workflow is now intentionally a thin dispatch and
+receiver wrapper; executable ownership behavior lives in the exact
+`scripts/codex_target_adapter.py` blob already bound by the conformance pin.
+The syntactic check therefore inspected the wrong layer. A correct wrapper
+without explanatory comments would fail, while comments containing those words
+could pass without implementing the behavior.
+
+Second, the merged adapter preflight queried pull requests by deterministic head
+branch but did not query branch existence independently. No matching PR was
+treated as a new delivery. If the branch existed without a PR, Codex could run
+again before the later non-force push failed. That violated the recovery
+requirement that ambiguous ownership fail before paid execution.
+
+The corrective `.github` draft PR is https://github.com/Young-Consultations/.github/pull/47. It:
+
+1. limits static workflow verification to the exact two-input dispatch and
+   receiver interface;
+2. relies on the mandatory non-recursive pin and complete real-adapter oracle
+   for idempotency behavior;
+3. changes the adapter ownership observation to include branch existence plus
+   every pull request;
+4. rejects branch/PR disagreement as `ambiguous-rejected` before Codex;
+5. repeats both observations after a create race; and
+6. maps the shared `ownership-conflict` scenario to an orphaned branch while
+   retaining unit coverage for conflicting payload digests and multiple drafts.
+
+The consulting target adopts the same corrected behavior. Its candidate replaces
+the obsolete `workflow_call` path and 26-case local oracle with exact
+`workflow_dispatch`, canonical v2 schema/result handling, the planned immutable
+2.3.1 receiver, a non-recursive exact-file pin, and all 29 organization
+scenarios. Twenty-two scenarios invoke the real consulting adapter seam. Every
+Codex, branch, commit, push, pull-request, merge, release, deployment,
+production, and secret-output counter is zero.
+
+### Prevention rules added by this discovery
+
+- Verify each property at the layer that owns it: wrapper syntax for transport,
+  executable tests for adapter behavior, and immutable identities for adoption.
+- Never treat comments, names, or keyword presence as proof of a behavioral
+  security or reliability property.
+- Model remote ownership as the combination of branch state and pull-request
+  state; neither is a safe proxy for the other.
+- Exercise orphaned and contradictory state before any paid or mutating
+  boundary, not only during publication cleanup.
+- When implementation moves behind a new seam, review every verifier to ensure
+  it follows the seam rather than the old file layout.
+
+This evidence remains pre-activation. Both corrective changes are draft review
+work; no adapter tag, compatibility tag/release, secret/setting change, Codex
+call, live receiver acceptance, or target activation is part of them.

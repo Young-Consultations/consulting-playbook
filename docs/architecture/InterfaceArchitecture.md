@@ -41,14 +41,18 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
 - **Outbound:** the canonical result only, covering every terminal outcome with
   identities, target, timestamps, validation evidence, safe failure/reconciliation
   detail, and branch/draft metadata when applicable.
-- **Compatibility and activation:** immutable release `2.2.0` is pinned at
-  `c6090e5bbadcc2102a1cb91875466e9decdada1e` for schemas, target capabilities,
-  executable fixtures, and the receiver interface. Current activation is separate
-  mutable router state; the target neither consumes historical activation nor
-  administers it. No package or observed import is a contract.
+- **Compatibility and activation:** the non-recursive target pin binds exact
+  schema/fixture blobs at recovery candidate `e27b8a5` plus this workflow,
+  adapter, and harness. The planned receiver is `ai-sdlc-v2.3.1`; its tag and
+  final compatibility release remain unpublished. Current activation is
+  separate mutable router state; the target neither consumes historical
+  activation nor administers it. No package or observed import is a contract.
 - **Validation:** exact immutable schemas first, then caller/target/type, supported
   executor/mode, sensitivity, repository policy, concurrency, and reconciliation.
-- **Retries/idempotency:** router retries retain logical delivery identity; concurrency is optimization only. Results are correlated and safe to re-consume.
+- **Retries/idempotency:** router retries retain logical delivery identity;
+  concurrency is optimization only. Preflight observes branch and pull-request
+  state independently before Codex; disagreement is ambiguous and fail-closed.
+  Results are correlated and safe to re-consume.
 - **Ownership:** `Young-Consultations/.github` owns contract and routing; this repository owns local acceptance and publication policy.
 
 ## External interface: Portfolio Tasks

@@ -158,8 +158,9 @@ their subject is affected rather than treating this index as a substitute.
   **one active implementation path for each responsibility**. For the current
   next-MVP target-adapter slice,
   the locally authoritative interface is the `ai-sdlc-contract/v2` payload shape
-  and organization compatibility release `2.2.0` at the immutable commit recorded
-  in the [Next-MVP profile](docs/requirements/NextMVP.md).
+  plus the exact schema/fixture identities at recovery candidate
+  `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`
+  recorded in the [Next-MVP profile](docs/requirements/NextMVP.md).
 - Earlier contract shapes, compatibility adapters, legacy aliases, migration
   layers, dual-schema validation, obsolete workflow inputs, and fallback
   interfaces must not be preserved unless a future approved requirement
@@ -280,28 +281,24 @@ must:
 
 ## Known gaps or conflicts
 
-- The authoritative [Next-MVP profile](docs/requirements/NextMVP.md) specifies
-  organization release `2.2.0` at immutable commit
-  `c6090e5bbadcc2102a1cb91875466e9decdada1e`, exactly two routing inputs, direct
-  schema consumption, executable shared-fixture conformance, and the canonical
-  organization result receiver. Current activation is separate mutable
-  organization-router state and must not be consumed from the compatibility pin.
-  The 2026-08-13 [activation-readiness review](ai-sdlc/engineering-journal/2026-08-13-immutable-baseline-activation-blocker.md)
-  found that this baseline cannot safely activate any core target: its registry,
-  router, target trigger, receiver, and conformance-evidence expectations do not
-  form one executable compatibility unit. Preserve `c6090e5` as historical and
-  keep this target disabled while the organization owner publishes a corrected
-  immutable baseline; do not repin this repository before that exact replacement
-  commit is reviewed.
-- The issue #114 implementation exists in
-  `.github/workflows/codex-execute.yml`, and its local checks are in
-  `scripts/test_codex_execute_contract.py`. It is not activation-ready evidence.
-  The readiness review confirmed a `workflow_call`/dynamic-dispatch mismatch,
-  repository-defined input/branch/result semantics, an incomplete receiver call,
-  and a 26-case local 2.2.0 fixture rather than the complete organization-owned
-  2.3.0 oracle. Do not describe the checked-in workflow or green local report as
-  canonical conformance until those defects are fixed and the exact shared oracle
-  passes through the real adapter seam with zero real effects.
+- The authoritative [Next-MVP profile](docs/requirements/NextMVP.md) now adopts
+  the issue #135 recovery interface: exact two-input `workflow_dispatch`,
+  canonical v2 schemas and 29-scenario fixture bytes at
+  `e27b8a541afbd27b4be5606a19ffa43637ad312a`, organization-owned receiver trust,
+  and a non-recursive exact-file conformance pin. Historical 2.3.0 commit
+  `c6090e5bbadcc2102a1cb91875466e9decdada1e` remains evidence only.
+- The former issue #114 `workflow_call` adapter, repository-defined payload and
+  branch/result semantics, and 26-case local oracle are obsolete and removed.
+  The active workflow calls `scripts/codex_target_adapter.py`; the checked-in
+  report passes all 29 organization scenarios, invokes the real adapter seam in
+  22, and records zero prohibited effects. This is target evidence only. No
+  adapter tag exists, the planned `ai-sdlc-v2.3.1` receiver has not been
+  live-verified, credentials have not been confirmed, the registry conformance
+  record is null, and the target remains disabled.
+- Static wrapper comments are not idempotency evidence. The exact adapter and
+  harness blobs are bound by the pin and exercised by the shared oracle.
+  Preflight must observe both branch existence and all pull-request state before
+  Codex; branch/PR disagreement fails `ambiguous-rejected`.
 - Portfolio Tasks interface details remain explicitly unknown and owner
   validation is required. The Slugger interface is conditional and unapproved;
   no direct interaction is active. Do not invent either interface.

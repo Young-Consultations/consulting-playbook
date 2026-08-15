@@ -2,16 +2,16 @@
 
 ## Confirmed assumptions (repository-local)
 
-These are confirmed by the controlling vision or inspected snapshot, not by
-inspection of external repositories.
+These are confirmed by the controlling vision, repository implementation, and
+the reviewed issue #135 cross-repository compatibility artifacts.
 
 | ID | Confirmed statement |
 | --- | --- |
 | CA-01 | Consulting-playbook owns reusable consulting knowledge and recommendation-to-action patterns, not portfolio governance or Slugger. |
 | CA-02 | Human judgment and designated authority remain final for recommendations, approvals, architecture, review, merge, and production. |
 | CA-03 | Current implemented scope is primarily a bounded organization-routed target executor; intended consulting content is not yet implemented. |
-| CA-04 | Inspected implementation evidence supports verify/implement paths, approval/non-sensitive/Codex checks, and draft-only publication; it does not prove next-MVP contract or authorization conformance. |
-| CA-05 | Other repositories were not inspected; cross-repository descriptions are owner-supplied context and required contracts, not implementation claims. |
+| CA-04 | The exact shared oracle passes through the real adapter seam with zero prohibited effects; this is reviewable target evidence, not tag, receiver, credential, release, or activation evidence. |
+| CA-05 | Cross-repository implementation claims are limited to the exact reviewed issue #135 artifacts and immutable identities cited by the target pin. |
 
 ## Working assumptions requiring validation
 
@@ -68,12 +68,12 @@ result consumption, retention, SLA, test fixtures, incident response, recovery,
 upgrade, and rollback. See
 [Interface-Organization-Control-Plane.md](Interface-Organization-Control-Plane.md).
 
-The next-MVP compatibility unit is release `2.2.0` at immutable commit
-`c6090e5bbadcc2102a1cb91875466e9decdada1e`; direct schema-file consumption is
-required and no package API is assumed. It supplies immutable target-capability,
-executable fixture, and canonical result-receiver semantics. Current target
-activation is separate mutable organization-router state and is neither pinned
-nor administered by this repository.
+The target evidence pins exact schema and fixture blobs at recovery candidate
+`e27b8a541afbd27b4be5606a19ffa43637ad312a`; no package API is assumed. The
+final 2.3.1 compatibility and receiver tags, registry bindings, credentials, and
+live receiver proof remain pending. Current target activation is separate
+mutable organization-router state and is neither pinned nor administered by
+this repository.
 
 ### `Young-Consultations/portfolio-tasks`
 
