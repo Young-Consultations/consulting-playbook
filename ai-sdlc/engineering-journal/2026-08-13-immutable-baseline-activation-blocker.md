@@ -308,7 +308,7 @@ call, live receiver acceptance, or target activation is part of them.
 
 ## 2026-08-14 third addendum — The target recovered, but the source could not produce or consume the contract
 
-The corrective control-plane and first-consumer work has now merged:
+The corrective control-plane and first-consumer work have now merged:
 
 - [`.github` PR #47](https://github.com/Young-Consultations/.github/pull/47)
   merged at
