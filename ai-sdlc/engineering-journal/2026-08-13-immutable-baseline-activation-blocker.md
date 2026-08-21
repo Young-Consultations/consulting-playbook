@@ -421,22 +421,23 @@ repository source and target layers. It does not publish the receiver release,
 configure credentials, or activate a target.
 
 Applying the same accepted recovery architecture to Slugger produced
-[draft PR #108](https://github.com/Young-Consultations/slugger/pull/108). The
-candidate removes the obsolete nested payload and `workflow_call` contract,
-uses only the exact two-input `workflow_dispatch` transport, consumes
-byte-identical v2 schemas and fixtures from compatibility candidate
+[open PR #108, ready for review](https://github.com/Young-Consultations/slugger/pull/108).
+Its historical `4491911b6926ef382b3385f09bc586951408ad4a` recovery snapshot
+removes the obsolete nested payload and `workflow_call` contract, uses only
+the exact two-input `workflow_dispatch` transport, consumes byte-identical v2
+schemas and fixtures from compatibility candidate
 `e27b8a541afbd27b4be5606a19ffa43637ad312a`, and calls the planned
-organization-owned `ai-sdlc-v2.3.1` receiver with only
-`CODEX_RESULT_TOKEN`.
+organization-owned `ai-sdlc-v2.3.1` receiver with only `CODEX_RESULT_TOKEN`.
 
-The complete Slugger report has SHA-256
-`4e9956f55829b67619cb7ee48b56e86650dfb63cdb7df812c76fa4e696231690`.
-Its non-recursive adapter revision is
-`sha256:0269531b66ae43303a91d7e3f24394dd80ebd6921543602a5c3bf8a106b6c7cf`.
-All 29 organization scenarios pass, 22 invoke the real Slugger adapter seam,
-and every Codex, branch, commit, push, pull-request, merge, release,
-deployment, production, and secret-output counter is zero. This addresses the
-candidate behavior for DEF-0018 but does not resolve it until review and merge.
+The complete report for that historical snapshot has SHA-256
+`4e9956f55829b67619cb7ee48b56e86650dfb63cdb7df812c76fa4e696231690`. Its
+non-recursive adapter revision is
+`sha256:0269531b66ae43303a91d7e3f24394dd80ebd6921543602a5c3bf8a106b6c7cf`. All
+29 organization scenarios pass, 22 invoke the real Slugger adapter seam, and
+every Codex, branch, commit, push, pull-request, merge, release, deployment,
+production, and secret-output counter is zero. This historical evidence
+addresses the candidate behavior for DEF-0018 but does not resolve it until
+review and merge.
 
 ### DEF-0025 — The publication token was placed in a Git process argument
 
@@ -447,20 +448,23 @@ diagnostics, exception text, or future logging. The implementation also relied
 on redaction that did not cover every supported GitHub token prefix. No token
 value was collected, copied, or published during this review.
 
-The draft correction uses the normal anonymous HTTPS remote. A temporary
-`GIT_ASKPASS` helper contains only logic and reads the password from its
-environment; it never contains the credential. Only the narrowly scoped push
-subprocess receives `GIT_PASSWORD`, terminal prompting is disabled, push output
-is suppressed, the helper is removed in a `finally` block, and externally
+The historical `4491911b6926ef382b3385f09bc586951408ad4a` correction candidate
+uses the normal anonymous HTTPS remote. A temporary `GIT_ASKPASS` helper
+contains only logic and reads the password from its environment; it never
+contains the credential. Terminal prompting is disabled, push output is
+suppressed, the helper is removed in a `finally` block, and externally
 reported failures use sanitized categories instead of command or exception
-text.
+text. Current review of PR #108 still needs to confirm that anonymous
+discovery stays separate from credentialed publication so preflight reads do
+not receive the publication token.
 
 ### Prevention rules added by this discovery
 
 - Prevent secret exposure structurally; redaction is a secondary control, not
   permission to place credentials in URLs, arguments, files, results, or logs.
-- Give a credential only to the single subprocess and phase that needs it, and
-  construct that environment from an explicit safe allowlist.
+- Keep anonymous discovery separate from credentialed publication so preflight
+  reads do not receive publication credentials, and construct any credentialed
+  environment from an explicit safe allowlist.
 - Keep credential helpers secret-free. They may read an environment value at
   execution time but must not persist or echo it.
 - Suppress effect-boundary output and translate failures into fixed safe
@@ -476,7 +480,7 @@ is necessary but not sufficient. Recovery review must also inspect how each
 effect boundary constructs commands, scopes credentials, reports failures, and
 proves that sensitive values cannot enter durable or observable artifacts.
 
-Slugger PR #108 remains draft review work. Package build and `actionlint` are
+Slugger PR #108 remains open review work. Package build and `actionlint` are
 GitHub CI gates. No target activation, immutable adapter tag, compatibility
 release, live receiver dispatch, paid Codex execution, merge, deployment, or
 production action is part of this addendum.

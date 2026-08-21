@@ -307,14 +307,17 @@ must:
   identity, grants the reusable router's required least privilege, and accepts
   only the bounded organization receiver `repository_dispatch` path. This is
   merged repository evidence, not live receiver or activation evidence.
-- Slugger recovery is proposed in draft PR #108. Its exact-file pin and report
-  pass all 29 organization scenarios, invoke the real adapter seam in 22, and
-  record zero prohibited effects. The same review found DEF-0025: the former
-  publisher placed its publication token in a Git remote process argument. The
-  draft uses an anonymous remote and a secret-free askpass helper, with the
-  credential supplied only to the publication subprocess environment. DEF-0018
-  and DEF-0025 remain open until review and merge. No token value is recorded;
-  no target, receiver, tag, credential, or route was activated by the review.
+- Slugger recovery is proposed in open PR #108 and is ready for review. Its
+  recorded historical exact-file pin and report pass all 29 organization
+  scenarios, invoke the real adapter seam in 22, and record zero prohibited
+  effects. The same review found DEF-0025: the former publisher placed its
+  publication token in a Git remote process argument. The reviewed historical
+  snapshot uses an anonymous remote and a secret-free askpass helper for push
+  publication; current review still needs to confirm that discovery stays
+  anonymous and separate from any credentialed publication subprocess before
+  merge. DEF-0018 and DEF-0025 remain open until review and merge. No token
+  value is recorded; no target, receiver, tag, credential, or route was
+  activated by the review.
 - Architecture open questions concerning classification taxonomy, client-data
   storage/retention, identity, AI providers, and other future runtime choices
   retain their documented unresolved status. They do not authorize scope or
