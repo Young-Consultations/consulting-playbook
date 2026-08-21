@@ -300,15 +300,24 @@ must:
   harness blobs are bound by the pin and exercised by the shared oracle.
   Preflight must observe both branch existence and all pull-request state before
   Codex; branch/PR disagreement fails `ambiguous-rejected`.
-- Portfolio recovery review found two additional source-side defects, recorded
-  as DEF-0023 and DEF-0024: the source producer could not emit an exact
-  task-contract/v2 object or bind approval to all routing authority, and its
-  direct target-to-source result path contradicted the corrected
-  receiver-to-source `repository_dispatch` interface. The candidate correction
-  and prevention rules are documented in the defect ledger and Engineering
-  Journal; they remain unverified external work until the portfolio change is
-  reviewed and merged. The Slugger interface is conditional and unapproved; no
-  direct interaction is active.
+- Portfolio recovery defects DEF-0016, DEF-0019, DEF-0023, and DEF-0024 were
+  resolved by merged portfolio PR #136 at
+  `42f01e40fd148c1d16aa93828921234a9cfa95da`. The source now constructs and
+  validates the exact closed task contract, binds routing authority into task
+  identity, grants the reusable router's required least privilege, and accepts
+  only the bounded organization receiver `repository_dispatch` path. This is
+  merged repository evidence, not live receiver or activation evidence.
+- Slugger recovery is proposed in open PR #108 and is ready for review. Its
+  recorded historical exact-file pin and report pass all 29 organization
+  scenarios, invoke the real adapter seam in 22, and record zero prohibited
+  effects. The same review found DEF-0025: the former publisher placed its
+  publication token in a Git remote process argument. The reviewed historical
+  snapshot uses an anonymous remote and a secret-free askpass helper for push
+  publication; current review still needs to confirm that discovery stays
+  anonymous and separate from any credentialed publication subprocess before
+  merge. DEF-0018 and DEF-0025 remain open until review and merge. No token
+  value is recorded; no target, receiver, tag, credential, or route was
+  activated by the review.
 - Architecture open questions concerning classification taxonomy, client-data
   storage/retention, identity, AI providers, and other future runtime choices
   retain their documented unresolved status. They do not authorize scope or
