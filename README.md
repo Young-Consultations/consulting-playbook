@@ -49,10 +49,11 @@ scenarios reach that real adapter seam and every prohibited effect counter is
 zero. The 2026-08-13
 [activation-readiness review](ai-sdlc/engineering-journal/2026-08-13-immutable-baseline-activation-blocker.md)
 found cross-repository trigger, payload/result, receiver, branch, fixture, and
-baseline-release blockers. Keep this target disabled until the corrected
-organization release and adapter tag are reviewed, the receiver is
-live-verified, and the registry records the separately bound tag, commit, and
-report digest.
+baseline-release blockers. Those compatibility gates are now satisfied for this
+repository by `codex-adapter-v2.3.1`, the published 2.3.1 receiver, and the
+registry's tag/commit/report binding. The target remains disabled because
+operational activation, credentials, retention, reconciliation, and the
+controlled end-to-end test are separate human-governed gates.
 
 Upgrades to the organization control-plane release require an explicit reviewed repository change. Rollback must pin the workflow to the previous immutable known-good organization release.
 
