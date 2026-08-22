@@ -484,3 +484,68 @@ Slugger PR #108 remains open review work. Package build and `actionlint` are
 GitHub CI gates. No target activation, immutable adapter tag, compatibility
 release, live receiver dispatch, paid Codex execution, merge, deployment, or
 production action is part of this addendum.
+
+## 2026-08-21 fifth addendum — The final merge proved why derived evidence must move atomically
+
+[Slugger PR #108](https://github.com/Young-Consultations/slugger/pull/108)
+merged at
+[`89eba8e`](https://github.com/Young-Consultations/slugger/commit/89eba8ea57887443f6dc3d52dc019dde797ef9b7).
+That merge resolves DEF-0018 and DEF-0025 at the repository implementation
+layer: the active target consumes the canonical v2 contract and the publication
+credential no longer appears in a Git remote argument.
+
+The final recovery head, however, changed the adapter blob without regenerating
+the target-file identity, adapter revision, and report metadata bound to that
+blob. The exact-head
+[CI run 32506770178](https://github.com/Young-Consultations/slugger/actions/runs/32506770178)
+failed rather than accepting stale evidence. This is DEF-0026. It is a useful
+release-boundary result: the adapter behavior was not silently treated as
+conforming merely because an earlier head had been green.
+
+[Slugger PR #111](https://github.com/Young-Consultations/slugger/pull/111)
+regenerated the pin and report from the exact final adapter blob. Current main
+is
+[`d9c7f41`](https://github.com/Young-Consultations/slugger/commit/d9c7f414e2373d1269ebf0e02ebc4dbd1dc7ef11),
+with adapter revision
+`sha256:9dc5c57580741f60d3391436d1dcae09e4eaa3b7c1449988f2a98acdfbac3df8`
+and report SHA-256
+`e7c418f93dd3d74a24911e05cbd41a4a75341470de597b96476d1cabd9e46357`.
+Replacement
+[CI run 32539564318](https://github.com/Young-Consultations/slugger/actions/runs/32539564318)
+is green. All 29 shared scenarios pass, 22 invoke the real adapter seam, and all
+ten prohibited-effect counters remain zero.
+
+### Accepted adapter-tag candidates
+
+The post-merge release-preparation audit resolved the current default-branch
+commit, non-recursive adapter revision, and committed report digest for each
+target:
+
+| Repository | Proposed immutable tag | Candidate commit | Adapter revision | Report SHA-256 |
+| --- | --- | --- | --- | --- |
+| `Young-Consultations/.github` | `codex-adapter-v2.3.1` | `4b0ff4f86429412261ee2887d11a1c124c397a8b` | `sha256:73a5939bd6f582f97d80f797e4e9c86f821b96eaca2d13ab9dca2a45feeacf1a` | `48eaf52e768a7113755caf0da99a1657541a6b782473daeaf9fa02e22bb2a872` |
+| `Young-Consultations/portfolio-tasks` | `codex-adapter-v2.3.1` | `42f01e40fd148c1d16aa93828921234a9cfa95da` | `sha256:9b16b9a7ab3342d941b6fe72c0c319ea3d166cccb7a6ee4c6efd671ebeedf09f` | `f1d99301572caa30c5db14c3e33c594659651d63db08366095676ee7a2fc6ad6` |
+| `Young-Consultations/consulting-playbook` | `codex-adapter-v2.3.1` | `666323d3828a695f3614e6a61bae93aca0531e15` | `sha256:c7b959f8144aacd4fc6d282add4c4cfaad7a666d09ec0f014f44af04048ca4e1` | `fc6108fb86c51f5de2f97ed155f06ea82999a84f102521d0186e9106cf16379a` |
+| `Young-Consultations/slugger` | `codex-adapter-v2.3.1` | `d9c7f414e2373d1269ebf0e02ebc4dbd1dc7ef11` | `sha256:9dc5c57580741f60d3391436d1dcae09e4eaa3b7c1449988f2a98acdfbac3df8` | `e7c418f93dd3d74a24911e05cbd41a4a75341470de597b96476d1cabd9e46357` |
+
+These are release candidates, not published tags or activation claims. The
+next controlled sequence is to publish each reviewed immutable adapter tag,
+resolve each tag back to the recorded commit, place those exact tag/commit/report
+bindings in the organization registry, run the live compatibility verifier,
+and only then prepare the final `ai-sdlc-v2.3.1` release review.
+
+### Prevention rules added by this discovery
+
+- Treat every target file listed in the conformance pin, the pin itself, and the
+  generated report as one atomic change set.
+- Regenerate the pin and report after the final bound-file edit, not before it.
+- Require CI success for the exact final pull-request head; an earlier green
+  head is historical evidence, not permission to merge a later head.
+- Resolve the immutable tag back to its commit and recheck the report digest
+  before recording registry conformance.
+- Keep target implementation acceptance, immutable tag publication,
+  compatibility-release publication, and mutable activation as distinct gates.
+
+No adapter tag, compatibility tag/release, receiver credential, target
+activation, paid Codex execution, result dispatch, deployment, or production
+action was performed in this documentation step.
