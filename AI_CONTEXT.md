@@ -307,17 +307,19 @@ must:
   identity, grants the reusable router's required least privilege, and accepts
   only the bounded organization receiver `repository_dispatch` path. This is
   merged repository evidence, not live receiver or activation evidence.
-- Slugger recovery is proposed in open PR #108 and is ready for review. Its
-  recorded historical exact-file pin and report pass all 29 organization
-  scenarios, invoke the real adapter seam in 22, and record zero prohibited
-  effects. The same review found DEF-0025: the former publisher placed its
-  publication token in a Git remote process argument. The reviewed historical
-  snapshot uses an anonymous remote and a secret-free askpass helper for push
-  publication; current review still needs to confirm that discovery stays
-  anonymous and separate from any credentialed publication subprocess before
-  merge. DEF-0018 and DEF-0025 remain open until review and merge. No token
-  value is recorded; no target, receiver, tag, credential, or route was
-  activated by the review.
+- Slugger PR #108 merged at
+  `89eba8ea57887443f6dc3d52dc019dde797ef9b7`, resolving DEF-0018 and
+  DEF-0025 at the repository implementation layer. Post-merge CI then exposed
+  DEF-0026: the adapter blob, non-recursive pin, and checked-in report had
+  drifted. Follow-up PR #111 resolved that discrepancy at current main
+  `d9c7f414e2373d1269ebf0e02ebc4dbd1dc7ef11`. The final checked-in evidence
+  passes all 29 organization scenarios, invokes the real adapter seam in 22,
+  records zero prohibited effects, binds adapter revision
+  `sha256:9dc5c57580741f60d3391436d1dcae09e4eaa3b7c1449988f2a98acdfbac3df8`,
+  and has report SHA-256
+  `e7c418f93dd3d74a24911e05cbd41a4a75341470de597b96476d1cabd9e46357`.
+  No token value is recorded. No target adapter tag, compatibility release,
+  receiver credential, route, or activation has yet been published or changed.
 - Architecture open questions concerning classification taxonomy, client-data
   storage/retention, identity, AI providers, and other future runtime choices
   retain their documented unresolved status. They do not authorize scope or
