@@ -87,8 +87,8 @@ complete shared-fixture oracle at recovery candidate
 `e27b8a541afbd27b4be5606a19ffa43637ad312a`. Their blob identities and the
 target workflow/adapter/harness are bound by the non-recursive conformance pin.
 Internal paths, unverified modules/packages, locally redefined expectations, and
-mutable references MUST NOT be used. The final 2.3.1 compatibility release and
-receiver tag remain unpublished. Current operational activation is separate
+mutable references MUST NOT be used. The 2.3.1 compatibility release and
+receiver tag are published and live-verified. Current operational activation is separate
 router-owned mutable state and MUST NOT be inferred from or enforced by the
 target's immutable compatibility pin.
 Upgrades require reviewed compatibility evidence and rollback instructions.

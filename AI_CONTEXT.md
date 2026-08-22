@@ -292,10 +292,12 @@ must:
   The active workflow calls `scripts/codex_target_adapter.py`; the checked-in
   report passes all 29 organization scenarios, invokes the real adapter seam in
   22, and records zero prohibited effects. The merged-main replacement
-  conformance run 31857176623 is green. This is target evidence only. No
-  adapter tag exists, the planned `ai-sdlc-v2.3.1` receiver has not been
-  live-verified, credentials have not been confirmed, the registry conformance
-  record is null, and the target remains disabled.
+  conformance run 31857176623 is green. Immutable tag
+  `codex-adapter-v2.3.1` resolves to
+  `666323d3828a695f3614e6a61bae93aca0531e15`; the 2.3.1 receiver and the
+  registry's report binding passed live verification. This is target evidence
+  only. Credentials and operational governance have not been confirmed, and
+  the target remains disabled.
 - Static wrapper comments are not idempotency evidence. The exact adapter and
   harness blobs are bound by the pin and exercised by the shared oracle.
   Preflight must observe both branch existence and all pull-request state before
@@ -318,8 +320,10 @@ must:
   `sha256:9dc5c57580741f60d3391436d1dcae09e4eaa3b7c1449988f2a98acdfbac3df8`,
   and has report SHA-256
   `e7c418f93dd3d74a24911e05cbd41a4a75341470de597b96476d1cabd9e46357`.
-  No token value is recorded. No target adapter tag, compatibility release,
-  receiver credential, route, or activation has yet been published or changed.
+  The first immutable tag later failed independent live evidence verification
+  because the report-producing harness was absent from the pin. DEF-0027 records
+  the shared Portfolio/Slugger failure and the repaired 2.3.2 tags. No token
+  value is recorded. No receiver credential, route, or activation was changed.
 - Architecture open questions concerning classification taxonomy, client-data
   storage/retention, identity, AI providers, and other future runtime choices
   retain their documented unresolved status. They do not authorize scope or
