@@ -204,10 +204,9 @@ pull-request state.
 
 ## Implementation readiness and operational activation
 
-The repository-owned adapter and no-effects evidence are implemented. Acceptance
-still requires review/merge, an immutable `codex-adapter-v*` tag, registry
-tag/commit/report bindings, the published and live-verified 2.3.1 receiver,
-credential confirmation, and organization compatibility validation. Current
+The repository-owned adapter and no-effects evidence are implemented, tagged,
+and live-verified for 2.3.1. Acceptance for live routing still requires
+credential confirmation and explicit organization activation. Current
 operational activation remains mutable organization control-plane state and is
 neither pinned nor enforced here. This repository must not enable itself, and
 implementation completion alone is not a claim that live routing is active or

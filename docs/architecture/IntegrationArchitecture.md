@@ -8,7 +8,7 @@ External systems are authoritative only for their owned state. Anti-corruption a
 
 | Collaborator | Known | Assumed (must validate) | Unknown / decision required |
 |---|---|---|---|
-| Organization `.github` control plane | Issue #135 recovery candidate supplies exact v2 schemas, two-input dispatch, organization-owned receiver trust, complete 29-scenario fixtures, and non-recursive evidence semantics. | Canonical identities remain stable across retry. | Final 2.3.1 tag, live receiver proof, registry evidence bindings, credentials, enablement, SLA and incidents remain external dependencies. |
+| Organization `.github` control plane | Issue #135 recovery candidate supplies exact v2 schemas, two-input dispatch, organization-owned receiver trust, complete 29-scenario fixtures, and non-recursive evidence semantics. | Canonical identities remain stable across retry. | Credentials, enablement, SLA, and incidents remain external dependencies. |
 | `portfolio-tasks` | Owner context says it owns intake, governance, priority, approval and initiation; router admission is canonical approval for this adapter. | Material edits produce a new task ID and approval. | Its implementation, permissions, and retention were not inspected. |
 | `slugger` | Owns AI Software Factory product. | None; direct interaction is not confirmed. | Whether integration exists and every contract detail. |
 | Client evidence systems | Own source evidence. | Can provide authorized access-safe references. | Systems, formats, jurisdictions, authentication, retention and availability. |

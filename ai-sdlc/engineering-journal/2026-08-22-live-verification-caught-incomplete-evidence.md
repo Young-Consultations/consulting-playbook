@@ -85,7 +85,8 @@ disabled. Activation remains a separate human-governed decision.
 
 The context now records that Consulting Playbook's own 2.3.1 evidence passed
 live verification, while Portfolio and Slugger required 2.3.2 evidence tags.
-It removes stale claims that the compatibility and adapter tags are unpublished.
+It removes stale unpublished-tag claims from `AI_CONTEXT.md`, `README.md`, and
+the corresponding current-status sections in requirements and architecture docs.
 
 ## Follow-up
 
