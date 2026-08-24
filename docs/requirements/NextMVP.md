@@ -53,7 +53,7 @@ The target evidence consumes the three schemas below and the exact executable
 `config/mvp-conformance-pin.json` binds their Git blob identities together
 with this target's workflow, adapter, and harness. Its revision is calculated
 non-recursively; the report and pin never predict their containing commit.
-The eventual registry separately binds the adapter tag, resolved commit, and
+The published registry separately binds the adapter tag, resolved commit, and
 report digest.
 
 The adapter shall directly consume the immutable schema files:
