@@ -70,10 +70,10 @@ upgrade, and rollback. See
 
 The target evidence pins exact schema and fixture blobs at recovery candidate
 `e27b8a541afbd27b4be5606a19ffa43637ad312a`; no package API is assumed. The
-final 2.3.1 compatibility and receiver tags, registry bindings, credentials, and
-live receiver proof remain pending. Current target activation is separate
-mutable organization-router state and is neither pinned nor administered by
-this repository.
+2.3.1 compatibility and receiver tags, registry bindings, and live receiver
+proof are published for this repository. Credentials and current target
+activation remain separate mutable organization-router state and are neither
+pinned nor administered by this repository.
 
 ### `Young-Consultations/portfolio-tasks`
 

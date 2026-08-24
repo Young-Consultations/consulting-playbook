@@ -6,7 +6,8 @@ This profile is the normative repository-owned implementation baseline. It uses
 payload contract `ai-sdlc-contract/v2` and fixture-set manifest
 `TC-MVP-CI-001` from the reviewed issue #135 recovery candidate at immutable
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
-The final 2.3.1 compatibility release remains unpublished. These supplied
+The 2.3.1 compatibility release and this repository's immutable 2.3.1 adapter
+tag are published and live-verified. These supplied
 interface facts are requirements; conformance is established only by the
 exact-file pin and executable report described below.
 
@@ -52,7 +53,7 @@ The target evidence consumes the three schemas below and the exact executable
 `config/mvp-conformance-pin.json` binds their Git blob identities together
 with this target's workflow, adapter, and harness. Its revision is calculated
 non-recursively; the report and pin never predict their containing commit.
-The eventual registry separately binds the adapter tag, resolved commit, and
+The published registry separately binds the adapter tag, resolved commit, and
 report digest.
 
 The adapter shall directly consume the immutable schema files:
@@ -94,8 +95,8 @@ result separately; it does not return execution success directly to the router.
 It shall invoke
 `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.3.1`
 with inputs `execution_result` and `source_issue` and secret
-`CODEX_RESULT_TOKEN`. That planned tag is not yet published; live receiver
-verification therefore remains a release gate. Receiver outputs are `accepted`, `delivery_id`,
+`CODEX_RESULT_TOKEN`. That tag is published and its workflow/action bundle was
+live-verified. Receiver outputs are `accepted`, `delivery_id`,
 `correlation_id`, `execution_status`, `failure_category`, and
 `diagnostic_summary`.
 
@@ -203,10 +204,9 @@ pull-request state.
 
 ## Implementation readiness and operational activation
 
-The repository-owned adapter and no-effects evidence are implemented. Acceptance
-still requires review/merge, an immutable `codex-adapter-v*` tag, registry
-tag/commit/report bindings, the published and live-verified 2.3.1 receiver,
-credential confirmation, and organization compatibility validation. Current
+The repository-owned adapter and no-effects evidence are implemented, tagged,
+and live-verified for 2.3.1. Acceptance for live routing still requires
+credential confirmation and explicit organization activation. Current
 operational activation remains mutable organization control-plane state and is
 neither pinned nor enforced here. This repository must not enable itself, and
 implementation completion alone is not a claim that live routing is active or
