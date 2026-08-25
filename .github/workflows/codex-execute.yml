@@ -51,7 +51,7 @@ jobs:
     permissions:
       contents: read
     # The target remains disabled pending separate activation and credential gates.
-    uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.3.1
+    uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.0
     with:
       execution_result: ${{ needs.execute.outputs.execution_result }}
       source_issue: ${{ needs.execute.outputs.source_issue }}
