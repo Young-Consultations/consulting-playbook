@@ -8,6 +8,7 @@ from pathlib import Path
 
 from run_tc_mvp_ci_001 import ROOT, run
 
+EXPECTED_GENERATOR_STATE = "pending-ai-sdlc-v2.3.1-tag"
 EXPECTED_RECEIVER_STATE = "pending-ai-sdlc-v2.4.0-tag"
 
 
@@ -21,6 +22,12 @@ def main() -> None:
     args = parser.parse_args()
     failures = run(args.report)
     report = json.loads(args.report.read_text(encoding="utf-8"))
+    observed = report.get("receiver_live_verification")
+    if observed != EXPECTED_GENERATOR_STATE:
+        raise SystemExit(
+            "unexpected base receiver verification state: "
+            f"expected {EXPECTED_GENERATOR_STATE!r}, got {observed!r}"
+        )
     report["receiver_live_verification"] = EXPECTED_RECEIVER_STATE
     args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     if failures:
