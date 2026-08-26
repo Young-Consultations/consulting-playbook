@@ -50,7 +50,7 @@ jobs:
     if: ${{ always() && needs.execute.outputs.execution_result != '' && needs.execute.outputs.source_issue != '' }}
     permissions:
       contents: read
-    # The target remains disabled pending separate activation and credential gates.
+    # Organization routing remains bound to the currently registered immutable adapter until this candidate is tagged and registered.
     uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.0
     with:
       execution_result: ${{ needs.execute.outputs.execution_result }}
