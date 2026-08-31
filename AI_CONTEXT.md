@@ -197,6 +197,12 @@ the organization release, while current activation is separate mutable
 organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
+The active stabilization candidate consumes
+`codex-result-receiver.yml@ai-sdlc-v2.4.1`, pins Codex CLI `0.63.0` and
+`jsonschema` `4.26.0`, and carries regenerated no-real-effects evidence for a
+future `codex-adapter-v2.4.1` tag. Published 2.4.0 tags are immutable and must
+not be moved or reinterpreted.
+
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft
 pull request and passing local fake checks are review evidence, not release or
