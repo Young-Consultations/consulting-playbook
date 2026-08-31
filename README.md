@@ -33,6 +33,8 @@ The current target candidate pins the organization receiver to
 `4.26.0`. Its regenerated zero-effect evidence is bound by
 `config/mvp-conformance-pin.json`; after review it requires a new immutable
 `codex-adapter-v2.4.1` tag. The published 2.4.0 adapter remains unchanged.
+The versioned 2.4.0 conformance entry point is retained only to reproduce the
+published rollback evidence; active candidate CI invokes the 2.4.1 entry point.
 
 The recovery evidence is bound to
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.

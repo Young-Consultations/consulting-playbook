@@ -117,7 +117,12 @@ def test_exact_dispatch_and_receiver_boundary() -> None:
     inputs = trigger.split("inputs:", 1)[1]
     require("workflow_dispatch:" in trigger and "workflow_call:" not in WORKFLOW, "target must expose only workflow_dispatch")
     require(inputs.count("execution_input_json:") == 1 and inputs.count("concurrency_group:") == 1, "target inputs differ")
-    require("codex-result-receiver.yml@ai-sdlc-v2.4.1" in WORKFLOW, "receiver is not immutably pinned")
+    workflow_lines = {line.strip() for line in WORKFLOW.splitlines()}
+    require(
+        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.1"
+        in workflow_lines,
+        "receiver is not exactly and immutably pinned",
+    )
     require("CODEX_TRUSTED_JOURNAL_AUTHORS" not in WORKFLOW, "target supplies control-plane trust policy")
     require("secrets: inherit" not in WORKFLOW, "workflow broadly inherits secrets")
     receiver = WORKFLOW.split("  report:", 1)[1]
@@ -125,13 +130,21 @@ def test_exact_dispatch_and_receiver_boundary() -> None:
 
 
 def test_security_and_publication_guards() -> None:
+    workflow_lines = {line.strip() for line in WORKFLOW.splitlines()}
     require("persist-credentials: false" in WORKFLOW, "checkout persists credentials")
     require("permissions:\n  contents: read" in WORKFLOW, "workflow permissions are broader than read-only")
     require("environment: consulting-playbook-codex" in WORKFLOW, "target environment boundary is missing")
     require("gh pr merge" not in WORKFLOW and "git push origin main" not in WORKFLOW, "workflow can bypass draft review")
     require("CODEX_TARGET_TRUSTED_CALLERS" in WORKFLOW, "dispatch caller allowlist is missing")
-    require("@openai/codex@0.63.0" in WORKFLOW, "Codex CLI is not exactly pinned")
-    require("jsonschema[format]==4.26.0" in WORKFLOW, "runtime validator is not exactly pinned")
+    require(
+        "run: npm install --global @openai/codex@0.63.0" in workflow_lines,
+        "Codex CLI is not exactly pinned",
+    )
+    require(
+        "run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]==4.26.0'"
+        in workflow_lines,
+        "runtime validator is not exactly pinned",
+    )
 
 
 def test_canonical_policy_and_result() -> None:

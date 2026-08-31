@@ -43,8 +43,8 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   detail, and branch/draft metadata when applicable.
 - **Compatibility and activation:** the non-recursive target pin binds exact
   schema/fixture blobs at recovery candidate `e27b8a5` plus this workflow,
-  adapter, and harness. The `ai-sdlc-v2.3.1` receiver remains the published,
-  live-verified rollback baseline. The reviewed `ai-sdlc-v2.4.0` receiver is the
+  adapter, and harness. The `ai-sdlc-v2.4.0` receiver remains the published
+  rollback baseline. The reviewed `ai-sdlc-v2.4.1` receiver is the
   current candidate and remains pending publication and live verification.
   Current activation is separate mutable router state; the target neither
   consumes historical activation nor administers it. No package or observed
