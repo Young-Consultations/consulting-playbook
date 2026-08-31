@@ -6,10 +6,10 @@ This profile is the normative repository-owned implementation baseline. It uses
 payload contract `ai-sdlc-contract/v2` and fixture-set manifest
 `TC-MVP-CI-001` from the reviewed issue #135 recovery candidate at immutable
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
-The 2.3.1 compatibility release and this repository's immutable 2.3.1 adapter
-tag remain the current published, live-verified rollback baseline. This change
-prepares the reviewed `ai-sdlc-v2.4.0` receiver candidate; that receiver is not
-yet published or live-verified. These supplied interface facts are requirements;
+The 2.4.0 compatibility release and this repository's immutable 2.4.0 adapter
+tag remain the published rollback baseline. This approved change prepares the
+reviewed `ai-sdlc-v2.4.1` receiver candidate; that receiver is not yet published
+or live-verified. These supplied interface facts are requirements;
 conformance is established only by the exact-file pin and executable report
 described below.
 
@@ -95,12 +95,12 @@ The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
 It shall invoke
-`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.0`
+`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.1`
 with inputs `execution_result` and `source_issue` and secret
-`CODEX_RESULT_TOKEN`. The 2.4.0 receiver is the reviewed candidate required by
-the merged control-plane change; publication and live verification remain
-pending. The prior 2.3.1 receiver remains the published rollback baseline until
-the release sequence completes. Receiver outputs are `accepted`, `delivery_id`,
+`CODEX_RESULT_TOKEN`. The 2.4.1 receiver is the reviewed candidate required by
+the focused architecture-simplification decision; publication and live
+verification remain pending. The prior 2.4.0 receiver remains the published
+rollback baseline until the release sequence completes. Receiver outputs are `accepted`, `delivery_id`,
 `correlation_id`, `execution_status`, `failure_category`, and
 `diagnostic_summary`.
 
@@ -208,10 +208,10 @@ pull-request state.
 
 ## Implementation readiness and operational activation
 
-The repository-owned 2.3.1 adapter and no-effects evidence remain the current
-published, live-verified rollback baseline. This change prepares a 2.4.0-targeted
+The repository-owned 2.4.0 adapter and no-effects evidence remain the published
+rollback baseline. This change prepares a 2.4.1-targeted
 adapter candidate and refreshed no-effects evidence, but does not claim the
-2.4.0 receiver or a new target adapter tag is published or live-verified.
+2.4.1 receiver or a new target adapter tag is published or live-verified.
 Operational activation remains mutable organization control-plane state and is
 neither pinned nor enforced here. This repository must not create a second
 activation switch; routing remains bound to the organization registry until the
