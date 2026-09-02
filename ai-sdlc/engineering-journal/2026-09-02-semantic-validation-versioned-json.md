@@ -1,7 +1,7 @@
 # 2026-09-02 — Semantic validation at versioned JSON boundaries
 
 - **Date:** 2026-09-02
-- **Decision status:** unresolved
+- **Decision status:** resolved
 - **SDLC phase:** release-production
 
 ## Context
@@ -36,7 +36,7 @@ PR #143 replaces substring matching with JSON marker parsing. It requires an exa
 
 No authoritative requirement, architecture, ownership, security boundary, or active contract change is needed. The existing source requirement already calls for semantic admission-binding validation. The repair aligns implementation with that requirement.
 
-The implementation remains unresolved until PR #143 passes CI, merges, and a controlled result redelivery proves one source projection without duplicate effects.
+The architecture and contract decision is resolved: no authoritative change is required. DEF-0033 implementation and verification remain open until PR #143 passes CI, merges, and a controlled result redelivery proves one source projection without duplicate effects.
 
 ## Lessons learned
 
