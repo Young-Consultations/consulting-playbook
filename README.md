@@ -84,6 +84,23 @@ mode may run one bounded executor and create or reuse one deterministic draft
 pull request. Target execution can never merge
 automatically; human review and merge are always required.
 
+### Codex authentication preflight
+
+The manual `.github/workflows/codex-auth-preflight.yml` workflow checks the
+runtime credential separately from task delivery. It enters the protected
+`consulting-playbook-codex` environment, installs the same pinned Codex CLI as
+the target workflow, authenticates from `OPENAI_API_KEY` over standard input,
+and makes one fixed, read-only provider probe. It has no repository checkout,
+GitHub permissions, publication credential, result-delivery credential, or
+automatic trigger.
+
+A passing preflight is time-specific evidence that the environment credential,
+pinned client, and current provider/model route can complete a request. It is
+not contract-conformance, release, activation, production-readiness, or task
+execution evidence. A failure reports only a safe category: missing credential,
+authentication, authorization/model access, quota, rate limit, transport, or
+Codex runtime. Provider output and the credential are not published.
+
 ## Required idempotent publication protocol
 
 The canonical `delivery_id` is the logical publication identity. It must be
