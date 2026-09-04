@@ -1,0 +1,93 @@
+name: Codex authentication preflight
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: codex-auth-preflight
+  cancel-in-progress: false
+
+jobs:
+  authenticate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: consulting-playbook-codex
+    steps:
+      - name: Install pinned Codex CLI
+        run: npm install --global @openai/codex@0.63.0
+      - name: Verify Codex authentication and provider readiness
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          codex_home="${RUNNER_TEMP}/codex-auth-preflight"
+          preflight_log="${RUNNER_TEMP}/codex-auth-preflight.log"
+          cleanup() {
+            rm -rf -- "$codex_home"
+            rm -f -- "$preflight_log"
+          }
+          trap cleanup EXIT
+
+          if [[ -z "${OPENAI_API_KEY:-}" ]]; then
+            echo "::error title=Codex preflight failed::category=missing-credential"
+            exit 1
+          fi
+
+          install -d -m 700 "$codex_home"
+          export CODEX_HOME="$codex_home"
+          set +e
+          printf '%s' "$OPENAI_API_KEY" | codex login --with-api-key \
+            >"$preflight_log" 2>&1
+          exit_code=$?
+          # Do not leave the raw secret available to the probe or diagnostic
+          # subprocesses, including when login fails.
+          unset OPENAI_API_KEY
+          if [[ "$exit_code" -eq 0 ]]; then
+            codex exec \
+              --color never \
+              --sandbox read-only \
+              --skip-git-repo-check \
+              "Do not use tools. Reply with AUTHENTICATED only." \
+              >>"$preflight_log" 2>&1
+            exit_code=$?
+          fi
+          set -e
+
+          if [[ "$exit_code" -eq 0 ]]; then
+            {
+              echo "### Codex authentication preflight"
+              echo "- Outcome: passed"
+              echo "- Category: authenticated"
+              echo "- Run ID: ${GITHUB_RUN_ID}"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice title=Codex preflight passed::Authentication and a read-only provider probe succeeded."
+            exit 0
+          fi
+
+          if grep -Eqi '(^|[^0-9])401([^0-9]|$)|unauthorized|invalid[ _-]?(api[ _-]?)?key|incorrect[ _-]?(api[ _-]?)?key|authentication[_ -]error' "$preflight_log"; then
+            category="authentication"
+          elif grep -Eqi '(^|[^0-9])403([^0-9]|$)|forbidden|permission[_ -]denied|model.{0,40}(not found|access|permission)' "$preflight_log"; then
+            category="authorization-or-model-access"
+          elif grep -Eqi 'insufficient[_ -]?quota|billing|credit|spend[ _-]?limit' "$preflight_log"; then
+            category="quota"
+          elif grep -Eqi '(^|[^0-9])429([^0-9]|$)|rate[ _-]?limit|too many requests' "$preflight_log"; then
+            category="rate-limit"
+          elif grep -Eqi 'timed? out|timeout|connection|connect error|dns|network|tls|certificate' "$preflight_log"; then
+            category="transport"
+          else
+            category="codex-runtime"
+          fi
+
+          {
+            echo "### Codex authentication preflight"
+            echo "- Outcome: failed"
+            echo "- Category: ${category}"
+            echo "- Run ID: ${GITHUB_RUN_ID}"
+            echo "- Detail: Provider output was withheld to keep diagnostics credential-safe."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error title=Codex preflight failed::category=${category}; provider output withheld"
+          exit 1
