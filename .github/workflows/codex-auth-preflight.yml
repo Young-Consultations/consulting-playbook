@@ -43,8 +43,10 @@ jobs:
           printf '%s' "$OPENAI_API_KEY" | codex login --with-api-key \
             >"$preflight_log" 2>&1
           exit_code=$?
+          # Do not leave the raw secret available to the probe or diagnostic
+          # subprocesses, including when login fails.
+          unset OPENAI_API_KEY
           if [[ "$exit_code" -eq 0 ]]; then
-            unset OPENAI_API_KEY
             codex exec \
               --color never \
               --sandbox read-only \

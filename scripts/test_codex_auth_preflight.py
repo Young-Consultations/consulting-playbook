@@ -54,7 +54,17 @@ def test_exact_client_and_read_only_probe() -> None:
         "printf '%s' \"$OPENAI_API_KEY\" | codex login --with-api-key" in WORKFLOW,
         "preflight does not use Codex API-key login over stdin",
     )
-    require("unset OPENAI_API_KEY" in WORKFLOW, "provider probe retains the raw key environment")
+    login_result = WORKFLOW.index("exit_code=$?", WORKFLOW.index("codex login"))
+    unset_secret = WORKFLOW.index("unset OPENAI_API_KEY", login_result)
+    probe_guard = WORKFLOW.index('if [[ "$exit_code" -eq 0 ]]', login_result)
+    require(
+        login_result < unset_secret < probe_guard,
+        "raw key must be unset after every login attempt and before the probe",
+    )
+    require(
+        WORKFLOW.count("unset OPENAI_API_KEY") == 1,
+        "raw key cleanup must have one unambiguous location",
+    )
     require("--sandbox read-only" in WORKFLOW, "provider probe is not read-only")
     require("--skip-git-repo-check" in WORKFLOW, "provider probe requires a repository checkout")
     require("Do not use tools. Reply with AUTHENTICATED only." in WORKFLOW, "probe prompt is not fixed")
