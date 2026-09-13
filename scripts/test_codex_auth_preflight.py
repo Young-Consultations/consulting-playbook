@@ -136,6 +136,14 @@ exit "$PROBE_CODE"
         ("stage-isolation", 0, 6, "401 old login diagnostic", "unknown failure", "probe", 6, "codex-runtime", ["login", "exec"]),
         ("client-missing", 127, 0, "command not found", "", "login", 127, "client-unavailable", ["login"]),
     ]
+    header = "OpenAI Codex v0.63.0\n--------\nworkdir: /tmp/preflight\nmodel: gpt-5-codex\nprovider: openai\napproval: never\nsandbox: read-only\n--------\n"
+    cases.extend([
+        ("sandbox-init", 0, 1, "", "error: failed to initialize sandbox", "probe", 1, "sandbox", ["login", "exec"]),
+        ("landlock", 0, 1, "", "error running landlock: Sandbox(LandlockRestrict)", "probe", 1, "sandbox", ["login", "exec"]),
+        ("not-permitted-first", 0, 1, "", "Operation not permitted while initializing landlock", "probe", 1, "sandbox", ["login", "exec"]),
+        ("sandbox-mention", 0, 1, "", "sandbox enabled\nunknown failure", "probe", 1, "codex-runtime", ["login", "exec"]),
+        ("bwrap-mention", 0, 1, "", "bwrap available\nunknown failure", "probe", 1, "codex-runtime", ["login", "exec"]),
+    ])
     for name, login, probe, login_text, probe_text, stage, code, category, calls in cases:
         with tempfile.TemporaryDirectory(prefix="preflight-test-") as directory:
             root = Path(directory)
@@ -155,7 +163,7 @@ exit "$PROBE_CODE"
                 "CALLS": str(root / "calls"),
                 "LOGIN_CODE": str(login), "PROBE_CODE": str(probe),
                 "LOGIN_TEXT": login_text + poison,
-                "PROBE_TEXT": probe_text + poison,
+                "PROBE_TEXT": header + probe_text + "\n" + poison,
             }
             result = subprocess.run(["bash", "--noprofile", "--norc", "-c", script],
                                     env=env, cwd=root, capture_output=True, text=True, timeout=10)

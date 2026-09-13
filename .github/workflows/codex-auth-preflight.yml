@@ -92,7 +92,9 @@ jobs:
             category="cli-arguments"
           elif grep -Eqi 'failed to (load|parse).*config|error (loading|parsing).*config|TOML parse error' "$preflight_log"; then
             category="client-configuration"
-          elif grep -Eqi 'sandbox|landlock|bwrap|operation not permitted' "$preflight_log"; then
+          # Require an error and a sandbox mechanism on the same line. The normal
+          # CLI banner contains 'sandbox: read-only' even for provider failures.
+          elif grep -Eqi '(sandbox|landlock|bwrap).*(failed|failure|error|denied|not permitted)|((failed|failure|error|denied|not permitted).*(sandbox|landlock|bwrap))' "$preflight_log"; then
             category="sandbox"
           elif grep -Eqi '(^|[^0-9])401([^0-9]|$)|unauthorized|invalid[ _-]?(api[ _-]?)?key|incorrect[ _-]?(api[ _-]?)?key|authentication[_ -]error' "$preflight_log"; then
             category="authentication"
