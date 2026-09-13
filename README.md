@@ -97,9 +97,29 @@ automatic trigger.
 A passing preflight is time-specific evidence that the environment credential,
 pinned client, and current provider/model route can complete a request. It is
 not contract-conformance, release, activation, production-readiness, or task
-execution evidence. A failure reports only a safe category: missing credential,
-authentication, authorization/model access, quota, rate limit, transport, or
-Codex runtime. Provider output and the credential are not published.
+execution evidence. Provider output and the credential are not published.
+
+Each attempted stage reports its name, original exit code, client and run ID. A successful
+`login` means only `credential-stored`; only a successful `probe` reports
+`authenticated`. The exact failure-category allowlist is:
+
+`missing-credential`, `authentication`, `authorization-or-model-access`, `quota`,
+`rate-limit`, `transport`, `codex-runtime`, `cli-arguments`,
+`client-configuration`, `sandbox`, `local-filesystem`, `client-unavailable`,
+`provider-service`.
+
+The machine-style codes `permission_denied` and `permission-denied` are treated
+as authorization hints. Plain `Permission denied` without provider context
+remains a local-filesystem hint; explicit HTTP 403 or model context takes precedence.
+These are text-pattern diagnostic hints, not proof of root cause. Unknown
+failures retain `codex-runtime` with the failing stage and original exit code.
+The raw log is private and deleted after classification; arbitrary provider
+text, credential values, and request bodies never enter the summary.
+
+After merging a diagnostic repair, start a **new** manual run on `main` in
+Actions → Codex authentication preflight. Rerunning an old run uses its old
+workflow revision. Do not retry a governed implementation delivery merely
+because login succeeded; first require the provider probe to pass.
 
 ## Required idempotent publication protocol
 
