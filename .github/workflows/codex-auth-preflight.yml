@@ -34,9 +34,10 @@ jobs:
               echo "- Exit code: ${code}"
               echo "- Category: ${category}"
               echo "- Client: Codex CLI 0.63.0"
+              echo "- Run ID: ${GITHUB_RUN_ID}"
               echo "- Detail: provider output withheld; category is a diagnostic hint, not proof of root cause."
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "::notice::stage=${stage}; exit_code=${code}; category=${category}"
+            echo "::notice::run_id=${GITHUB_RUN_ID}; stage=${stage}; exit_code=${code}; category=${category}"
           }
 
           codex_home="${RUNNER_TEMP}/codex-auth-preflight"
@@ -95,7 +96,7 @@ jobs:
             category="sandbox"
           elif grep -Eqi '(^|[^0-9])401([^0-9]|$)|unauthorized|invalid[ _-]?(api[ _-]?)?key|incorrect[ _-]?(api[ _-]?)?key|authentication[_ -]error' "$preflight_log"; then
             category="authentication"
-          elif grep -Eqi '(^|[^0-9])403([^0-9]|$)|forbidden|model[_ -]not[_ -]found|model.{0,80}(not found|does not exist|not supported|access|permission)' "$preflight_log"; then
+          elif grep -Eqi '(^|[^0-9])403([^0-9]|$)|forbidden|permission[_-]denied|model[_ -]not[_ -]found|model.{0,80}(not found|does not exist|not supported|access|permission)' "$preflight_log"; then
             category="authorization-or-model-access"
           elif grep -Eqi 'insufficient[_ -]?quota|billing|credit|spend[ _-]?limit' "$preflight_log"; then
             category="quota"
