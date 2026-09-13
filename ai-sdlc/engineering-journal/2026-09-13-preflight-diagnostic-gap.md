@@ -59,6 +59,23 @@ operators need, including correlation and the distinction between stages.
 No policy update is required; this repair implements existing observability,
 secret-handling and testing requirements.
 
+## Controlled run after PR #48
+
+PR #48 merged at `d18eaf576a4afc96cad560b5ecfcab37b0f26b22`.
+[Run 34732628071](https://github.com/Young-Consultations/consulting-playbook/actions/runs/34732628071/job/103658119611)
+confirmed login exit 0 and probe exit 1, reported as `sandbox`. The classifier
+matched the normal `sandbox: read-only` banner before provider errors. Offline
+reproduction classified a banner followed by 401, 429 or 503 as sandbox. This
+is a confirmed diagnostic defect (DEF-0036), not evidence of a sandbox root cause.
+The discarded provider output prevents establishing the live underlying error.
+
+The follow-up repair requires failure context on the same line as a sandbox
+mechanism. All probe fixtures now include a representative pinned-client header;
+22 executable scenarios cover provider errors, genuine sandbox failures, benign
+mechanism mentions, unknown errors, secret suppression and cleanup. The new
+header fixture fails against the old classifier at the authentication case.
+These are offline regression results, not live credential readiness evidence.
+
 ## Follow-up
 
 The repository maintainer should review and merge the repair, then start a new
