@@ -101,6 +101,20 @@ execution evidence. A failure reports only a safe category: missing credential,
 authentication, authorization/model access, quota, rate limit, transport, or
 Codex runtime. Provider output and the credential are not published.
 
+Each attempted stage now reports its name and original exit code. A successful
+`login` means only `credential-stored`; only a successful `probe` reports
+`authenticated`. CLI argument/configuration, sandbox, local-filesystem,
+missing-client, and provider-service failures have separate allowlisted hints.
+These are text-pattern diagnostic hints, not proof of root cause. Unknown
+failures retain `codex-runtime` with the failing stage and original exit code.
+The raw log is private and deleted after classification; arbitrary provider
+text, credential values, and request bodies never enter the summary.
+
+After merging a diagnostic repair, start a **new** manual run on `main` in
+Actions → Codex authentication preflight. Rerunning an old run uses its old
+workflow revision. Do not retry a governed implementation delivery merely
+because login succeeded; first require the provider probe to pass.
+
 ## Required idempotent publication protocol
 
 The canonical `delivery_id` is the logical publication identity. It must be
