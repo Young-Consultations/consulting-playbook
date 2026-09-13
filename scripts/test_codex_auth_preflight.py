@@ -105,6 +105,7 @@ if [[ "$1" == login ]]; then
   [[ "$supplied" == "$EXPECTED_KEY" ]] || exit 91
   printf '%s' "$supplied" > "$CODEX_HOME/auth.json"
   printf '%s' "$LOGIN_TEXT"
+  printf '%s' "$LOGIN_TEXT" >&2
   exit "$LOGIN_CODE"
 fi
 [[ "$1" == exec ]] || exit 92
@@ -112,6 +113,7 @@ fi
 [[ "$(cat "$CODEX_HOME/auth.json")" == "$EXPECTED_KEY" ]] || exit 94
 [[ "$*" == *"--sandbox read-only --skip-git-repo-check"* ]] || exit 95
 printf '%s' "$PROBE_TEXT"
+printf '%s' "$PROBE_TEXT" >&2
 exit "$PROBE_CODE"
 '''
     cases = [
@@ -121,6 +123,8 @@ exit "$PROBE_CODE"
         ("login-empty", 8, 0, "", "", "login", 8, "codex-runtime", ["login"]),
         ("auth", 0, 1, "", "401 Unauthorized", "probe", 1, "authentication", ["login", "exec"]),
         ("model", 0, 1, "", "model_not_found", "probe", 1, "authorization-or-model-access", ["login", "exec"]),
+        ("permission-underscore", 0, 1, "", "permission_denied", "probe", 1, "authorization-or-model-access", ["login", "exec"]),
+        ("permission-hyphen", 0, 1, "", "permission-denied", "probe", 1, "authorization-or-model-access", ["login", "exec"]),
         ("quota", 0, 1, "", "429 insufficient_quota", "probe", 1, "quota", ["login", "exec"]),
         ("rate", 0, 1, "", "429 Too many requests", "probe", 1, "rate-limit", ["login", "exec"]),
         ("network", 0, 1, "", "connection timed out", "probe", 1, "transport", ["login", "exec"]),
@@ -161,6 +165,18 @@ exit "$PROBE_CODE"
             require(f"- Stage: {stage}" in summary, f"{name}: stage missing")
             require(f"- Exit code: {code}" in summary, f"{name}: exit code missing")
             require(f"- Category: {category}" in summary, f"{name}: wrong category")
+            reports = [block for block in summary.split("### Codex authentication preflight\n") if block.strip()]
+            require(len(reports) == (2 if stage == "probe" else 1), f"{name}: missing or extra report")
+            for report in reports:
+                require("- Run ID: 123\n" in report, f"{name}: run identity missing")
+                require("- Client: Codex CLI 0.63.0\n" in report, f"{name}: reported client differs from install pin")
+            if stage == "probe":
+                login_report = reports[0]
+                require("- Stage: login\n" in login_report and "- Outcome: passed\n" in login_report
+                        and "- Exit code: 0\n" in login_report
+                        and "- Category: credential-stored\n" in login_report
+                        and "- Category: authenticated\n" not in login_report,
+                        f"{name}: login storage confused with provider authentication")
             observed = (root / "calls").read_text().splitlines() if (root / "calls").exists() else []
             require(observed == calls, f"{name}: wrong command sequence")
             require(sentinel not in output and "forged-provider-output" not in output,
