@@ -140,6 +140,7 @@ exit "$PROBE_CODE"
     cases.extend([
         ("sandbox-init", 0, 1, "", "error: failed to initialize sandbox", "probe", 1, "sandbox", ["login", "exec"]),
         ("landlock", 0, 1, "", "error running landlock: Sandbox(LandlockRestrict)", "probe", 1, "sandbox", ["login", "exec"]),
+        ("not-permitted-first", 0, 1, "", "Operation not permitted while initializing landlock", "probe", 1, "sandbox", ["login", "exec"]),
         ("sandbox-mention", 0, 1, "", "sandbox enabled\nunknown failure", "probe", 1, "codex-runtime", ["login", "exec"]),
         ("bwrap-mention", 0, 1, "", "bwrap available\nunknown failure", "probe", 1, "codex-runtime", ["login", "exec"]),
     ])
