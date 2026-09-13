@@ -111,6 +111,8 @@ Each attempted stage reports its name, original exit code, client and run ID. A 
 The machine-style codes `permission_denied` and `permission-denied` are treated
 as authorization hints. Plain `Permission denied` without provider context
 remains a local-filesystem hint; explicit HTTP 403 or model context takes precedence.
+Sandbox hints require failure context on the same line as a sandbox mechanism;
+normal startup headers such as `sandbox: read-only` do not classify a failure.
 These are text-pattern diagnostic hints, not proof of root cause. Unknown
 failures retain `codex-runtime` with the failing stage and original exit code.
 The raw log is private and deleted after classification; arbitrary provider
