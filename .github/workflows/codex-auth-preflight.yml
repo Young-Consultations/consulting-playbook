@@ -94,7 +94,7 @@ jobs:
             category="client-configuration"
           # Require an error and a sandbox mechanism on the same line. The normal
           # CLI banner contains 'sandbox: read-only' even for provider failures.
-          elif grep -Eqi '(sandbox|landlock|bwrap).*(failed|failure|error|denied|not permitted)|((failed|failure|error|denied).*(sandbox|landlock|bwrap))' "$preflight_log"; then
+          elif grep -Eqi '(sandbox|landlock|bwrap).*(failed|failure|error|denied|not permitted)|((failed|failure|error|denied|not permitted).*(sandbox|landlock|bwrap))' "$preflight_log"; then
             category="sandbox"
           elif grep -Eqi '(^|[^0-9])401([^0-9]|$)|unauthorized|invalid[ _-]?(api[ _-]?)?key|incorrect[ _-]?(api[ _-]?)?key|authentication[_ -]error' "$preflight_log"; then
             category="authentication"
