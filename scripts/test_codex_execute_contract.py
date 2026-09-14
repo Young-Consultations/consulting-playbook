@@ -137,8 +137,13 @@ def test_security_and_publication_guards() -> None:
     require("gh pr merge" not in WORKFLOW and "git push origin main" not in WORKFLOW, "workflow can bypass draft review")
     require("CODEX_TARGET_TRUSTED_CALLERS" in WORKFLOW, "dispatch caller allowlist is missing")
     require(
-        "run: npm install --global @openai/codex@0.63.0" in workflow_lines,
+        "run: npm install --global @openai/codex@0.154.0" in workflow_lines,
         "Codex CLI is not exactly pinned",
+    )
+    adapter = (ROOT / "scripts/codex_target_adapter.py").read_text(encoding="utf-8")
+    require(
+        '"codex", "exec", "--model", "gpt-5.3-codex"' in adapter,
+        "Codex execution model is not exactly pinned",
     )
     require(
         "run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]==4.26.0'"
