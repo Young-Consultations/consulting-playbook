@@ -16,7 +16,7 @@ jobs:
     environment: consulting-playbook-codex
     steps:
       - name: Install pinned Codex CLI
-        run: npm install --global @openai/codex@0.63.0
+        run: npm install --global @openai/codex@0.154.0
       - name: Verify Codex authentication and provider readiness
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -33,7 +33,8 @@ jobs:
               echo "- Stage: ${stage}"
               echo "- Exit code: ${code}"
               echo "- Category: ${category}"
-              echo "- Client: Codex CLI 0.63.0"
+              echo "- Client: Codex CLI 0.154.0"
+              echo "- Model: gpt-5.3-codex"
               echo "- Run ID: ${GITHUB_RUN_ID}"
               echo "- Detail: provider output withheld; category is a diagnostic hint, not proof of root cause."
             } >> "$GITHUB_STEP_SUMMARY"
@@ -72,6 +73,7 @@ jobs:
             # Classify only this stage, not earlier successful login output.
             codex exec \
               --color never \
+              --model gpt-5.3-codex \
               --sandbox read-only \
               --skip-git-repo-check \
               "Do not use tools. Reply with AUTHENTICATED only." \
