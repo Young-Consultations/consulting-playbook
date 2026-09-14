@@ -298,8 +298,16 @@ class GitHubEffects:
         Path(".codex-instructions.txt").write_text(instructions)
         env = {k: v for k, v in os.environ.items() if k in SAFE_ENV or k.startswith("CODEX_") or k == "OPENAI_API_KEY"}
         try:
-            proc = subprocess.run(["codex", "exec", "--sandbox", "workspace-write", "-C", str(ROOT), "-"],
-                                  input=instructions, text=True, env=env, timeout=timeout_seconds)
+            proc = subprocess.run(
+                [
+                    "codex", "exec", "--model", "gpt-5.3-codex",
+                    "--sandbox", "workspace-write", "-C", str(ROOT), "-",
+                ],
+                input=instructions,
+                text=True,
+                env=env,
+                timeout=timeout_seconds,
+            )
         finally:
             Path(".codex-instructions.txt").unlink(missing_ok=True)
         if proc.returncode:
