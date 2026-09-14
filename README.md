@@ -29,8 +29,8 @@ the two required string inputs `execution_input_json` and
 fallback entry point is active.
 
 The current target candidate pins the organization receiver to
-`ai-sdlc-v2.4.1`, Codex CLI to `0.63.0`, and the runtime schema validator to
-`4.26.0`. Its regenerated zero-effect evidence is bound by
+`ai-sdlc-v2.4.1`, Codex CLI to `0.154.0`, model to `gpt-5.3-codex`, and the
+runtime schema validator to `4.26.0`. Its regenerated zero-effect evidence is bound by
 `config/mvp-conformance-pin.json`; after review it requires a new immutable
 `codex-adapter-v2.4.1` tag. The published 2.4.0 adapter remains unchanged.
 The versioned 2.4.0 conformance entry point is retained only to reproduce the
@@ -89,8 +89,9 @@ automatically; human review and merge are always required.
 The manual `.github/workflows/codex-auth-preflight.yml` workflow checks the
 runtime credential separately from task delivery. It enters the protected
 `consulting-playbook-codex` environment, installs the same pinned Codex CLI as
-the target workflow, authenticates from `OPENAI_API_KEY` over standard input,
-and makes one fixed, read-only provider probe. It has no repository checkout,
+the target workflow, uses the same explicitly pinned model, authenticates from
+`OPENAI_API_KEY` over standard input, and makes one fixed, read-only provider
+probe. It has no repository checkout,
 GitHub permissions, publication credential, result-delivery credential, or
 automatic trigger.
 
