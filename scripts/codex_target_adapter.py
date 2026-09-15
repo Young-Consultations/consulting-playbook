@@ -13,6 +13,7 @@ import json
 import os
 import re
 import subprocess
+import tempfile
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -295,9 +296,51 @@ class GitHubEffects:
         return Ownership(branch_exists=branch_exists, pull_requests=found)
 
     def codex(self, instructions: str, timeout_seconds: float) -> None:
-        Path(".codex-instructions.txt").write_text(instructions)
-        env = {k: v for k, v in os.environ.items() if k in SAFE_ENV or k.startswith("CODEX_") or k == "OPENAI_API_KEY"}
-        try:
+        deadline = time.monotonic() + timeout_seconds
+
+        def budget() -> float:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired("codex", timeout_seconds)
+            return remaining
+
+        # Fail before invoking Codex when the publication identity cannot push
+        # to this repository. PR creation is still exercised by publication,
+        # because GitHub exposes no read-only check for a token's PR-write scope.
+        can_push = self._gh(
+            "api",
+            f"repos/{TARGET}",
+            "--jq",
+            ".permissions.push",
+            timeout_seconds=budget(),
+        ).strip()
+        if can_push != "true":
+            raise AdapterError(
+                "authorization",
+                "Publication identity does not have repository write access",
+                "failed",
+            )
+
+        api_key = os.environ["OPENAI_API_KEY"]
+        with tempfile.TemporaryDirectory(prefix="codex-target-") as codex_home:
+            # Match the controlled preflight: authenticate into isolated,
+            # ephemeral state over stdin and do not expose the raw key to the
+            # model execution or any command it launches.
+            env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
+            env["CODEX_HOME"] = codex_home
+            login = subprocess.run(
+                ["codex", "login", "--with-api-key"],
+                input=api_key,
+                text=True,
+                cwd=ROOT,
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=budget(),
+            )
+            if login.returncode:
+                raise AdapterError("authentication", "Codex authentication failed", "failed")
+
             proc = subprocess.run(
                 [
                     "codex", "exec", "--model", "gpt-5.3-codex",
@@ -305,11 +348,10 @@ class GitHubEffects:
                 ],
                 input=instructions,
                 text=True,
+                cwd=ROOT,
                 env=env,
-                timeout=timeout_seconds,
+                timeout=budget(),
             )
-        finally:
-            Path(".codex-instructions.txt").unlink(missing_ok=True)
         if proc.returncode:
             raise AdapterError("codex-runtime", "Codex execution failed", "failed")
 

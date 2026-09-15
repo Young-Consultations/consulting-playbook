@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 from codex_target_adapter import (
     AdapterError,
+    GitHubEffects,
     Ownership,
     TARGET,
     canonical_digest,
@@ -146,10 +150,103 @@ def test_security_and_publication_guards() -> None:
         "Codex execution model is not exactly pinned",
     )
     require(
+        '["codex", "login", "--with-api-key"]' in adapter,
+        "production execution does not use the proven login flow",
+    )
+    require(
+        '"--sandbox", "workspace-write", "-C", str(ROOT)' in adapter,
+        "Codex does not use the bounded writable target workspace",
+    )
+    require(
         "run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]==4.26.0'"
         in workflow_lines,
         "runtime validator is not exactly pinned",
     )
+
+
+def test_production_codex_runtime_matches_preflight_boundary() -> None:
+    calls: list[dict[str, Any]] = []
+
+    def fake_run(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        calls.append({"command": command, **kwargs})
+        return subprocess.CompletedProcess(command, 0)
+
+    effects = GitHubEffects()
+    with (
+        patch.dict(
+            os.environ,
+            {
+                "OPENAI_API_KEY": "sentinel-openai-key",
+                "TARGET_PUBLICATION_TOKEN": "sentinel-publication-token",
+            },
+            clear=False,
+        ),
+        patch.object(effects, "_gh", return_value="true\n") as github,
+        patch("codex_target_adapter.subprocess.run", side_effect=fake_run),
+    ):
+        effects.codex("Implement the admitted task.", 30)
+
+    github.assert_called_once_with(
+        "api",
+        f"repos/{TARGET}",
+        "--jq",
+        ".permissions.push",
+        timeout_seconds=github.call_args.kwargs["timeout_seconds"],
+    )
+    require(len(calls) == 2, "production runtime did not perform exactly login and execution")
+    login, execution = calls
+    require(login["command"] == ["codex", "login", "--with-api-key"], "Codex login command drifted")
+    require(login["input"] == "sentinel-openai-key", "Codex login did not receive the credential over stdin")
+    require(execution["input"] == "Implement the admitted task.", "Codex execution did not receive admitted instructions")
+    require(login["cwd"] == ROOT and execution["cwd"] == ROOT, "Codex did not run from the target repository root")
+    require(
+        "OPENAI_API_KEY" not in login["env"] and "OPENAI_API_KEY" not in execution["env"],
+        "raw OpenAI credential was exposed to a child environment",
+    )
+    require(
+        login["env"]["CODEX_HOME"] == execution["env"]["CODEX_HOME"],
+        "login and execution did not share isolated authentication state",
+    )
+    require(
+        not Path(login["env"]["CODEX_HOME"]).exists(),
+        "ephemeral Codex authentication state was retained",
+    )
+    require(
+        execution["command"] == [
+            "codex", "exec", "--model", "gpt-5.3-codex",
+            "--sandbox", "workspace-write", "-C", str(ROOT), "-",
+        ],
+        "production Codex client, model, sandbox, or workspace differs from policy",
+    )
+
+    with (
+        patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),
+        patch.object(effects, "_gh", return_value="false\n"),
+        patch("codex_target_adapter.subprocess.run") as denied_run,
+    ):
+        try:
+            effects.codex("Do not execute.", 30)
+        except AdapterError as exc:
+            require(exc.category == "authorization", "publication denial used the wrong category")
+        else:
+            raise ValueError("publication denial did not fail closed")
+        require(not denied_run.called, "Codex ran without repository write access")
+
+    with (
+        patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),
+        patch.object(effects, "_gh", return_value="true\n"),
+        patch(
+            "codex_target_adapter.subprocess.run",
+            return_value=subprocess.CompletedProcess(["codex", "login"], 1),
+        ) as failed_login,
+    ):
+        try:
+            effects.codex("Do not execute.", 30)
+        except AdapterError as exc:
+            require(exc.category == "authentication", "login failure used the wrong category")
+        else:
+            raise ValueError("failed Codex login did not fail closed")
+        require(failed_login.call_count == 1, "Codex execution continued after failed login")
 
 
 def test_canonical_policy_and_result() -> None:

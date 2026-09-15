@@ -84,6 +84,17 @@ mode may run one bounded executor and create or reuse one deterministic draft
 pull request. Target execution can never merge
 automatically; human review and merge are always required.
 
+Before implementation, the production adapter confirms that the separate
+publication identity has write access to this repository. It then mirrors the
+controlled authentication preflight: the API key enters only `codex login
+--with-api-key` over standard input, login state is stored in a fresh temporary
+`CODEX_HOME`, and the raw key is absent from the `codex exec` environment.
+Codex runs from this repository root with the pinned client and model under the
+`workspace-write` sandbox. The temporary authentication state is deleted when
+execution ends. Draft-PR creation remains the authoritative check of the
+publication token's pull-request write permission because GitHub provides no
+read-only permission probe for that scope.
+
 ### Codex authentication preflight
 
 The manual `.github/workflows/codex-auth-preflight.yml` workflow checks the
