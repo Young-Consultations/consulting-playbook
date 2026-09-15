@@ -198,7 +198,8 @@ organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
 The active stabilization candidate consumes
-`codex-result-receiver.yml@ai-sdlc-v2.4.1`, pins Codex CLI `0.63.0` and
+`codex-result-receiver.yml@ai-sdlc-v2.4.1`, pins Codex CLI `0.154.0`, model
+`gpt-5.3-codex`, and
 `jsonschema` `4.26.0`, and carries regenerated no-real-effects evidence for a
 future `codex-adapter-v2.4.1` tag. Published 2.4.0 tags are immutable and must
 not be moved or reinterpreted.

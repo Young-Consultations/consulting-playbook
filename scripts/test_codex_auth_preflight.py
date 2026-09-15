@@ -51,7 +51,7 @@ def test_least_privilege_and_secret_boundary() -> None:
 
 def test_exact_client_and_read_only_probe() -> None:
     require(
-        "npm install --global @openai/codex@0.63.0" in WORKFLOW,
+        "npm install --global @openai/codex@0.154.0" in WORKFLOW,
         "preflight does not use the target's pinned Codex CLI",
     )
     require(
@@ -70,6 +70,7 @@ def test_exact_client_and_read_only_probe() -> None:
         "raw key cleanup must have one unambiguous location",
     )
     require("--sandbox read-only" in WORKFLOW, "provider probe is not read-only")
+    require("--model gpt-5.3-codex" in WORKFLOW, "provider probe does not pin the target model")
     require("--skip-git-repo-check" in WORKFLOW, "provider probe requires a repository checkout")
     require("Do not use tools. Reply with AUTHENTICATED only." in WORKFLOW, "probe prompt is not fixed")
 
@@ -111,7 +112,7 @@ fi
 [[ "$1" == exec ]] || exit 92
 [[ -z "${OPENAI_API_KEY+x}" ]] || exit 93
 [[ "$(cat "$CODEX_HOME/auth.json")" == "$EXPECTED_KEY" ]] || exit 94
-[[ "$*" == *"--sandbox read-only --skip-git-repo-check"* ]] || exit 95
+[[ "$*" == *"--model gpt-5.3-codex --sandbox read-only --skip-git-repo-check"* ]] || exit 95
 printf '%s' "$PROBE_TEXT"
 printf '%s' "$PROBE_TEXT" >&2
 exit "$PROBE_CODE"
@@ -136,7 +137,7 @@ exit "$PROBE_CODE"
         ("stage-isolation", 0, 6, "401 old login diagnostic", "unknown failure", "probe", 6, "codex-runtime", ["login", "exec"]),
         ("client-missing", 127, 0, "command not found", "", "login", 127, "client-unavailable", ["login"]),
     ]
-    header = "OpenAI Codex v0.63.0\n--------\nworkdir: /tmp/preflight\nmodel: gpt-5-codex\nprovider: openai\napproval: never\nsandbox: read-only\n--------\n"
+    header = "OpenAI Codex v0.154.0\n--------\nworkdir: /tmp/preflight\nmodel: gpt-5.3-codex\nprovider: openai\napproval: never\nsandbox: read-only\n--------\n"
     cases.extend([
         ("sandbox-init", 0, 1, "", "error: failed to initialize sandbox", "probe", 1, "sandbox", ["login", "exec"]),
         ("landlock", 0, 1, "", "error running landlock: Sandbox(LandlockRestrict)", "probe", 1, "sandbox", ["login", "exec"]),
@@ -177,7 +178,8 @@ exit "$PROBE_CODE"
             require(len(reports) == (2 if stage == "probe" else 1), f"{name}: missing or extra report")
             for report in reports:
                 require("- Run ID: 123\n" in report, f"{name}: run identity missing")
-                require("- Client: Codex CLI 0.63.0\n" in report, f"{name}: reported client differs from install pin")
+                require("- Client: Codex CLI 0.154.0\n" in report, f"{name}: reported client differs from install pin")
+                require("- Model: gpt-5.3-codex\n" in report, f"{name}: reported model differs from probe pin")
             if stage == "probe":
                 login_report = reports[0]
                 require("- Stage: login\n" in login_report and "- Outcome: passed\n" in login_report

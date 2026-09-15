@@ -86,3 +86,33 @@ unresolved until that run produces useful evidence.
 
 Failure diagnostics need acceptance tests of their own. Safe suppression of raw
 output is useful only when sufficient attributable evidence survives.
+
+## 2026-09-14 addendum — settings eliminated, stale client/model route isolated
+
+PR #49 merged the startup-banner classifier repair. Controlled runs
+[34762039726](https://github.com/Young-Consultations/consulting-playbook/actions/runs/34762039726/job/103736460491),
+[34849176824](https://github.com/Young-Consultations/consulting-playbook/actions/runs/34849176824/job/103997987244),
+and [34893752679](https://github.com/Young-Consultations/consulting-playbook/actions/runs/34893752679/job/104142492405)
+then consistently reported login exit 0 followed by probe exit 1 as
+`authorization-or-model-access`.
+
+Before the last run, the operator replaced the environment secret in
+`consulting-playbook-codex`, removed the project model allowlist, and verified
+active billing credit, a nonzero organization spend limit, unrestricted key
+permissions, and no IP allowlist. The final run still failed in the same stage
+and category. Those observations eliminate the visible account and GitHub
+environment settings as the differentiator.
+
+The workflow still installed Codex CLI `0.63.0` and did not select a model.
+That client's representative startup metadata identifies `gpt-5-codex`; the
+current OpenAI model catalog marks that model deprecated and identifies
+`gpt-5.3-codex` as the default Codex model. Because raw provider output remains
+intentionally withheld, the old default cannot be proven as the exact provider
+message. It is nevertheless a confirmed configuration defect: production and
+preflight delegated a release-critical model choice to a stale client default.
+
+The repair pins Codex CLI `0.154.0` and `gpt-5.3-codex` in both preflight and
+target execution, reports both identities in preflight evidence, updates the
+target conformance binding, and regenerates the complete no-real-effects report.
+DEF-0037 tracks this defect. It remains open until the change is merged and a
+controlled preflight succeeds.
