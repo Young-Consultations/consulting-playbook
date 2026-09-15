@@ -88,10 +88,14 @@ Before implementation, the production adapter confirms that the separate
 publication identity has write access to this repository. It then mirrors the
 controlled authentication preflight: the API key enters only `codex login
 --with-api-key` over standard input, login state is stored in a fresh temporary
-`CODEX_HOME`, and the raw key is absent from the `codex exec` environment.
-Codex runs from this repository root with the pinned client and model under the
-`workspace-write` sandbox. The temporary authentication state is deleted when
-execution ends. Draft-PR creation remains the authoritative check of the
+`CODEX_HOME`, and the runner shell is replaced before the adapter re-executes
+with a secret-free process environment. Before execution, the adapter replaces
+the login file with a one-read FIFO and unlinks it as soon as Codex opens it,
+before admitted instructions are sent. The raw key is therefore absent from
+the executor environment, readable filesystem paths, and ancestor process
+environments while model tools can run. Codex runs from this repository root
+with the pinned client and model under the `workspace-write` sandbox. Draft-PR
+creation remains the authoritative check of the
 publication token's pull-request write permission because GitHub provides no
 read-only permission probe for that scope.
 

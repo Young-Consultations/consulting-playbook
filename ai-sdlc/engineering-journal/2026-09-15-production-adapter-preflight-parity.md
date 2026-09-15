@@ -22,6 +22,17 @@ state but not the raw API key or ambient Codex configuration. Login and executio
 both run from the target repository root; execution retains the required
 `workspace-write` sandbox and the pinned `gpt-5.3-codex` model.
 
+Review then identified two paths that environment filtering alone did not
+close: model-launched commands could read the adapter's inherited environment
+through `/proc`, and the workspace-write sandbox permits reading the temporary
+`auth.json` outside the repository. The workflow now replaces its runner shell,
+the adapter re-executes once with both runtime secrets carried through an
+anonymous memory file rather than its environment, and the original secret
+environment is discarded. After login, the adapter converts `auth.json` to a
+one-read FIFO. Codex reads and caches API-key auth during startup; the adapter
+unlinks the FIFO before sending admitted instructions, leaving no credential
+path for model tools to read.
+
 Before login, the adapter uses the separate publication credential to confirm
 that its GitHub identity has write access to the target repository. This check
 cannot prove pull-request write scope without performing a publication effect,
@@ -29,11 +40,12 @@ so successful draft creation remains the final evidence for that permission.
 
 ## Evidence and remaining gate
 
-Executable tests cover the successful login/execution sequence, raw-key
-exclusion, temporary-state cleanup, exact working directory, client/model and
-sandbox arguments, denied repository write access, and failed login. The
-canonical 29-scenario conformance report was regenerated with all prohibited
-effects at zero.
+Executable tests cover the successful login/execution sequence, immediate
+environment consumption, one-shot auth-state delivery and removal, ambient
+profile exclusion, exact working directory, client/model and sandbox arguments,
+denied repository write access, failed publication-readiness classification,
+and failed login. The canonical 29-scenario conformance report was regenerated
+with all prohibited effects at zero.
 
 This repair establishes production/preflight parity but is not live
 implementation or publication evidence. Keep DEF-0038 open until a fresh

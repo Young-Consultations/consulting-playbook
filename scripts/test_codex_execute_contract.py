@@ -5,10 +5,13 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
+import threading
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import codex_target_adapter as adapter_module
 from codex_target_adapter import (
     AdapterError,
     GitHubEffects,
@@ -138,6 +141,10 @@ def test_security_and_publication_guards() -> None:
     require("persist-credentials: false" in WORKFLOW, "checkout persists credentials")
     require("permissions:\n  contents: read" in WORKFLOW, "workflow permissions are broader than read-only")
     require("environment: consulting-playbook-codex" in WORKFLOW, "target environment boundary is missing")
+    require(
+        "run: exec python3 scripts/codex_target_adapter.py" in workflow_lines,
+        "runner shell remains as a secret-bearing ancestor",
+    )
     require("gh pr merge" not in WORKFLOW and "git push origin main" not in WORKFLOW, "workflow can bypass draft review")
     require("CODEX_TARGET_TRUSTED_CALLERS" in WORKFLOW, "dispatch caller allowlist is missing")
     require(
@@ -164,12 +171,86 @@ def test_security_and_publication_guards() -> None:
     )
 
 
+def test_runtime_secrets_cross_reexec_without_environment_exposure() -> None:
+    captured: dict[str, str] = {}
+
+    def stop_at_exec(executable: str, argv: list[str], env: dict[str, str]) -> None:
+        require(executable == sys.executable and argv[0] == sys.executable, "adapter re-exec target drifted")
+        require(all(name not in env for name in adapter_module.SECRET_NAMES), "secret crossed re-exec in environment")
+        fd = int(env[adapter_module.SECRET_FD_ENV])
+        os.lseek(fd, 0, os.SEEK_SET)
+        with os.fdopen(fd, "r", encoding="utf-8") as stream:
+            captured.update(json.load(stream))
+        raise RuntimeError("exec intercepted")
+
+    with (
+        patch.dict(
+            os.environ,
+            {"OPENAI_API_KEY": "openai-sentinel", "TARGET_PUBLICATION_TOKEN": "github-sentinel"},
+            clear=True,
+        ),
+        patch("codex_target_adapter.os.execve", side_effect=stop_at_exec),
+    ):
+        try:
+            adapter_module._bootstrap_secret_environment()
+        except RuntimeError as exc:
+            require(str(exc) == "exec intercepted", "unexpected bootstrap failure")
+        else:
+            raise ValueError("adapter did not replace its secret-bearing process image")
+        require(
+            all(name not in os.environ for name in adapter_module.SECRET_NAMES),
+            "adapter retained a runtime secret",
+        )
+
+    require(
+        captured == {"OPENAI_API_KEY": "openai-sentinel", "TARGET_PUBLICATION_TOKEN": "github-sentinel"},
+        "anonymous secret handoff changed credential bytes",
+    )
+
+
 def test_production_codex_runtime_matches_preflight_boundary() -> None:
     calls: list[dict[str, Any]] = []
+    executions: list[dict[str, Any]] = []
 
     def fake_run(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
         calls.append({"command": command, **kwargs})
+        if command == ["codex", "login", "--with-api-key"]:
+            auth_path = Path(kwargs["env"]["CODEX_HOME"]) / "auth.json"
+            auth_path.write_text(
+                json.dumps({"auth_mode": "apikey", "OPENAI_API_KEY": kwargs["input"]}),
+                encoding="utf-8",
+            )
         return subprocess.CompletedProcess(command, 0)
+
+    class FakeCodexProcess:
+        def __init__(self, command: list[str], **kwargs: Any):
+            self.command, self.kwargs, self.returncode = command, kwargs, None
+            self.auth_payload: str | None = None
+            self._reader = threading.Thread(target=self._read_auth)
+            self._reader.start()
+            executions.append({"command": command, **kwargs, "process": self})
+
+        def _read_auth(self) -> None:
+            path = Path(self.kwargs["env"]["CODEX_HOME"]) / "auth.json"
+            self.auth_payload = path.read_text(encoding="utf-8")
+
+        def poll(self) -> int | None:
+            return self.returncode
+
+        def communicate(self, input: str, timeout: float) -> tuple[None, None]:
+            self.kwargs["input"] = input
+            self.kwargs["timeout"] = timeout
+            self._reader.join(timeout)
+            require(not self._reader.is_alive(), "Codex did not consume one-shot authentication")
+            self.returncode = 0
+            return None, None
+
+        def kill(self) -> None:
+            self.returncode = -9
+
+        def wait(self) -> int:
+            assert self.returncode is not None
+            return self.returncode
 
     effects = GitHubEffects()
     with (
@@ -178,13 +259,16 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             {
                 "OPENAI_API_KEY": "sentinel-openai-key",
                 "TARGET_PUBLICATION_TOKEN": "sentinel-publication-token",
+                "CODEX_PROFILE": "ambient-profile-must-not-cross-boundary",
             },
             clear=False,
         ),
         patch.object(effects, "_gh", return_value="true\n") as github,
         patch("codex_target_adapter.subprocess.run", side_effect=fake_run),
+        patch("codex_target_adapter.subprocess.Popen", side_effect=FakeCodexProcess),
     ):
         effects.codex("Implement the admitted task.", 30)
+        require("OPENAI_API_KEY" not in os.environ, "adapter retained the raw OpenAI credential")
 
     github.assert_called_once_with(
         "api",
@@ -193,15 +277,22 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         ".permissions.push",
         timeout_seconds=github.call_args.kwargs["timeout_seconds"],
     )
-    require(len(calls) == 2, "production runtime did not perform exactly login and execution")
-    login, execution = calls
+    require(len(calls) == 1 and len(executions) == 1, "production runtime did not perform exactly login and execution")
+    login, execution = calls[0], executions[0]
     require(login["command"] == ["codex", "login", "--with-api-key"], "Codex login command drifted")
     require(login["input"] == "sentinel-openai-key", "Codex login did not receive the credential over stdin")
-    require(execution["input"] == "Implement the admitted task.", "Codex execution did not receive admitted instructions")
+    require(
+        execution["process"].kwargs["input"] == "Implement the admitted task.",
+        "Codex execution did not receive admitted instructions",
+    )
     require(login["cwd"] == ROOT and execution["cwd"] == ROOT, "Codex did not run from the target repository root")
     require(
         "OPENAI_API_KEY" not in login["env"] and "OPENAI_API_KEY" not in execution["env"],
         "raw OpenAI credential was exposed to a child environment",
+    )
+    require(
+        "CODEX_PROFILE" not in login["env"] and "CODEX_PROFILE" not in execution["env"],
+        "ambient Codex profile crossed the controlled runtime boundary",
     )
     require(
         login["env"]["CODEX_HOME"] == execution["env"]["CODEX_HOME"],
@@ -210,6 +301,15 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
     require(
         not Path(login["env"]["CODEX_HOME"]).exists(),
         "ephemeral Codex authentication state was retained",
+    )
+    require(
+        not (Path(execution["env"]["CODEX_HOME"]) / "auth.json").exists(),
+        "Codex authentication remained readable while model tools could run",
+    )
+    require(
+        json.loads(execution["process"].auth_payload or "{}").get("OPENAI_API_KEY")
+        == "sentinel-openai-key",
+        "Codex did not receive the one-shot authenticated state",
     )
     require(
         execution["command"] == [
@@ -231,6 +331,23 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         else:
             raise ValueError("publication denial did not fail closed")
         require(not denied_run.called, "Codex ran without repository write access")
+
+    with (
+        patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),
+        patch.object(
+            effects,
+            "_gh",
+            side_effect=subprocess.CalledProcessError(1, ["gh", "api"]),
+        ),
+        patch("codex_target_adapter.subprocess.run") as unavailable_run,
+    ):
+        try:
+            effects.codex("Do not execute.", 30)
+        except AdapterError as exc:
+            require(exc.category == "publication", "publication probe failure used the wrong category")
+        else:
+            raise ValueError("failed publication readiness probe did not fail closed")
+        require(not unavailable_run.called, "Codex ran after publication readiness failed")
 
     with (
         patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),

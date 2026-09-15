@@ -8,11 +8,13 @@ The command-line adapter uses ``gh`` only after admission and reconciliation.
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import time
 from dataclasses import dataclass
@@ -27,6 +29,42 @@ TARGET = "Young-Consultations/consulting-playbook"
 MARKER = "ai-sdlc-delivery-id"
 ALLOWED_TYPES = {"automation", "documentation", "feature", "testing"}
 SAFE_ENV = {"PATH", "HOME", "LANG", "LC_ALL", "CI", "GITHUB_ACTIONS"}
+SECRET_NAMES = ("OPENAI_API_KEY", "TARGET_PUBLICATION_TOKEN")
+SECRET_FD_ENV = "CODEX_ADAPTER_SECRETS_FD"
+_RUNTIME_SECRETS: dict[str, str] = {}
+
+
+def _bootstrap_secret_environment() -> None:
+    """Re-exec once so runner secrets never remain in this process environment."""
+    inherited_fd = os.environ.pop(SECRET_FD_ENV, None)
+    if inherited_fd is not None:
+        fd = int(inherited_fd)
+        try:
+            with os.fdopen(fd, "r", encoding="utf-8") as stream:
+                loaded = json.load(stream)
+        except (OSError, ValueError, TypeError) as exc:
+            raise AdapterError("authentication", "Execution credentials could not be isolated", "failed") from exc
+        if not isinstance(loaded, dict) or any(not isinstance(value, str) for value in loaded.values()):
+            raise AdapterError("authentication", "Execution credentials could not be isolated", "failed")
+        _RUNTIME_SECRETS.update(loaded)
+        return
+
+    available = {name: os.environ.pop(name) for name in SECRET_NAMES if name in os.environ}
+    if not available:
+        return
+    fd = os.memfd_create("codex-adapter-secrets", flags=0)
+    os.set_inheritable(fd, True)
+    os.write(fd, json.dumps(available).encode())
+    os.lseek(fd, 0, os.SEEK_SET)
+    clean_env = dict(os.environ)
+    clean_env[SECRET_FD_ENV] = str(fd)
+    os.execve(sys.executable, [sys.executable, *sys.argv], clean_env)
+
+
+def _take_secret(name: str) -> str:
+    if name in _RUNTIME_SECRETS:
+        return _RUNTIME_SECRETS.pop(name)
+    return os.environ.pop(name)
 
 
 class AdapterError(Exception):
@@ -267,9 +305,17 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
 
 
 class GitHubEffects:
+    def __init__(self) -> None:
+        self._publication_token: str | None = None
+
+    def _publication_credential(self) -> str:
+        if self._publication_token is None:
+            self._publication_token = _take_secret("TARGET_PUBLICATION_TOKEN")
+        return self._publication_token
+
     def _gh(self, *args: str, timeout_seconds: float) -> str:
         env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
-        env["GH_TOKEN"] = os.environ["TARGET_PUBLICATION_TOKEN"]
+        env["GH_TOKEN"] = self._publication_credential()
         return subprocess.check_output(["gh", *args], text=True, env=env, stderr=subprocess.DEVNULL,
                                        timeout=timeout_seconds)
 
@@ -307,13 +353,20 @@ class GitHubEffects:
         # Fail before invoking Codex when the publication identity cannot push
         # to this repository. PR creation is still exercised by publication,
         # because GitHub exposes no read-only check for a token's PR-write scope.
-        can_push = self._gh(
-            "api",
-            f"repos/{TARGET}",
-            "--jq",
-            ".permissions.push",
-            timeout_seconds=budget(),
-        ).strip()
+        try:
+            can_push = self._gh(
+                "api",
+                f"repos/{TARGET}",
+                "--jq",
+                ".permissions.push",
+                timeout_seconds=budget(),
+            ).strip()
+        except (subprocess.CalledProcessError, KeyError) as exc:
+            raise AdapterError(
+                "publication",
+                "Publication identity readiness check failed",
+                "failed",
+            ) from exc
         if can_push != "true":
             raise AdapterError(
                 "authorization",
@@ -321,7 +374,10 @@ class GitHubEffects:
                 "failed",
             )
 
-        api_key = os.environ["OPENAI_API_KEY"]
+        # Consume the secret before any child process is created. In
+        # particular, a model-launched command must not be able to recover it
+        # from this adapter's live environment via /proc.
+        api_key = _take_secret("OPENAI_API_KEY")
         with tempfile.TemporaryDirectory(prefix="codex-target-") as codex_home:
             # Match the controlled preflight: authenticate into isolated,
             # ephemeral state over stdin and do not expose the raw key to the
@@ -338,20 +394,70 @@ class GitHubEffects:
                 stderr=subprocess.DEVNULL,
                 timeout=budget(),
             )
+            api_key = ""
             if login.returncode:
                 raise AdapterError("authentication", "Codex authentication failed", "failed")
 
-            proc = subprocess.run(
-                [
-                    "codex", "exec", "--model", "gpt-5.3-codex",
-                    "--sandbox", "workspace-write", "-C", str(ROOT), "-",
-                ],
-                input=instructions,
+            # `codex login` writes auth.json. A workspace-write sandbox may
+            # read paths outside the workspace, so leaving that file present
+            # would expose the API key to model-launched commands. Replace it
+            # with a FIFO and serve its contents exactly once. Codex caches
+            # API-key auth during startup; the FIFO is unlinked as soon as the
+            # Codex process opens it, before admitted instructions are sent.
+            auth_path = Path(codex_home) / "auth.json"
+            try:
+                auth_payload = auth_path.read_bytes()
+                auth_path.unlink()
+                os.mkfifo(auth_path, 0o600)
+            except OSError as exc:
+                raise AdapterError(
+                    "authentication",
+                    "Codex authentication state could not be isolated",
+                    "failed",
+                ) from exc
+
+            command = [
+                "codex", "exec", "--model", "gpt-5.3-codex",
+                "--sandbox", "workspace-write", "-C", str(ROOT), "-",
+            ]
+            proc = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
                 text=True,
                 cwd=ROOT,
                 env=env,
-                timeout=budget(),
             )
+            fifo_fd: int | None = None
+            try:
+                while fifo_fd is None:
+                    if proc.poll() is not None:
+                        raise AdapterError("authentication", "Codex authentication failed", "failed")
+                    try:
+                        fifo_fd = os.open(auth_path, os.O_WRONLY | os.O_NONBLOCK)
+                    except OSError as exc:
+                        if exc.errno != errno.ENXIO:
+                            raise
+                        if budget() < 0.01:
+                            raise subprocess.TimeoutExpired(command, timeout_seconds)
+                        time.sleep(0.01)
+                auth_path.unlink()
+                with os.fdopen(fifo_fd, "wb", buffering=0) as fifo:
+                    fifo_fd = None
+                    fifo.write(auth_payload)
+                auth_payload = b""
+                proc.communicate(input=instructions, timeout=budget())
+            except Exception:
+                if proc.poll() is None:
+                    proc.kill()
+                    proc.wait()
+                raise
+            finally:
+                if fifo_fd is not None:
+                    os.close(fifo_fd)
+                try:
+                    auth_path.unlink()
+                except FileNotFoundError:
+                    pass
         if proc.returncode:
             raise AdapterError("codex-runtime", "Codex execution failed", "failed")
 
@@ -373,7 +479,7 @@ class GitHubEffects:
 
     def publish(self, branch: str, delivery_id: str, digest: str, timeout_seconds: float) -> str:
         env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
-        token = os.environ["TARGET_PUBLICATION_TOKEN"]
+        token = self._publication_credential()
         deadline = time.monotonic() + timeout_seconds
         def budget() -> float:
             remaining = deadline - time.monotonic()
@@ -422,6 +528,7 @@ class GitHubEffects:
 
 
 def main() -> int:
+    _bootstrap_secret_environment()
     raw = os.environ.get("EXECUTION_INPUT_JSON", "")
     outcome = run_adapter(raw, os.environ.get("CONCURRENCY_GROUP", ""), os.environ.get("CALLER_LOGIN", ""),
                           {x.strip() for x in os.environ.get("TRUSTED_CALLERS", "").split(",") if x.strip()},
