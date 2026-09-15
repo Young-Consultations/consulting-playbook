@@ -100,6 +100,11 @@ class FakeEffects:
         return "https://github.com/Young-Consultations/consulting-playbook/pull/7"
 
 
+class MissingCredentialEffects(FakeEffects):
+    def codex(self, *_: Any) -> None:
+        raise KeyError("TARGET_PUBLICATION_TOKEN")
+
+
 def execute(value: dict[str, Any], effects: FakeEffects | None = None) -> dict[str, Any]:
     return run_adapter(
         json.dumps(value),
@@ -186,7 +191,11 @@ def test_runtime_secrets_cross_reexec_without_environment_exposure() -> None:
     with (
         patch.dict(
             os.environ,
-            {"OPENAI_API_KEY": "openai-sentinel", "TARGET_PUBLICATION_TOKEN": "github-sentinel"},
+            {
+                "OPENAI_API_KEY": "openai-sentinel",
+                "TARGET_PUBLICATION_TOKEN": "github-sentinel",
+                "TRUSTED_CALLERS": "trusted-sentinel",
+            },
             clear=True,
         ),
         patch("codex_target_adapter.os.execve", side_effect=stop_at_exec),
@@ -203,9 +212,39 @@ def test_runtime_secrets_cross_reexec_without_environment_exposure() -> None:
         )
 
     require(
-        captured == {"OPENAI_API_KEY": "openai-sentinel", "TARGET_PUBLICATION_TOKEN": "github-sentinel"},
+        captured
+        == {
+            "OPENAI_API_KEY": "openai-sentinel",
+            "TARGET_PUBLICATION_TOKEN": "github-sentinel",
+            "TRUSTED_CALLERS": "trusted-sentinel",
+        },
         "anonymous secret handoff changed credential bytes",
     )
+
+    adapter_module._RUNTIME_SECRETS.clear()
+    fd = os.memfd_create("test-inherited-secrets", flags=0)
+    os.write(fd, json.dumps(captured).encode())
+    os.lseek(fd, 0, os.SEEK_SET)
+    with patch.dict(os.environ, {adapter_module.SECRET_FD_ENV: str(fd)}, clear=True):
+        adapter_module._bootstrap_secret_environment()
+        require(adapter_module.SECRET_FD_ENV not in os.environ, "inherited secret FD remained in environment")
+        require(
+            adapter_module._RUNTIME_SECRETS == captured,
+            "re-executed adapter did not load inherited runtime secrets",
+        )
+        try:
+            os.fstat(fd)
+        except OSError:
+            pass
+        else:
+            raise ValueError("inherited secret FD remained open after loading")
+        require(
+            adapter_module._take_secret("OPENAI_API_KEY") == "openai-sentinel"
+            and adapter_module._take_secret("TARGET_PUBLICATION_TOKEN") == "github-sentinel"
+            and adapter_module._take_optional_secret("TRUSTED_CALLERS") == "trusted-sentinel",
+            "loaded runtime secrets could not be consumed",
+        )
+        require(not adapter_module._RUNTIME_SECRETS, "consumed runtime secrets remained in memory store")
 
 
 def test_production_codex_runtime_matches_preflight_boundary() -> None:
@@ -242,6 +281,8 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             self.kwargs["timeout"] = timeout
             self._reader.join(timeout)
             require(not self._reader.is_alive(), "Codex did not consume one-shot authentication")
+            auth_path = Path(self.kwargs["env"]["CODEX_HOME"]) / "auth.json"
+            self.auth_path_absent_during_execution = not auth_path.exists()
             self.returncode = 0
             return None, None
 
@@ -291,6 +332,11 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         "raw OpenAI credential was exposed to a child environment",
     )
     require(
+        "TARGET_PUBLICATION_TOKEN" not in login["env"]
+        and "TARGET_PUBLICATION_TOKEN" not in execution["env"],
+        "publication credential was exposed to a Codex child environment",
+    )
+    require(
         "CODEX_PROFILE" not in login["env"] and "CODEX_PROFILE" not in execution["env"],
         "ambient Codex profile crossed the controlled runtime boundary",
     )
@@ -303,7 +349,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         "ephemeral Codex authentication state was retained",
     )
     require(
-        not (Path(execution["env"]["CODEX_HOME"]) / "auth.json").exists(),
+        execution["process"].auth_path_absent_during_execution,
         "Codex authentication remained readable while model tools could run",
     )
     require(
@@ -351,6 +397,19 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
 
     with (
         patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),
+        patch.object(effects, "_gh", side_effect=KeyError("TARGET_PUBLICATION_TOKEN")),
+        patch("codex_target_adapter.subprocess.run") as missing_token_run,
+    ):
+        try:
+            effects.codex("Do not execute.", 30)
+        except KeyError:
+            pass
+        else:
+            raise ValueError("missing publication credential was misclassified by the Codex effect")
+        require(not missing_token_run.called, "Codex ran without the publication credential")
+
+    with (
+        patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),
         patch.object(effects, "_gh", return_value="true\n"),
         patch(
             "codex_target_adapter.subprocess.run",
@@ -373,6 +432,12 @@ def test_canonical_policy_and_result() -> None:
     require(result["branch_name"] is None and result["pull_request_url"] is None, "verify mode published state")
     require(result["validation_result"] == "passed" and result["test_result"] == "passed", "verify evidence is incomplete")
     require(verify_effects.validation_calls == 1, "verify mode skipped repository validation")
+    missing_credential = execute(payload(), MissingCredentialEffects())
+    require(
+        missing_credential["execution_status"] == "failed"
+        and missing_credential["failure_category"] == "authentication",
+        "missing publication credential did not retain canonical authentication classification",
+    )
     failed = execute(
         payload(execution_mode="verify"),
         FakeEffects(validation_result=(False, "tests")),

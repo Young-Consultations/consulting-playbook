@@ -28,7 +28,8 @@ through `/proc`, and the workspace-write sandbox permits reading the temporary
 `auth.json` outside the repository. The workflow now replaces its runner shell,
 the adapter re-executes once with both runtime secrets carried through an
 anonymous memory file rather than its environment, and the original secret
-environment is discarded. After login, the adapter converts `auth.json` to a
+environment is discarded. The trusted-caller allowlist uses that handoff as
+well, so no GitHub secret remains in the ancestor environment. After login, the adapter converts `auth.json` to a
 one-read FIFO. Codex reads and caches API-key auth during startup; the adapter
 unlinks the FIFO before sending admitted instructions, leaving no credential
 path for model tools to read.

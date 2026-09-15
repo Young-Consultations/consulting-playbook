@@ -29,7 +29,7 @@ TARGET = "Young-Consultations/consulting-playbook"
 MARKER = "ai-sdlc-delivery-id"
 ALLOWED_TYPES = {"automation", "documentation", "feature", "testing"}
 SAFE_ENV = {"PATH", "HOME", "LANG", "LC_ALL", "CI", "GITHUB_ACTIONS"}
-SECRET_NAMES = ("OPENAI_API_KEY", "TARGET_PUBLICATION_TOKEN")
+SECRET_NAMES = ("OPENAI_API_KEY", "TARGET_PUBLICATION_TOKEN", "TRUSTED_CALLERS")
 SECRET_FD_ENV = "CODEX_ADAPTER_SECRETS_FD"
 _RUNTIME_SECRETS: dict[str, str] = {}
 
@@ -65,6 +65,12 @@ def _take_secret(name: str) -> str:
     if name in _RUNTIME_SECRETS:
         return _RUNTIME_SECRETS.pop(name)
     return os.environ.pop(name)
+
+
+def _take_optional_secret(name: str) -> str:
+    if name in _RUNTIME_SECRETS:
+        return _RUNTIME_SECRETS.pop(name)
+    return os.environ.pop(name, "")
 
 
 class AdapterError(Exception):
@@ -361,7 +367,7 @@ class GitHubEffects:
                 ".permissions.push",
                 timeout_seconds=budget(),
             ).strip()
-        except (subprocess.CalledProcessError, KeyError) as exc:
+        except subprocess.CalledProcessError as exc:
             raise AdapterError(
                 "publication",
                 "Publication identity readiness check failed",
@@ -530,9 +536,13 @@ class GitHubEffects:
 def main() -> int:
     _bootstrap_secret_environment()
     raw = os.environ.get("EXECUTION_INPUT_JSON", "")
+    trusted_callers = {
+        value.strip()
+        for value in _take_optional_secret("TRUSTED_CALLERS").split(",")
+        if value.strip()
+    }
     outcome = run_adapter(raw, os.environ.get("CONCURRENCY_GROUP", ""), os.environ.get("CALLER_LOGIN", ""),
-                          {x.strip() for x in os.environ.get("TRUSTED_CALLERS", "").split(",") if x.strip()},
-                          GitHubEffects())
+                          trusted_callers, GitHubEffects())
     output = json.dumps(outcome.result, sort_keys=True, separators=(",", ":"))
     path = os.environ.get("GITHUB_OUTPUT")
     if path:

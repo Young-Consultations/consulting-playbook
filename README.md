@@ -93,7 +93,9 @@ with a secret-free process environment. Before execution, the adapter replaces
 the login file with a one-read FIFO and unlinks it as soon as Codex opens it,
 before admitted instructions are sent. The raw key is therefore absent from
 the executor environment, readable filesystem paths, and ancestor process
-environments while model tools can run. Codex runs from this repository root
+environments while model tools can run. The publication credential and trusted
+caller allowlist cross the same anonymous handoff rather than remaining in the
+process environment. Codex runs from this repository root
 with the pinned client and model under the `workspace-write` sandbox. Draft-PR
 creation remains the authoritative check of the
 publication token's pull-request write permission because GitHub provides no
