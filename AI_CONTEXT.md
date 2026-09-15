@@ -235,6 +235,12 @@ production evidence.
   ambiguity or stale/improper routing, and use deterministic draft-only
   publication. It must never push directly to `main`, merge automatically, or
   treat a draft as published consulting guidance.
+- Production Codex execution must use the same pinned client, pinned model, and
+  stdin login flow proven by the controlled preflight. Store login state in an
+  ephemeral `CODEX_HOME` outside the repository, remove the raw OpenAI key from
+  the executor environment, run from the repository root under
+  `workspace-write`, and verify the publication identity's repository write
+  access before invoking Codex.
 - Pre-production status and the number of users do not weaken any security,
   approval, isolation, or human-review boundary.
 

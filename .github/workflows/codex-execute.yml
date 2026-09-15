@@ -43,7 +43,9 @@ jobs:
           TRUSTED_CALLERS: ${{ secrets.CODEX_TARGET_TRUSTED_CALLERS }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TARGET_PUBLICATION_TOKEN: ${{ secrets.TARGET_PUBLICATION_TOKEN }}
-        run: python3 scripts/codex_target_adapter.py
+        # Replace the runner shell so the adapter can re-exec with a
+        # secret-free environment and leave no secret-bearing ancestor.
+        run: exec python3 scripts/codex_target_adapter.py
 
   report:
     needs: execute
