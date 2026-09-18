@@ -197,12 +197,16 @@ the organization release, while current activation is separate mutable
 organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
-The active stabilization candidate consumes
-`codex-result-receiver.yml@ai-sdlc-v2.4.1`, pins Codex CLI `0.154.0`, model
-`gpt-5.3-codex`, and
-`jsonschema` `4.26.0`, and carries regenerated no-real-effects evidence for a
-future `codex-adapter-v2.4.1` tag. Published 2.4.0 tags are immutable and must
-not be moved or reinterpreted.
+The active immutable production adapter is `codex-adapter-v2.4.1` at
+`f34ceacc310dff0ce66bad8d623230af7143071d`, selected by the published
+`ai-sdlc-v2.4.1` control plane. The repaired 2.4.2 target candidate pins Codex
+CLI `0.154.0`, model `gpt-5.3-codex`, `jsonschema` `4.26.0`, and the
+organization receiver at `ai-sdlc-v2.4.2`; its exact no-real-effects evidence
+is bound by `config/mvp-conformance-pin.json`. It is not active until
+`codex-adapter-v2.4.2` is published at the exact reviewed target merge commit,
+the immutable `ai-sdlc-v2.4.2` control-plane tag and publication attestation
+are verified, and `portfolio-tasks` consumes that release. Existing published
+tags are immutable and must not be moved or reinterpreted.
 
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft
