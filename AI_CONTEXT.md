@@ -198,15 +198,18 @@ organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
 The active immutable production adapter is `codex-adapter-v2.4.1` at
-`f34ceacc310dff0ce66bad8d623230af7143071d`, selected by the published
-`ai-sdlc-v2.4.1` control plane. The repaired 2.4.2 target candidate pins Codex
-CLI `0.154.0`, model `gpt-5.3-codex`, `jsonschema` `4.26.0`, and the
-organization receiver at `ai-sdlc-v2.4.2`; its exact no-real-effects evidence
-is bound by `config/mvp-conformance-pin.json`. It is not active until
-`codex-adapter-v2.4.2` is published at the exact reviewed target merge commit,
-the immutable `ai-sdlc-v2.4.2` control-plane tag and publication attestation
-are verified, and `portfolio-tasks` consumes that release. Existing published
-tags are immutable and must not be moved or reinterpreted.
+`f34ceacc310dff0ce66bad8d623230af7143071d`. That release predates the
+production-authentication repair and remains the runtime selected by the
+published `ai-sdlc-v2.4.1` control plane. The repaired implementation on
+`main` at `9a45a8e56c4cbfddf30229b0c23a171097b93868` pins Codex CLI
+`0.154.0`, model `gpt-5.3-codex`, and `jsonschema` `4.26.0`, and carries
+regenerated no-real-effects evidence. The pending `codex-adapter-v2.4.2`
+target candidate repins the organization receiver to `ai-sdlc-v2.4.2`; its
+exact no-real-effects evidence is bound by `config/mvp-conformance-pin.json`.
+It is not active until the immutable target tag exists and a new control-plane
+release containing the repin is published, consumed by `portfolio-tasks`, and
+verified. Existing published tags are immutable and must not be moved or
+reinterpreted.
 
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft
