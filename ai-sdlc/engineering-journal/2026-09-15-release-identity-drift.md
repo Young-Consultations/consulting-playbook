@@ -43,10 +43,11 @@ No new execution path or architecture is required. The existing immutable-releas
 
 The repair sequence is therefore:
 
-1. publish `codex-adapter-v2.4.2` at repaired commit `9a45a8e56c4cbfddf30229b0c23a171097b93868`;
-2. bind the new tag, commit, and conformance digest in the control plane;
-3. verify the active runtime resolves that immutable adapter;
-4. use a fresh governed delivery identity for the original task because #145 already has a terminal failed result.
+1. merge the reviewed target-side 2.4.2 receiver repin and publish `codex-adapter-v2.4.2` at its exact reviewed merge commit;
+2. bind that tag, commit, and conformance digest into a new `ai-sdlc-v2.4.2` control-plane release;
+3. publish and attest the immutable control-plane tag, then pass release-aware Runtime Preflight;
+4. only then merge the `portfolio-tasks` source-consumer repin from `ai-sdlc-v2.4.1` to `ai-sdlc-v2.4.2`;
+5. use a fresh governed delivery identity for the original task because #145 already has a terminal failed result.
 
 ## Lessons learned
 
@@ -60,9 +61,10 @@ Reconcile repository AI context now so it distinguishes the active immutable `co
 
 ## Follow-up
 
-- Create immutable `codex-adapter-v2.4.2` at the exact reviewed repair commit.
-- Complete and verify Young-Consultations/.github#64.
-- Confirm current runtime resolves v2.4.2.
+- Complete and verify Young-Consultations/consulting-playbook#53, then publish its immutable `codex-adapter-v2.4.2` tag at the exact reviewed merge commit.
+- Complete and verify Young-Consultations/.github#64, publish and attest immutable `ai-sdlc-v2.4.2`, and pass Runtime Preflight.
+- Merge Young-Consultations/portfolio-tasks#146 only after the control-plane tag is published and verified.
+- Confirm the deployed source consumer resolves the 2.4.2 control plane and repaired target.
 - Create a fresh governed delivery for the original #145 outcome.
 - Resolve DEF-0039 only after the active production path proves the repaired adapter through a successful governed delivery.
 
