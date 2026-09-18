@@ -6,10 +6,11 @@ This profile is the normative repository-owned implementation baseline. It uses
 payload contract `ai-sdlc-contract/v2` and fixture-set manifest
 `TC-MVP-CI-001` from the reviewed issue #135 recovery candidate at immutable
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
-The 2.4.0 compatibility release and this repository's immutable 2.4.0 adapter
-tag remain the published rollback baseline. This approved change prepares the
-reviewed `ai-sdlc-v2.4.1` receiver candidate; that receiver is not yet published
-or live-verified. These supplied interface facts are requirements;
+The published `ai-sdlc-v2.4.1` control plane and this repository's immutable
+`codex-adapter-v2.4.1` remain the active rollback baseline. This approved
+release repair prepares the reviewed `ai-sdlc-v2.4.2` receiver and
+`codex-adapter-v2.4.2` target candidates; neither 2.4.2 immutable tag is active
+until the governed publication sequence and live verification complete. These supplied interface facts are requirements;
 conformance is established only by the exact-file pin and executable report
 described below.
 
@@ -95,12 +96,12 @@ The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
 It shall invoke
-`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.1`
+`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.2`
 with inputs `execution_result` and `source_issue` and secret
-`CODEX_RESULT_TOKEN`. The 2.4.1 receiver is the reviewed candidate required by
-the focused architecture-simplification decision; publication and live
-verification remain pending. The prior 2.4.0 receiver remains the published
-rollback baseline until the release sequence completes. Receiver outputs are `accepted`, `delivery_id`,
+`CODEX_RESULT_TOKEN`. The 2.4.2 receiver is the reviewed release-repair
+candidate required by the immutable release sequence; publication and live
+verification remain pending. The published 2.4.1 receiver remains the rollback
+baseline until the release sequence completes. Receiver outputs are `accepted`, `delivery_id`,
 `correlation_id`, `execution_status`, `failure_category`, and
 `diagnostic_summary`.
 
