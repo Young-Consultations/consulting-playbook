@@ -10,7 +10,7 @@ DEF-0039 established that a repaired target implementation is not production-act
 
 ## Discovery
 
-PR #64 nevertheless merged at commit `6d7a3153ee2686137b45737c68710825d15dd028` while Young-Consultations/consulting-playbook PR #53 was still open and the required `codex-adapter-v2.4.2` tag did not exist.
+PR #64 nevertheless merged at commit `6d7a3153ee2686137b45737c68710825d15dd028` while Young-Consultations/consulting-playbook PR #53 was still open and the required `codex-adapter-v2.4.2` tag did not exist. Review fixes then moved #53's candidate head from `5ee5d8aacaa9293d162ed371bc73ddb1483e9c98` to `eb20fe255d58e5afb49fcf14833fa37861b85fba`, proving why the control-plane binding must occur only after the target release identity is final.
 
 This is a real SDLC defect, not merely an unfinished release step. The intended prerequisite was known, documented, and reviewed, but it was advisory rather than technically enforced.
 
