@@ -131,7 +131,7 @@ def test_exact_dispatch_and_receiver_boundary() -> None:
     require(inputs.count("execution_input_json:") == 1 and inputs.count("concurrency_group:") == 1, "target inputs differ")
     workflow_lines = {line.strip() for line in WORKFLOW.splitlines()}
     require(
-        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.1"
+        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.2"
         in workflow_lines,
         "receiver is not exactly and immutably pinned",
     )
