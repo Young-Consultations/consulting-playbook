@@ -28,13 +28,15 @@ the two required string inputs `execution_input_json` and
 `concurrency_group`. No `workflow_call`, artifact/run-ID, field-by-field, or
 fallback entry point is active.
 
-The current target candidate pins the organization receiver to
-`ai-sdlc-v2.4.1`, Codex CLI to `0.154.0`, model to `gpt-5.3-codex`, and the
+The current target release candidate pins the organization receiver to
+`ai-sdlc-v2.4.2`, Codex CLI to `0.154.0`, model to `gpt-5.3-codex`, and the
 runtime schema validator to `4.26.0`. Its regenerated zero-effect evidence is bound by
 `config/mvp-conformance-pin.json`; after review it requires a new immutable
-`codex-adapter-v2.4.1` tag. The published 2.4.0 adapter remains unchanged.
-The versioned 2.4.0 conformance entry point is retained only to reproduce the
-published rollback evidence; active candidate CI invokes the 2.4.1 entry point.
+`codex-adapter-v2.4.2` tag at the exact reviewed merge commit. The published
+`codex-adapter-v2.4.1` remains the active rollback target until that tag is
+published and the 2.4.2 control-plane release is activated. Historical 2.4.0 and
+2.4.1 conformance entry points are retained only to reproduce prior evidence;
+active candidate CI invokes the 2.4.2 entry point.
 
 The recovery evidence is bound to
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
