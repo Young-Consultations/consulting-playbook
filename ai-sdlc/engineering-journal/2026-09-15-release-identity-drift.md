@@ -1,7 +1,7 @@
 # 2026-09-15 — Repaired source was not the active immutable runtime
 
 - **Date:** 2026-09-15
-- **Decision status:** resolved
+- **Decision status:** unresolved
 - **SDLC phase:** release-production
 
 ## Context
@@ -56,7 +56,7 @@ A useful acceptance check for future production-path repairs is to compare the i
 
 ## `AI_CONTEXT.md` impact
 
-Do not update repository AI context to claim `codex-adapter-v2.4.2` is active until the immutable tag exists, the control-plane repin is merged, and runtime verification passes. After that state transition, affected context files should be reconciled to the new active adapter identity.
+Reconcile repository AI context now so it distinguishes the active immutable `codex-adapter-v2.4.1` runtime from the repaired-but-not-active `v2.4.2` candidate. Do not claim `codex-adapter-v2.4.2` is active until the immutable target tag exists, the new control-plane release is published and consumed, and runtime verification passes. Update the activation status again after that state transition.
 
 ## Follow-up
 
