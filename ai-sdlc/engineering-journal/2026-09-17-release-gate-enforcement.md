@@ -1,8 +1,8 @@
 # 2026-09-17 — Release prerequisite existed but was not enforceable
 
 - **Date:** 2026-09-17
-- **Decision status:** partially resolved — CI implementation complete; required-check configuration pending
-- **Decision owner:** Joseph Young, control-plane repository owner, tracked by [Young-Consultations/.github issue #65](https://github.com/Young-Consultations/.github/issues/65)
+- **Decision status:** resolved — CI implementation, required-check configuration, and blocked-merge proof complete
+- **Decision owner:** Joseph Young, control-plane repository owner; closure evidence is recorded in [Young-Consultations/.github issue #65](https://github.com/Young-Consultations/.github/issues/65)
 - **SDLC phase:** release / acceptance review
 
 ## Context
@@ -19,7 +19,7 @@ This is a real SDLC defect, not merely an unfinished release step. The intended 
 
 The early control-plane merge temporarily described a candidate composition that referenced an unresolved immutable target ref. Production remained protected because `portfolio-tasks` main continued to consume the published `ai-sdlc-v2.4.1` router, so no REAL delivery switched to the incomplete 2.4.2 chain. The escape therefore did not activate the bad composition, but it demonstrated that prose merge blockers and review comments were insufficient release controls.
 
-The target tag was subsequently published at the final reviewed target commit, and [Young-Consultations/.github PR #66](https://github.com/Young-Consultations/.github/pull/66) reconciled the binding and implemented an all-pull-request release-evidence check. The implementation is complete, but DEF-0040 remains open because [issue #65](https://github.com/Young-Consultations/.github/issues/65) still requires that check to be configured and demonstrated as a required merge rule.
+The target tag was subsequently published at the final reviewed target commit, and [Young-Consultations/.github PR #66](https://github.com/Young-Consultations/.github/pull/66) reconciled the binding and implemented an all-pull-request release-evidence check. Active ruleset `23675262` now requires that check on the default branch with strict up-to-date enforcement and no bypass actors. [PR #67](https://github.com/Young-Consultations/.github/pull/67) deliberately selected a nonexistent target tag and demonstrated that GitHub blocked the PR when the required live release-evidence job failed closed. [Issue #65](https://github.com/Young-Consultations/.github/issues/65) records the proof and is closed, so DEF-0040 is resolved.
 
 ## Related defect(s)
 
@@ -33,7 +33,9 @@ The target tag was subsequently published at the final reviewed target commit, a
 - [Review comment 4043219615](https://github.com/Young-Consultations/.github/pull/64#discussion_r4043219615): new control-plane release and source-consumer repin required
 - [Young-Consultations/consulting-playbook PR #53](https://github.com/Young-Consultations/consulting-playbook/pull/53), which produced published target commit [`6ce0bf941c10c0c37b51c90d433d39f377ccad85`](https://github.com/Young-Consultations/consulting-playbook/commit/6ce0bf941c10c0c37b51c90d433d39f377ccad85)
 - [Young-Consultations/.github PR #66](https://github.com/Young-Consultations/.github/pull/66), merge commit [`1ea59832996dc398923c2d1516eb464546e30877`](https://github.com/Young-Consultations/.github/commit/1ea59832996dc398923c2d1516eb464546e30877), and the passing [target-compatibility run](https://github.com/Young-Consultations/.github/actions/runs/35375868023)
-- [Young-Consultations/.github issue #65](https://github.com/Young-Consultations/.github/issues/65), which remains open for required-check configuration and proof
+- Active default-branch ruleset `23675262`, requiring `Offline interface contract / live fail-closed gate` with strict up-to-date enforcement and no bypass actors
+- [Young-Consultations/.github PR #67](https://github.com/Young-Consultations/.github/pull/67), test head [`a2de0e9ce9dce066c7f0f29cc04d114336f67408`](https://github.com/Young-Consultations/.github/commit/a2de0e9ce9dce066c7f0f29cc04d114336f67408), and failing [live release-evidence job](https://github.com/Young-Consultations/.github/actions/runs/35381473731/job/105718394979)
+- [Young-Consultations/.github issue #65](https://github.com/Young-Consultations/.github/issues/65), closed after the required-check configuration and blocked-merge proof were recorded
 - [Young-Consultations/portfolio-tasks PR #146](https://github.com/Young-Consultations/portfolio-tasks/pull/146), which remains the draft source-consumer repin
 
 ## What implementation or testing exposed
@@ -46,7 +48,7 @@ The release sequence itself is already documented correctly, so no new architect
 
 PR #66 added the release-aware candidate check. It runs on every pull request and fails when an enabled registry `workflow_ref` tag does not exist, does not resolve to the reviewed commit, or lacks the expected evidence binding. The check also resolves the exact Git tag ref, validates the explicit unpublished-candidate state, and avoids exposing a repository token to pull-request-controlled code.
 
-The remaining decision is operational enforcement: configure `AI-SDLC Target Compatibility` as a required ruleset or branch-protection check and demonstrate that GitHub blocks a nonpassing candidate merge. Joseph Young owns that decision through issue #65. Until that evidence exists, DEF-0040 remains open.
+Operational enforcement is complete. Ruleset `23675262` requires the release-evidence check, and PR #67 showed the exact intended separation: deterministic offline interface validation passed, while the live check failed on HTTP 404 for `codex-adapter-v9.9.9`. GitHub reported the PR merge blocked, proving that a missing immutable dependency cannot pass the required state transition. DEF-0040 is therefore resolved.
 
 ## Lessons learned
 
@@ -62,10 +64,10 @@ PR #66 updated the control-plane `AI_CONTEXT.md` with the published target ident
 
 1. **Completed:** publish `codex-adapter-v2.4.2` at the exact reviewed target commit.
 2. **Completed:** merge PR #66 with the reconciled binding and all-PR release-evidence check.
-3. Configure `AI-SDLC Target Compatibility` as a required ruleset or branch-protection check for control-plane merges.
-4. Demonstrate that GitHub blocks a candidate whose required release-evidence check fails, and attach that evidence to issue #65.
+3. **Completed:** configure `Offline interface contract / live fail-closed gate` as a required default-branch ruleset check.
+4. **Completed:** demonstrate with PR #67 that GitHub blocks a candidate whose live release-evidence check fails, and attach that evidence to issue #65.
 5. Keep portfolio-tasks PR #146 draft until `ai-sdlc-v2.4.2` publication attestation and Runtime Preflight pass.
-6. Close DEF-0040 only after the required merge gate itself is verified.
+6. **Completed:** close issue #65 and resolve DEF-0040 after the required merge gate itself was verified.
 
 ## Potential consulting or content value
 
