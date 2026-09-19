@@ -1,7 +1,8 @@
 # 2026-09-18 — Runtime Preflight modeled the wrong credential scope
 
 - **Date:** 2026-09-18
-- **Decision status:** unresolved — repair drafted; deployed rerun pending
+- **Decision status:** unresolved — repair merged; deployed rerun pending
+- **Decision owner:** Joseph Young, control-plane repository owner, tracked by [Young-Consultations/.github issue #69](https://github.com/Young-Consultations/.github/issues/69)
 - **SDLC phase:** release-production
 
 ## Context
@@ -29,7 +30,7 @@ The false negative correctly kept portfolio PR #146 blocked, so no unsafe runtim
 ## Evidence
 
 - [Control-plane issue #69](https://github.com/Young-Consultations/.github/issues/69)
-- [Draft repair PR #70](https://github.com/Young-Consultations/.github/pull/70)
+- [Merged repair PR #70](https://github.com/Young-Consultations/.github/pull/70) and merge commit [`78fe6d67adb3a3ddbdc611b9d8cdff14a24c678e`](https://github.com/Young-Consultations/.github/commit/78fe6d67adb3a3ddbdc611b9d8cdff14a24c678e)
 - [Failed deployed Runtime Preflight](https://github.com/Young-Consultations/.github/actions/runs/35399327896/job/105775369065)
 - [Successful protected-environment authentication preflight](https://github.com/Young-Consultations/consulting-playbook/actions/runs/34929448831/job/104254409000)
 
@@ -53,7 +54,7 @@ The control-plane `AI_CONTEXT.md` is updated in PR #70 because agents need to pr
 
 ## Follow-up
 
-1. Review and merge control-plane PR #70.
+1. **Completed:** review and merge control-plane PR #70.
 2. Rerun `AI-SDLC Runtime Preflight` on `main` with `candidate_mode: false`.
 3. Require the environment credential-metadata boundary to pass.
 4. Update DEF-0041 with the successful run and resolve it.
