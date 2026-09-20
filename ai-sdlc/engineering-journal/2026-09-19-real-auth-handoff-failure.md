@@ -1,5 +1,11 @@
 # 2026-09-19 — REAL execution lost provider authentication
 
+- **Date:** 2026-09-19
+- **Decision status:** unresolved
+- **Decision owner:** consulting-playbook target adapter maintainer and AI-SDLC security owner
+- **SDLC phase:** REAL acceptance / target execution
+- **Source issue:** [portfolio-tasks #148](https://github.com/Young-Consultations/portfolio-tasks/issues/148)
+
 Portfolio issue [#148](https://github.com/Young-Consultations/portfolio-tasks/issues/148)
 was admitted through `ai-sdlc-v2.4.2`, dispatched to the immutable
 `codex-adapter-v2.4.2` target, and returned a receiver-validated terminal
