@@ -6,6 +6,7 @@ from __future__ import annotations
 import io
 import os
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -121,6 +122,25 @@ def test_fifo_rotates_before_writer_releases_reader() -> None:
         assert not auth_path.exists()
 
 
+def test_stalled_prompt_pipe_obeys_deadline() -> None:
+    proc = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(5)"],
+        stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    deadline = time.monotonic() + 0.3
+    try:
+        try:
+            handoff.submit_stdin_prompt(proc, "界" * 50000, lambda: max(0, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired:
+            assert time.monotonic() - deadline < 1
+        else:
+            raise AssertionError("stalled child accepted a full oversized prompt")
+    finally:
+        proc.kill()
+        proc.stdin.close()
+        proc.wait()
+
+
 def test_provider_timeout_is_bounded() -> None:
     outcome, output, events = exercise(stall=True, timeout=0.3)
     assert outcome == 1 and "stage=probe; category=timeout" in output
@@ -150,7 +170,8 @@ def test_login_timeout_is_bounded() -> None:
 if __name__ == "__main__":
     test_fifo_race_and_prompt_order()
     test_fifo_rotates_before_writer_releases_reader()
+    test_stalled_prompt_pipe_obeys_deadline()
     test_provider_timeout_is_bounded()
     test_fifo_handoff_timeout_is_bounded()
     test_login_timeout_is_bounded()
-    print("passed 5 production-auth probe checks")
+    print("passed 6 production-auth probe checks")

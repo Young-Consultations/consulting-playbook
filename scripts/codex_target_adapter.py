@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from jsonschema import Draft202012Validator, FormatChecker
-from codex_auth_handoff import handoff_startup_auth
+from codex_auth_handoff import handoff_startup_auth, submit_stdin_prompt
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "Young-Consultations/consulting-playbook"
@@ -435,10 +435,7 @@ class GitHubEffects:
             )
             try:
                 def submit_prompt() -> None:
-                    assert proc.stdin is not None
-                    proc.stdin.write(instructions)
-                    proc.stdin.close()
-                    proc.stdin = None
+                    submit_stdin_prompt(proc, instructions, budget)
 
                 try:
                     handoff_startup_auth(auth_path, auth_payload, proc, budget, submit_prompt)
@@ -451,7 +448,9 @@ class GitHubEffects:
             except Exception:
                 if proc.poll() is None:
                     proc.kill()
-                    proc.wait()
+                if proc.stdin is not None:
+                    proc.stdin.close()
+                proc.wait()
                 raise
             finally:
                 try:

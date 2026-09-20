@@ -94,7 +94,7 @@ controlled authentication preflight: the API key enters only `codex login
 with a secret-free process environment. Before execution, the adapter replaces
 the login file with a FIFO for each of Codex's two startup auth reads, rotating
 the pathname after each reader connects. Codex consumes the admitted prompt
-from stdin after the first auth read and before starting its second auth
+from deadline-bounded stdin after the first auth read and before starting its second auth
 manager. The adapter removes that manager's FIFO when it attaches, before
 model tools can run. The raw key is therefore absent from
 the executor environment, readable filesystem paths, and ancestor process
