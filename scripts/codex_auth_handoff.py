@@ -35,11 +35,11 @@ def handoff_startup_auth(
                         raise subprocess.TimeoutExpired("codex auth", 0)
                     time.sleep(0.01)
             with os.fdopen(fd, "wb", buffering=0) as fifo:
+                # The reader is now attached to this inode. Publish the next
+                # FIFO before this writer can close and release the reader.
+                auth_path.unlink()
+                if index + 1 < STARTUP_AUTH_READS:
+                    os.mkfifo(auth_path, 0o600)
                 fifo.write(payload)
-            # A new FIFO inode prevents the next writer from joining the
-            # previous reader before it observes EOF.
-            auth_path.unlink()
-            if index + 1 < STARTUP_AUTH_READS:
-                os.mkfifo(auth_path, 0o600)
     finally:
         auth_path.unlink(missing_ok=True)

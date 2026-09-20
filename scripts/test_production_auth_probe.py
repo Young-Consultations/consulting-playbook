@@ -7,11 +7,14 @@ import io
 import os
 import subprocess
 import tempfile
-from contextlib import redirect_stdout
+import threading
+import time
+from contextlib import contextmanager, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
 import probe_production_codex_auth as probe
+import codex_auth_handoff as handoff
 
 
 FAKE_CODEX = '''#!/usr/bin/env python3
@@ -67,6 +70,52 @@ def test_fifo_race_and_prompt_order() -> None:
     assert events == ["auth-consumed", "auth-consumed", "prompt-received"]
 
 
+def test_fifo_rotates_before_writer_releases_reader() -> None:
+    with tempfile.TemporaryDirectory() as temporary:
+        auth_path = Path(temporary) / "auth.json"
+        os.mkfifo(auth_path, 0o600)
+        payloads: list[bytes] = []
+        rotations: list[bool] = []
+
+        def reader() -> None:
+            for _ in range(2):
+                with auth_path.open("rb") as stream:
+                    payloads.append(stream.read())
+
+        class LiveProcess:
+            def poll(self) -> None:
+                return None
+
+        original_fdopen = os.fdopen
+
+        @contextmanager
+        def inspect_writer(fd: int, *args: object, **kwargs: object):
+            with original_fdopen(fd, *args, **kwargs) as stream:
+                class Writer:
+                    def write(self, payload: bytes) -> int:
+                        # The first writer must point at the retired inode;
+                        # the final writer must have no linked auth path.
+                        rotations.append(
+                            not auth_path.exists()
+                            or os.stat(auth_path).st_ino != os.fstat(fd).st_ino
+                        )
+                        return stream.write(payload)
+
+                yield Writer()
+
+        thread = threading.Thread(target=reader, daemon=True)
+        thread.start()
+        deadline = time.monotonic() + 3
+        with patch.object(handoff.os, "fdopen", inspect_writer):
+            handoff.handoff_startup_auth(auth_path, b"sentinel", LiveProcess(),
+                                         lambda: deadline - time.monotonic())
+        thread.join(3)
+        assert not thread.is_alive()
+        assert payloads == [b"sentinel", b"sentinel"]
+        assert rotations == [True, True]
+        assert not auth_path.exists()
+
+
 def test_provider_timeout_is_bounded() -> None:
     outcome, output, events = exercise(stall=True, timeout=0.3)
     assert outcome == 1 and "stage=probe; category=timeout" in output
@@ -95,7 +144,8 @@ def test_login_timeout_is_bounded() -> None:
 
 if __name__ == "__main__":
     test_fifo_race_and_prompt_order()
+    test_fifo_rotates_before_writer_releases_reader()
     test_provider_timeout_is_bounded()
     test_fifo_handoff_timeout_is_bounded()
     test_login_timeout_is_bounded()
-    print("passed 4 production-auth probe checks")
+    print("passed 5 production-auth probe checks")

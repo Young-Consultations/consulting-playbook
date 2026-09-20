@@ -367,6 +367,32 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         "production Codex client, model, sandbox, or workspace differs from policy",
     )
 
+    class StoppedCodexProcess:
+        def poll(self) -> None:
+            return None
+
+        def kill(self) -> None:
+            pass
+
+        def wait(self) -> int:
+            return -9
+
+    for failure in (RuntimeError("auth reader exited"),
+                    subprocess.TimeoutExpired("codex auth", 1)):
+        with (
+            patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),
+            patch.object(effects, "_gh", return_value="true\n"),
+            patch("codex_target_adapter.subprocess.run", side_effect=fake_run),
+            patch("codex_target_adapter.subprocess.Popen", return_value=StoppedCodexProcess()),
+            patch("codex_target_adapter.handoff_startup_auth", side_effect=failure),
+        ):
+            try:
+                effects.codex("Do not execute.", 30)
+            except AdapterError as exc:
+                require(exc.category == "authentication", "handoff failure lost authentication category")
+            else:
+                raise ValueError("handoff failure did not fail closed")
+
     with (
         patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),
         patch.object(effects, "_gh", return_value="false\n"),

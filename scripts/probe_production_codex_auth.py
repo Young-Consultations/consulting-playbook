@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Probe the target's one-read auth handoff without publication credentials."""
+"""Probe the target's two startup auth reads without publication credentials."""
 
 from __future__ import annotations
 

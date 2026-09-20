@@ -433,7 +433,12 @@ class GitHubEffects:
                 env=env,
             )
             try:
-                handoff_startup_auth(auth_path, auth_payload, proc, budget)
+                try:
+                    handoff_startup_auth(auth_path, auth_payload, proc, budget)
+                except subprocess.TimeoutExpired as exc:
+                    raise AdapterError("authentication", "Codex authentication handoff timed out", "failed") from exc
+                except (OSError, RuntimeError) as exc:
+                    raise AdapterError("authentication", "Codex authentication handoff failed", "failed") from exc
                 auth_payload = b""
                 proc.communicate(input=instructions, timeout=budget())
             except Exception:

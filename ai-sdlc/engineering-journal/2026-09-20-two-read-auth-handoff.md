@@ -13,7 +13,8 @@ starting the in-process execution server. The first read consumes the former
 one-shot FIFO; the latter cannot find credentials, so the model request has no
 bearer header.
 
-The candidate serves each startup read from a separate FIFO inode. It deletes
+The candidate serves each startup read from a separate FIFO inode, rotating
+the pathname as soon as each reader attaches and before its writer closes. It deletes
 the authentication path before submitting any model prompt, preserving the
 credential boundary for model-launched commands. The fixed read-only probe
 uses the same handoff, and offline tests require both reads before prompt
