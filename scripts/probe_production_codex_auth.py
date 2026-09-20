@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Probe the target's one-read auth handoff without publication credentials."""
+"""Probe the target's two startup auth reads without publication credentials."""
 
 from __future__ import annotations
 
-import errno
 import os
 import subprocess
 import tempfile
@@ -11,6 +10,7 @@ import time
 from pathlib import Path
 
 from codex_target_adapter import ROOT, SAFE_ENV, _bootstrap_secret_environment, _take_optional_secret
+from codex_auth_handoff import handoff_startup_auth
 
 
 PROMPT = "Do not use tools. Reply with AUTHENTICATED only."
@@ -65,34 +65,20 @@ def main(timeout_seconds: float = 120) -> int:
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, cwd=ROOT, env=env,
         )
-        fifo_fd = None
         try:
-            while fifo_fd is None:
-                if proc.poll() is not None:
-                    return fail("auth-handoff", "authentication")
-                try:
-                    fifo_fd = os.open(auth_path, os.O_WRONLY | os.O_NONBLOCK)
-                except OSError as exc:
-                    if exc.errno != errno.ENXIO:
-                        return fail("auth-handoff", "authentication")
-                    remaining()
-                    time.sleep(0.01)
-            auth_path.unlink()
-            with os.fdopen(fifo_fd, "wb", buffering=0) as fifo:
-                fifo_fd = None
-                fifo.write(auth_payload)
+            handoff_startup_auth(auth_path, auth_payload, proc, remaining)
             auth_payload = b""
             response, diagnostic = proc.communicate(
                 input=PROMPT, timeout=remaining(),
             )
         except subprocess.TimeoutExpired:
             return fail("probe" if auth_payload == b"" else "auth-handoff", "timeout")
+        except (OSError, RuntimeError):
+            return fail("auth-handoff", "authentication")
         finally:
             if proc.poll() is None:
                 proc.kill()
                 proc.wait()
-            if fifo_fd is not None:
-                os.close(fifo_fd)
             auth_path.unlink(missing_ok=True)
 
     if proc.returncode:
@@ -100,7 +86,7 @@ def main(timeout_seconds: float = 120) -> int:
         return fail("probe", category)
     if response.strip() != "AUTHENTICATED":
         return fail("probe", "unexpected-response")
-    print("::notice title=Production auth probe passed::Provider response completed through the one-read handoff.")
+    print("::notice title=Production auth probe passed::Provider response completed through the two-read handoff.")
     return 0
 
 

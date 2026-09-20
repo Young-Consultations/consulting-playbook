@@ -8,7 +8,6 @@ The command-line adapter uses ``gh`` only after admission and reconciliation.
 
 from __future__ import annotations
 
-import errno
 import hashlib
 import json
 import os
@@ -23,6 +22,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from jsonschema import Draft202012Validator, FormatChecker
+from codex_auth_handoff import handoff_startup_auth
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "Young-Consultations/consulting-playbook"
@@ -407,9 +407,8 @@ class GitHubEffects:
             # `codex login` writes auth.json. A workspace-write sandbox may
             # read paths outside the workspace, so leaving that file present
             # would expose the API key to model-launched commands. Replace it
-            # with a FIFO and serve its contents exactly once. Codex caches
-            # API-key auth during startup; the FIFO is unlinked as soon as the
-            # Codex process opens it, before admitted instructions are sent.
+            # with a FIFO and serve both startup auth managers. The FIFO is
+            # removed before admitted instructions are sent to Codex.
             auth_path = Path(codex_home) / "auth.json"
             try:
                 auth_payload = auth_path.read_bytes()
@@ -433,23 +432,13 @@ class GitHubEffects:
                 cwd=ROOT,
                 env=env,
             )
-            fifo_fd: int | None = None
             try:
-                while fifo_fd is None:
-                    if proc.poll() is not None:
-                        raise AdapterError("authentication", "Codex authentication failed", "failed")
-                    try:
-                        fifo_fd = os.open(auth_path, os.O_WRONLY | os.O_NONBLOCK)
-                    except OSError as exc:
-                        if exc.errno != errno.ENXIO:
-                            raise
-                        if budget() < 0.01:
-                            raise subprocess.TimeoutExpired(command, timeout_seconds)
-                        time.sleep(0.01)
-                auth_path.unlink()
-                with os.fdopen(fifo_fd, "wb", buffering=0) as fifo:
-                    fifo_fd = None
-                    fifo.write(auth_payload)
+                try:
+                    handoff_startup_auth(auth_path, auth_payload, proc, budget)
+                except subprocess.TimeoutExpired as exc:
+                    raise AdapterError("authentication", "Codex authentication handoff timed out", "failed") from exc
+                except (OSError, RuntimeError) as exc:
+                    raise AdapterError("authentication", "Codex authentication handoff failed", "failed") from exc
                 auth_payload = b""
                 proc.communicate(input=instructions, timeout=budget())
             except Exception:
@@ -458,8 +447,6 @@ class GitHubEffects:
                     proc.wait()
                 raise
             finally:
-                if fifo_fd is not None:
-                    os.close(fifo_fd)
                 try:
                     auth_path.unlink()
                 except FileNotFoundError:
