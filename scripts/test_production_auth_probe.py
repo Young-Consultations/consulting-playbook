@@ -26,9 +26,10 @@ elif sys.argv[1] == "exec":
     if %r:
         time.sleep(2)
     time.sleep(0.05)  # Force the ENXIO race before the FIFO reader opens.
-    assert json.loads((home / "auth.json").read_text())["OPENAI_API_KEY"] == "sentinel"
-    with trace.open("a") as stream:
-        stream.write("auth-consumed\\n")
+    for index in range(2):
+        assert json.loads((home / "auth.json").read_text())["OPENAI_API_KEY"] == "sentinel"
+        with trace.open("a") as stream:
+            stream.write("auth-consumed\\n")
     prompt = sys.stdin.read()
     with trace.open("a") as stream:
         stream.write("prompt-received\\n")
@@ -63,14 +64,14 @@ def exercise(*, stall: bool = False, stall_before_auth: bool = False,
 def test_fifo_race_and_prompt_order() -> None:
     outcome, output, events = exercise()
     assert outcome == 0 and "probe passed" in output
-    assert events == ["auth-consumed", "prompt-received"]
+    assert events == ["auth-consumed", "auth-consumed", "prompt-received"]
 
 
 def test_provider_timeout_is_bounded() -> None:
     outcome, output, events = exercise(stall=True, timeout=0.3)
     assert outcome == 1 and "stage=probe; category=timeout" in output
     assert "sentinel" not in output
-    assert events == ["auth-consumed", "prompt-received"]
+    assert events == ["auth-consumed", "auth-consumed", "prompt-received"]
 
 
 def test_fifo_handoff_timeout_is_bounded() -> None:

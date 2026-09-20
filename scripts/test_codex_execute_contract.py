@@ -264,14 +264,15 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
     class FakeCodexProcess:
         def __init__(self, command: list[str], **kwargs: Any):
             self.command, self.kwargs, self.returncode = command, kwargs, None
-            self.auth_payload: str | None = None
+            self.auth_payloads: list[str] = []
             self._reader = threading.Thread(target=self._read_auth)
             self._reader.start()
             executions.append({"command": command, **kwargs, "process": self})
 
         def _read_auth(self) -> None:
             path = Path(self.kwargs["env"]["CODEX_HOME"]) / "auth.json"
-            self.auth_payload = path.read_text(encoding="utf-8")
+            for _ in range(2):
+                self.auth_payloads.append(path.read_text(encoding="utf-8"))
 
         def poll(self) -> int | None:
             return self.returncode
@@ -280,7 +281,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             self.kwargs["input"] = input
             self.kwargs["timeout"] = timeout
             self._reader.join(timeout)
-            require(not self._reader.is_alive(), "Codex did not consume one-shot authentication")
+            require(not self._reader.is_alive(), "Codex did not consume both startup authentication reads")
             auth_path = Path(self.kwargs["env"]["CODEX_HOME"]) / "auth.json"
             self.auth_path_absent_during_execution = not auth_path.exists()
             self.returncode = 0
@@ -353,9 +354,10 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         "Codex authentication remained readable while model tools could run",
     )
     require(
-        json.loads(execution["process"].auth_payload or "{}").get("OPENAI_API_KEY")
-        == "sentinel-openai-key",
-        "Codex did not receive the one-shot authenticated state",
+        len(execution["process"].auth_payloads) == 2
+        and all(json.loads(payload).get("OPENAI_API_KEY") == "sentinel-openai-key"
+                for payload in execution["process"].auth_payloads),
+        "Codex did not receive both startup authentication reads",
     )
     require(
         execution["command"] == [
