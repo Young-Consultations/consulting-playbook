@@ -66,11 +66,15 @@ def main(timeout_seconds: float = 120) -> int:
             text=True, cwd=ROOT, env=env,
         )
         try:
-            handoff_startup_auth(auth_path, auth_payload, proc, remaining)
+            def submit_prompt() -> None:
+                assert proc.stdin is not None
+                proc.stdin.write(PROMPT)
+                proc.stdin.close()
+                proc.stdin = None
+
+            handoff_startup_auth(auth_path, auth_payload, proc, remaining, submit_prompt)
             auth_payload = b""
-            response, diagnostic = proc.communicate(
-                input=PROMPT, timeout=remaining(),
-            )
+            response, diagnostic = proc.communicate(timeout=remaining())
         except subprocess.TimeoutExpired:
             return fail("probe" if auth_payload == b"" else "auth-handoff", "timeout")
         except (OSError, RuntimeError):

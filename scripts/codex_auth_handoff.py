@@ -1,4 +1,4 @@
-"""Deliver Codex's two startup auth reads before exposing a task prompt."""
+"""Deliver Codex's two auth reads across stdin prompt resolution."""
 
 import errno
 import os
@@ -18,8 +18,9 @@ def handoff_startup_auth(
     payload: bytes,
     proc: subprocess.Popen,
     remaining: Callable[[], float],
+    submit_prompt: Callable[[], None],
 ) -> None:
-    """Serve both reads, then remove the credential path before model input."""
+    """Serve config auth, close stdin, then serve execution auth before tools."""
     try:
         for index in range(STARTUP_AUTH_READS):
             while True:
@@ -41,5 +42,9 @@ def handoff_startup_auth(
                 if index + 1 < STARTUP_AUTH_READS:
                     os.mkfifo(auth_path, 0o600)
                 fifo.write(payload)
+            if index == 0:
+                # `codex exec -` reads stdin to EOF before it starts the
+                # in-process server that performs the second auth read.
+                submit_prompt()
     finally:
         auth_path.unlink(missing_ok=True)
