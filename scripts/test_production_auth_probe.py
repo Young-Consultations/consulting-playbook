@@ -6,6 +6,7 @@ from __future__ import annotations
 import io
 import os
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -29,14 +30,16 @@ elif sys.argv[1] == "exec":
     if %r:
         time.sleep(2)
     time.sleep(0.05)  # Force the ENXIO race before the FIFO reader opens.
-    for index in range(2):
-        assert json.loads((home / "auth.json").read_text())["OPENAI_API_KEY"] == "sentinel"
-        with trace.open("a") as stream:
-            stream.write("auth-consumed\\n")
+    assert json.loads((home / "auth.json").read_text())["OPENAI_API_KEY"] == "sentinel"
+    with trace.open("a") as stream:
+        stream.write("auth-consumed\\n")
     prompt = sys.stdin.read()
     with trace.open("a") as stream:
         stream.write("prompt-received\\n")
     assert prompt == "Do not use tools. Reply with AUTHENTICATED only."
+    assert json.loads((home / "auth.json").read_text())["OPENAI_API_KEY"] == "sentinel"
+    with trace.open("a") as stream:
+        stream.write("auth-consumed\\n")
     if %r:
         time.sleep(2)
     print("AUTHENTICATED")
@@ -67,7 +70,7 @@ def exercise(*, stall: bool = False, stall_before_auth: bool = False,
 def test_fifo_race_and_prompt_order() -> None:
     outcome, output, events = exercise()
     assert outcome == 0 and "probe passed" in output
-    assert events == ["auth-consumed", "auth-consumed", "prompt-received"]
+    assert events == ["auth-consumed", "prompt-received", "auth-consumed"]
 
 
 def test_fifo_rotates_before_writer_releases_reader() -> None:
@@ -76,9 +79,12 @@ def test_fifo_rotates_before_writer_releases_reader() -> None:
         os.mkfifo(auth_path, 0o600)
         payloads: list[bytes] = []
         rotations: list[bool] = []
+        prompt_ready = threading.Event()
 
         def reader() -> None:
-            for _ in range(2):
+            for index in range(2):
+                if index == 1:
+                    assert prompt_ready.wait(3)
                 with auth_path.open("rb") as stream:
                     payloads.append(stream.read())
 
@@ -108,7 +114,7 @@ def test_fifo_rotates_before_writer_releases_reader() -> None:
         deadline = time.monotonic() + 3
         with patch.object(handoff.os, "fdopen", inspect_writer):
             handoff.handoff_startup_auth(auth_path, b"sentinel", LiveProcess(),
-                                         lambda: deadline - time.monotonic())
+                                         lambda: deadline - time.monotonic(), prompt_ready.set)
         thread.join(3)
         assert not thread.is_alive()
         assert payloads == [b"sentinel", b"sentinel"]
@@ -116,11 +122,30 @@ def test_fifo_rotates_before_writer_releases_reader() -> None:
         assert not auth_path.exists()
 
 
+def test_stalled_prompt_pipe_obeys_deadline() -> None:
+    proc = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(5)"],
+        stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    deadline = time.monotonic() + 0.3
+    try:
+        try:
+            handoff.submit_stdin_prompt(proc, "界" * 50000, lambda: max(0, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired:
+            assert time.monotonic() - deadline < 1
+        else:
+            raise AssertionError("stalled child accepted a full oversized prompt")
+    finally:
+        proc.kill()
+        proc.stdin.close()
+        proc.wait()
+
+
 def test_provider_timeout_is_bounded() -> None:
     outcome, output, events = exercise(stall=True, timeout=0.3)
     assert outcome == 1 and "stage=probe; category=timeout" in output
     assert "sentinel" not in output
-    assert events == ["auth-consumed", "auth-consumed", "prompt-received"]
+    assert events == ["auth-consumed", "prompt-received", "auth-consumed"]
 
 
 def test_fifo_handoff_timeout_is_bounded() -> None:
@@ -145,7 +170,8 @@ def test_login_timeout_is_bounded() -> None:
 if __name__ == "__main__":
     test_fifo_race_and_prompt_order()
     test_fifo_rotates_before_writer_releases_reader()
+    test_stalled_prompt_pipe_obeys_deadline()
     test_provider_timeout_is_bounded()
     test_fifo_handoff_timeout_is_bounded()
     test_login_timeout_is_bounded()
-    print("passed 5 production-auth probe checks")
+    print("passed 6 production-auth probe checks")

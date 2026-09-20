@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from jsonschema import Draft202012Validator, FormatChecker
-from codex_auth_handoff import handoff_startup_auth
+from codex_auth_handoff import handoff_startup_auth, submit_stdin_prompt
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "Young-Consultations/consulting-playbook"
@@ -407,8 +407,9 @@ class GitHubEffects:
             # `codex login` writes auth.json. A workspace-write sandbox may
             # read paths outside the workspace, so leaving that file present
             # would expose the API key to model-launched commands. Replace it
-            # with a FIFO and serve both startup auth managers. The FIFO is
-            # removed before admitted instructions are sent to Codex.
+            # with a FIFO for each auth manager. Codex needs the prompt on
+            # stdin before it starts the second manager; remove that manager's
+            # FIFO as soon as it connects, before model tools can run.
             auth_path = Path(codex_home) / "auth.json"
             try:
                 auth_payload = auth_path.read_bytes()
@@ -433,18 +434,23 @@ class GitHubEffects:
                 env=env,
             )
             try:
+                def submit_prompt() -> None:
+                    submit_stdin_prompt(proc, instructions, budget)
+
                 try:
-                    handoff_startup_auth(auth_path, auth_payload, proc, budget)
+                    handoff_startup_auth(auth_path, auth_payload, proc, budget, submit_prompt)
                 except subprocess.TimeoutExpired as exc:
                     raise AdapterError("authentication", "Codex authentication handoff timed out", "failed") from exc
                 except (OSError, RuntimeError) as exc:
                     raise AdapterError("authentication", "Codex authentication handoff failed", "failed") from exc
                 auth_payload = b""
-                proc.communicate(input=instructions, timeout=budget())
+                proc.communicate(timeout=budget())
             except Exception:
                 if proc.poll() is None:
                     proc.kill()
-                    proc.wait()
+                if proc.stdin is not None:
+                    proc.stdin.close()
+                proc.wait()
                 raise
             finally:
                 try:

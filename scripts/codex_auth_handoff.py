@@ -1,7 +1,8 @@
-"""Deliver Codex's two startup auth reads before exposing a task prompt."""
+"""Deliver Codex's two auth reads across stdin prompt resolution."""
 
 import errno
 import os
+import select
 import subprocess
 import time
 from pathlib import Path
@@ -13,13 +14,42 @@ from typing import Callable
 STARTUP_AUTH_READS = 2
 
 
+def submit_stdin_prompt(
+    proc: subprocess.Popen,
+    prompt: str,
+    remaining: Callable[[], float],
+) -> None:
+    """Write the full UTF-8 prompt and EOF within the admitted time budget."""
+    if proc.stdin is None:
+        raise RuntimeError("Codex stdin is unavailable")
+    fd = proc.stdin.fileno()
+    data = prompt.encode("utf-8")
+    os.set_blocking(fd, False)
+    written = 0
+    while written < len(data):
+        if proc.poll() is not None:
+            raise RuntimeError("Codex terminated before accepting the prompt")
+        if not select.select([], [fd], [], remaining())[1]:
+            raise subprocess.TimeoutExpired("codex stdin", 0)
+        try:
+            count = os.write(fd, data[written:written + 65536])
+        except BlockingIOError:
+            continue
+        if count == 0:
+            raise RuntimeError("Codex stdin stopped accepting the prompt")
+        written += count
+    proc.stdin.close()
+    proc.stdin = None
+
+
 def handoff_startup_auth(
     auth_path: Path,
     payload: bytes,
     proc: subprocess.Popen,
     remaining: Callable[[], float],
+    submit_prompt: Callable[[], None],
 ) -> None:
-    """Serve both reads, then remove the credential path before model input."""
+    """Serve config auth, close stdin, then serve execution auth before tools."""
     try:
         for index in range(STARTUP_AUTH_READS):
             while True:
@@ -41,5 +71,9 @@ def handoff_startup_auth(
                 if index + 1 < STARTUP_AUTH_READS:
                     os.mkfifo(auth_path, 0o600)
                 fifo.write(payload)
+            if index == 0:
+                # `codex exec -` reads stdin to EOF before it starts the
+                # in-process server that performs the second auth read.
+                submit_prompt()
     finally:
         auth_path.unlink(missing_ok=True)

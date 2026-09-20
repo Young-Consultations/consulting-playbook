@@ -265,20 +265,35 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         def __init__(self, command: list[str], **kwargs: Any):
             self.command, self.kwargs, self.returncode = command, kwargs, None
             self.auth_payloads: list[str] = []
+
+            class Input:
+                def __init__(self) -> None:
+                    self.value = ""
+                    self.closed = threading.Event()
+
+                def write(self, value: str) -> None:
+                    self.value += value
+
+                def close(self) -> None:
+                    self.closed.set()
+
+            self.input = Input()
+            self.stdin = self.input
             self._reader = threading.Thread(target=self._read_auth)
             self._reader.start()
             executions.append({"command": command, **kwargs, "process": self})
 
         def _read_auth(self) -> None:
             path = Path(self.kwargs["env"]["CODEX_HOME"]) / "auth.json"
-            for _ in range(2):
-                self.auth_payloads.append(path.read_text(encoding="utf-8"))
+            self.auth_payloads.append(path.read_text(encoding="utf-8"))
+            require(self.input.closed.wait(5), "Codex prompt was not submitted after config auth")
+            self.auth_payloads.append(path.read_text(encoding="utf-8"))
 
         def poll(self) -> int | None:
             return self.returncode
 
-        def communicate(self, input: str, timeout: float) -> tuple[None, None]:
-            self.kwargs["input"] = input
+        def communicate(self, timeout: float) -> tuple[None, None]:
+            self.kwargs["input"] = self.input.value
             self.kwargs["timeout"] = timeout
             self._reader.join(timeout)
             require(not self._reader.is_alive(), "Codex did not consume both startup authentication reads")
@@ -295,6 +310,11 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             return self.returncode
 
     effects = GitHubEffects()
+    def fake_submit_prompt(proc: FakeCodexProcess, prompt: str, remaining: Any) -> None:
+        proc.stdin.write(prompt)
+        proc.stdin.close()
+        proc.stdin = None
+
     with (
         patch.dict(
             os.environ,
@@ -308,6 +328,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         patch.object(effects, "_gh", return_value="true\n") as github,
         patch("codex_target_adapter.subprocess.run", side_effect=fake_run),
         patch("codex_target_adapter.subprocess.Popen", side_effect=FakeCodexProcess),
+        patch("codex_target_adapter.submit_stdin_prompt", side_effect=fake_submit_prompt),
     ):
         effects.codex("Implement the admitted task.", 30)
         require("OPENAI_API_KEY" not in os.environ, "adapter retained the raw OpenAI credential")
@@ -368,6 +389,8 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
     )
 
     class StoppedCodexProcess:
+        stdin = None
+
         def poll(self) -> None:
             return None
 

@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 
 from codex_target_adapter import ROOT, SAFE_ENV, _bootstrap_secret_environment, _take_optional_secret
-from codex_auth_handoff import handoff_startup_auth
+from codex_auth_handoff import handoff_startup_auth, submit_stdin_prompt
 
 
 PROMPT = "Do not use tools. Reply with AUTHENTICATED only."
@@ -66,11 +66,12 @@ def main(timeout_seconds: float = 120) -> int:
             text=True, cwd=ROOT, env=env,
         )
         try:
-            handoff_startup_auth(auth_path, auth_payload, proc, remaining)
+            def submit_prompt() -> None:
+                submit_stdin_prompt(proc, PROMPT, remaining)
+
+            handoff_startup_auth(auth_path, auth_payload, proc, remaining, submit_prompt)
             auth_payload = b""
-            response, diagnostic = proc.communicate(
-                input=PROMPT, timeout=remaining(),
-            )
+            response, diagnostic = proc.communicate(timeout=remaining())
         except subprocess.TimeoutExpired:
             return fail("probe" if auth_payload == b"" else "auth-handoff", "timeout")
         except (OSError, RuntimeError):
@@ -78,7 +79,9 @@ def main(timeout_seconds: float = 120) -> int:
         finally:
             if proc.poll() is None:
                 proc.kill()
-                proc.wait()
+            if proc.stdin is not None:
+                proc.stdin.close()
+            proc.wait()
             auth_path.unlink(missing_ok=True)
 
     if proc.returncode:
