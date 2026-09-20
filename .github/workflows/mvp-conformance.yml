@@ -25,6 +25,7 @@ jobs:
           git diff --check
           python scripts/validate_repository.py
           python scripts/test_codex_auth_preflight.py
+          python scripts/test_production_auth_probe.py
           python scripts/test_codex_execute_contract.py
           python scripts/run_tc_mvp_ci_001_receiver_242.py
           git diff --exit-code -- .ai-sdlc/conformance/tc-mvp-ci-001.json

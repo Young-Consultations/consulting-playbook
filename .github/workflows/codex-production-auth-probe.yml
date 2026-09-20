@@ -1,0 +1,30 @@
+name: Codex production auth probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codex-production-auth-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: consulting-playbook-codex
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install pinned Codex CLI
+        run: npm install --global @openai/codex@0.154.0
+      - name: Install adapter validator dependency
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]==4.26.0'
+      - name: Probe the production authentication handoff
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: exec python3 scripts/probe_production_codex_auth.py
