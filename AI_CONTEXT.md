@@ -197,19 +197,18 @@ the organization release, while current activation is separate mutable
 organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
-The active immutable production adapter is `codex-adapter-v2.4.1` at
-`f34ceacc310dff0ce66bad8d623230af7143071d`. That release predates the
-production-authentication repair and remains the runtime selected by the
-published `ai-sdlc-v2.4.1` control plane. The repaired implementation on
-`main` at `9a45a8e56c4cbfddf30229b0c23a171097b93868` pins Codex CLI
-`0.154.0`, model `gpt-5.3-codex`, and `jsonschema` `4.26.0`, and carries
-regenerated no-real-effects evidence. The pending `codex-adapter-v2.4.2`
-target candidate repins the organization receiver to `ai-sdlc-v2.4.2`; its
-exact no-real-effects evidence is bound by `config/mvp-conformance-pin.json`.
-It is not active until the immutable target tag exists and a new control-plane
-release containing the repin is published, consumed by `portfolio-tasks`, and
-verified. Existing published tags are immutable and must not be moved or
-reinterpreted.
+The published 2.4.2 compatibility unit remains the rollback baseline. The
+published 2.4.3 control plane selected `codex-adapter-v2.4.3` at
+`1a5da85a4e29b83ba72e1bf4354d7770035cd367`, but deployed REAL preflight run
+35640134916 exposed that this target commit still called the 2.4.2 receiver.
+The 2.4.3 target identity is therefore quarantined from REAL use. This focused
+repair pins the target to the published `ai-sdlc-v2.4.3` receiver and
+regenerates exact no-real-effects evidence in `config/mvp-conformance-pin.json`.
+The owner explicitly authorized replacing the defective 2.4.3 target tag after
+the correction is reviewed and merged; that exceptional rewrite invalidates
+the prior tag-to-commit evidence and requires corresponding control-plane
+registry/attestation rebinding plus fresh deployed preflight before another
+REAL approval. Published tags otherwise remain immutable.
 
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft
