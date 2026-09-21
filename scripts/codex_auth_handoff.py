@@ -22,27 +22,40 @@ class CodexHomeCleanupError(Exception):
 
 
 @contextmanager
-def isolated_codex_home(prefix: str):
-    """Remove transient Codex state despite short-lived background file writes."""
+def isolated_codex_home(prefix: str, cleanup_timeout_seconds: float = 3):
+    """Scrub auth and remove Codex state after a bounded quiet period."""
     home = Path(tempfile.mkdtemp(prefix=prefix))
     try:
         yield str(home)
     finally:
-        deadline = time.monotonic() + 3
+        deadline = time.monotonic() + cleanup_timeout_seconds
+        quiet_since: float | None = None
         while True:
+            # Login can fail after writing the raw key. Remove it independently
+            # of the plugin-cache cleanup, including on the final failed try.
             try:
-                shutil.rmtree(home)
-                break
-            except FileNotFoundError as exc:
-                if not home.exists():
-                    break
-                if time.monotonic() >= deadline:
-                    raise CodexHomeCleanupError() from exc
-                time.sleep(0.05)
+                (home / "auth.json").unlink(missing_ok=True)
             except OSError as exc:
-                if exc.errno != errno.ENOTEMPTY or time.monotonic() >= deadline:
-                    raise CodexHomeCleanupError() from exc
-                time.sleep(0.05)
+                raise CodexHomeCleanupError() from exc
+
+            if home.exists():
+                quiet_since = None
+                try:
+                    shutil.rmtree(home)
+                except FileNotFoundError:
+                    pass  # A concurrent writer changed a child; recheck home.
+                except OSError as exc:
+                    if exc.errno != errno.ENOTEMPTY:
+                        raise CodexHomeCleanupError() from exc
+
+            now = time.monotonic()
+            if not home.exists() and quiet_since is None:
+                quiet_since = now
+            if quiet_since is not None and now - quiet_since >= 0.25:
+                break
+            if now >= deadline:
+                raise CodexHomeCleanupError()
+            time.sleep(0.05)
 
 
 def submit_stdin_prompt(

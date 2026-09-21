@@ -4,7 +4,7 @@
   "compatibility_sha": "e27b8a541afbd27b4be5606a19ffa43637ad312a",
   "fixture_set": "TC-MVP-CI-001",
   "fixture_version": "2.3.0",
-  "adapter_revision": "sha256:79198f781ab3498e69bbfc9802d5c54ce2105e86fe42f852e392b55113717e90",
+  "adapter_revision": "sha256:bc0bc25bcd1c86f842ad4b9493c261a5c8466858c69dce0ddb5aa22c5dce729a",
   "compatibility_files": {
     "contracts/task-contract.schema.json": "d95673363eb7f825eb64b73ddb0468c787078ce4",
     "contracts/execution-input.schema.json": "b2b16cfda619c82d73a5e78ae34566feb6b83224",
@@ -18,6 +18,6 @@
     "scripts/codex_target_adapter.py": "346245c013109f99a6e2754fe8061272d240d066",
     "scripts/run_tc_mvp_ci_001.py": "f907089b1740b9b31cd2265cc06255a1e52c9923",
     "scripts/run_tc_mvp_ci_001_receiver_242.py": "b50bedaf1ece78c35a295037a9d136cd10f91a6c",
-    "scripts/codex_auth_handoff.py": "73819e406c37b53d4826a27abd681b56a4ec9db5"
+    "scripts/codex_auth_handoff.py": "c66ecf1c01a8cd04178ebe0b865069fc64d2d30c"
   }
 }

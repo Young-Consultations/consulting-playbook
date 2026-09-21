@@ -12,12 +12,14 @@ Codex home, consistent with a concurrent plugin-cache write. The traceback
 masks the provider result. It neither proves nor
 disproves that the API request authenticated.
 
-Both the protected probe and production adapter now retry ephemeral-home
-removal for three seconds when a concurrent writer causes `ENOTEMPTY`.
+Both the protected probe and production adapter first unlink `auth.json`,
+including after a failed login. They then retry ephemeral-home removal for
+three seconds and require 250 ms with the path absent before success; this
+detects a plugin writer that recreates the directory after an initial removal.
 Persistent cleanup failures remain failures; the probe reports only
 `stage=cleanup; category=filesystem`. The auth FIFO is removed when its
 reader attaches, before model tools can run. Offline checks exercise the
-cleanup race and bounded classification.
+delayed write, credential scrub, and bounded classification.
 
 Require a protected provider-response pass before publishing a new immutable
 adapter tag or repinning the control plane. Do not reuse the terminal
