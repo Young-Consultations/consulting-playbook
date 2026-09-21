@@ -4,13 +4,14 @@
 from __future__ import annotations
 
 import io
+import errno
 import os
 import subprocess
 import sys
 import tempfile
 import threading
 import time
-from contextlib import contextmanager, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -141,6 +142,79 @@ def test_stalled_prompt_pipe_obeys_deadline() -> None:
         proc.wait()
 
 
+def test_ephemeral_codex_home_retries_concurrent_plugin_write() -> None:
+    actual_rmtree = handoff.shutil.rmtree
+    attempts = 0
+
+    def transient_failure(path: Path) -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise OSError(errno.ENOTEMPTY, "plugin writer still active")
+        actual_rmtree(path)
+
+    with patch.object(handoff.shutil, "rmtree", side_effect=transient_failure):
+        with handoff.isolated_codex_home("auth-cleanup-test-") as home:
+            (Path(home) / "plugins").mkdir()
+    assert attempts == 2
+    assert not Path(home).exists()
+
+
+def test_ephemeral_codex_home_stays_absent_during_quiet_period() -> None:
+    actual_rmtree = handoff.shutil.rmtree
+    attempts = 0
+    writers: list[threading.Thread] = []
+
+    def delayed_writer(path: Path) -> None:
+        nonlocal attempts
+        attempts += 1
+        actual_rmtree(path)
+        if attempts == 1:
+            def recreate() -> None:
+                time.sleep(0.1)
+                plugin_dir = path / "plugins"
+                plugin_dir.mkdir(parents=True)
+                (plugin_dir / "cache").write_text("transient", encoding="utf-8")
+
+            writer = threading.Thread(target=recreate)
+            writers.append(writer)
+            writer.start()
+
+    with patch.object(handoff.shutil, "rmtree", side_effect=delayed_writer):
+        with handoff.isolated_codex_home("auth-quiet-test-") as home:
+            pass
+    for writer in writers:
+        writer.join()
+    assert attempts == 2
+    assert not Path(home).exists()
+
+
+def test_persistent_cleanup_failure_scrubs_login_key() -> None:
+    actual_rmtree = handoff.shutil.rmtree
+    home: str | None = None
+    try:
+        with patch.object(handoff.shutil, "rmtree", side_effect=OSError(errno.ENOTEMPTY, "busy")):
+            try:
+                with handoff.isolated_codex_home("auth-scrub-test-", cleanup_timeout_seconds=0.1) as home:
+                    (Path(home) / "auth.json").write_text("sentinel", encoding="utf-8")
+            except handoff.CodexHomeCleanupError:
+                assert home is not None
+                assert not (Path(home) / "auth.json").exists()
+            else:
+                raise AssertionError("persistent cleanup failure was accepted")
+    finally:
+        if home is not None:
+            actual_rmtree(home)
+
+
+def test_cleanup_failure_is_bounded() -> None:
+    captured, errors = io.StringIO(), io.StringIO()
+    with patch.object(probe, "_run_probe", side_effect=handoff.CodexHomeCleanupError()), redirect_stdout(captured), redirect_stderr(errors):
+        assert probe.main(1) == 1
+    assert "stage=cleanup; category=filesystem" in captured.getvalue()
+    assert errors.getvalue() == ""
+
+
 def test_provider_timeout_is_bounded() -> None:
     outcome, output, events = exercise(stall=True, timeout=0.3)
     assert outcome == 1 and "stage=probe; category=timeout" in output
@@ -171,7 +245,11 @@ if __name__ == "__main__":
     test_fifo_race_and_prompt_order()
     test_fifo_rotates_before_writer_releases_reader()
     test_stalled_prompt_pipe_obeys_deadline()
+    test_ephemeral_codex_home_retries_concurrent_plugin_write()
+    test_ephemeral_codex_home_stays_absent_during_quiet_period()
+    test_persistent_cleanup_failure_scrubs_login_key()
+    test_cleanup_failure_is_bounded()
     test_provider_timeout_is_bounded()
     test_fifo_handoff_timeout_is_bounded()
     test_login_timeout_is_bounded()
-    print("passed 6 production-auth probe checks")
+    print("passed 10 production-auth probe checks")

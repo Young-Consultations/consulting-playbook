@@ -14,7 +14,6 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -22,7 +21,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from jsonschema import Draft202012Validator, FormatChecker
-from codex_auth_handoff import handoff_startup_auth, submit_stdin_prompt
+from codex_auth_handoff import handoff_startup_auth, isolated_codex_home, submit_stdin_prompt
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "Young-Consultations/consulting-playbook"
@@ -384,7 +383,7 @@ class GitHubEffects:
         # particular, a model-launched command must not be able to recover it
         # from this adapter's live environment via /proc.
         api_key = _take_secret("OPENAI_API_KEY")
-        with tempfile.TemporaryDirectory(prefix="codex-target-") as codex_home:
+        with isolated_codex_home(prefix="codex-target-") as codex_home:
             # Match the controlled preflight: authenticate into isolated,
             # ephemeral state over stdin and do not expose the raw key to the
             # model execution or any command it launches.
