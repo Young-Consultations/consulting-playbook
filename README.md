@@ -106,6 +106,11 @@ creation remains the authoritative check of the
 publication token's pull-request write permission because GitHub provides no
 read-only permission probe for that scope.
 
+The isolated Codex home is removed after execution. A bounded cleanup retry
+handles short-lived background writes to Codex's plugin cache; persistent
+cleanup failure is reported as a failure without printing local paths or
+credentials.
+
 ### Codex authentication preflight
 
 The manual `.github/workflows/codex-auth-preflight.yml` workflow checks the

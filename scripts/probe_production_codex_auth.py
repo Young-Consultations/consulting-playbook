@@ -5,12 +5,11 @@ from __future__ import annotations
 
 import os
 import subprocess
-import tempfile
 import time
 from pathlib import Path
 
 from codex_target_adapter import ROOT, SAFE_ENV, _bootstrap_secret_environment, _take_optional_secret
-from codex_auth_handoff import handoff_startup_auth, submit_stdin_prompt
+from codex_auth_handoff import CodexHomeCleanupError, handoff_startup_auth, isolated_codex_home, submit_stdin_prompt
 
 
 PROMPT = "Do not use tools. Reply with AUTHENTICATED only."
@@ -21,7 +20,7 @@ def fail(stage: str, category: str) -> int:
     return 1
 
 
-def main(timeout_seconds: float = 120) -> int:
+def _run_probe(timeout_seconds: float = 120) -> int:
     _bootstrap_secret_environment()
     api_key = _take_optional_secret("OPENAI_API_KEY")
     if not api_key:
@@ -34,7 +33,7 @@ def main(timeout_seconds: float = 120) -> int:
             raise subprocess.TimeoutExpired("codex", timeout_seconds)
         return seconds
 
-    with tempfile.TemporaryDirectory(prefix="codex-target-probe-") as codex_home:
+    with isolated_codex_home(prefix="codex-target-probe-") as codex_home:
         env = {key: value for key, value in os.environ.items() if key in SAFE_ENV}
         env["CODEX_HOME"] = codex_home
         try:
@@ -91,6 +90,13 @@ def main(timeout_seconds: float = 120) -> int:
         return fail("probe", "unexpected-response")
     print("::notice title=Production auth probe passed::Provider response completed through the two-read handoff.")
     return 0
+
+
+def main(timeout_seconds: float = 120) -> int:
+    try:
+        return _run_probe(timeout_seconds)
+    except CodexHomeCleanupError:
+        return fail("cleanup", "filesystem")
 
 
 if __name__ == "__main__":

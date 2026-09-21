@@ -3,8 +3,11 @@
 import errno
 import os
 import select
+import shutil
 import subprocess
+import tempfile
 import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable
 
@@ -12,6 +15,34 @@ from typing import Callable
 # In Codex 0.154.0, cloud configuration and the in-process execution server
 # each construct their own AuthManager before the exec prompt is submitted.
 STARTUP_AUTH_READS = 2
+
+
+class CodexHomeCleanupError(Exception):
+    """Ephemeral Codex state could not be completely removed."""
+
+
+@contextmanager
+def isolated_codex_home(prefix: str):
+    """Remove transient Codex state despite short-lived background file writes."""
+    home = Path(tempfile.mkdtemp(prefix=prefix))
+    try:
+        yield str(home)
+    finally:
+        deadline = time.monotonic() + 3
+        while True:
+            try:
+                shutil.rmtree(home)
+                break
+            except FileNotFoundError as exc:
+                if not home.exists():
+                    break
+                if time.monotonic() >= deadline:
+                    raise CodexHomeCleanupError() from exc
+                time.sleep(0.05)
+            except OSError as exc:
+                if exc.errno != errno.ENOTEMPTY or time.monotonic() >= deadline:
+                    raise CodexHomeCleanupError() from exc
+                time.sleep(0.05)
 
 
 def submit_stdin_prompt(

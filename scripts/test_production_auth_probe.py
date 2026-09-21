@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import io
+import errno
 import os
 import subprocess
 import sys
@@ -141,6 +142,31 @@ def test_stalled_prompt_pipe_obeys_deadline() -> None:
         proc.wait()
 
 
+def test_ephemeral_codex_home_retries_concurrent_plugin_write() -> None:
+    actual_rmtree = handoff.shutil.rmtree
+    attempts = 0
+
+    def transient_failure(path: Path) -> None:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise OSError(errno.ENOTEMPTY, "plugin writer still active")
+        actual_rmtree(path)
+
+    with patch.object(handoff.shutil, "rmtree", side_effect=transient_failure):
+        with handoff.isolated_codex_home("auth-cleanup-test-") as home:
+            (Path(home) / "plugins").mkdir()
+    assert attempts == 2
+    assert not Path(home).exists()
+
+
+def test_cleanup_failure_is_bounded() -> None:
+    captured = io.StringIO()
+    with patch.object(probe, "_run_probe", side_effect=handoff.CodexHomeCleanupError()), redirect_stdout(captured):
+        assert probe.main(1) == 1
+    assert "stage=cleanup; category=filesystem" in captured.getvalue()
+
+
 def test_provider_timeout_is_bounded() -> None:
     outcome, output, events = exercise(stall=True, timeout=0.3)
     assert outcome == 1 and "stage=probe; category=timeout" in output
@@ -171,7 +197,9 @@ if __name__ == "__main__":
     test_fifo_race_and_prompt_order()
     test_fifo_rotates_before_writer_releases_reader()
     test_stalled_prompt_pipe_obeys_deadline()
+    test_ephemeral_codex_home_retries_concurrent_plugin_write()
+    test_cleanup_failure_is_bounded()
     test_provider_timeout_is_bounded()
     test_fifo_handoff_timeout_is_bounded()
     test_login_timeout_is_bounded()
-    print("passed 6 production-auth probe checks")
+    print("passed 8 production-auth probe checks")
