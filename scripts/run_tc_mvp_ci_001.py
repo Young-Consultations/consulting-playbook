@@ -433,7 +433,7 @@ def run(report_path: Path | None = None) -> list[str]:
         "activation_evidence_sufficient": not errors,
         "activation_evidence_reason": "complete shared oracle executed through the repository adapter with deterministic effect traps",
         "adapter_tag_published": False,
-        "receiver_live_verification": "pending-ai-sdlc-v2.4.3-live-verification",
+        "receiver_live_verification": "pending-ai-sdlc-v2.3.1-tag",
         "effect_traps": {name: getattr(aggregate, name) for name in TRAPPED_EFFECTS},
         "scenario_results": results,
         "failures": errors,
