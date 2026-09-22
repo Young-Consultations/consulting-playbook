@@ -28,16 +28,16 @@ the two required string inputs `execution_input_json` and
 `concurrency_group`. No `workflow_call`, artifact/run-ID, field-by-field, or
 fallback entry point is active.
 
-The current target repair pins the organization receiver to
+The published 2.4.3 target pins the organization receiver to
 `ai-sdlc-v2.4.3`, Codex CLI to `0.154.0`, model to `gpt-5.3-codex`, and the
-runtime schema validator to `4.26.0`. Its regenerated zero-effect evidence is bound by
-`config/mvp-conformance-pin.json`. The originally published
-`codex-adapter-v2.4.3` commit retained a stale 2.4.2 receiver call, so it is not
-valid REAL evidence. Under explicit owner authorization, the 2.4.3 target tag
-will be replaced only after this reviewed correction merges; renewed deployed
-preflight is required before REAL approval. The published 2.4.2 unit remains
-the rollback baseline. Historical conformance entry points remain only to
-reproduce prior evidence; active repair CI invokes the 2.4.3 entry point.
+runtime schema validator to `4.26.0`. Issue #150 reached Codex but exposed
+missing GitHub runner sandbox preparation and an empty implementation reported
+as `no-changes`. This candidate restores runner preparation before credential
+handoff and fails an implement task with no candidate changes before repository
+validation. Its regenerated zero-effect evidence is bound by
+`config/mvp-conformance-pin.json`. Publish it through a new immutable patch
+release and rerun deployed preflight before another REAL approval. The published
+2.4.3 and 2.4.2 units are unchanged.
 
 The recovery evidence is bound to
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
@@ -106,6 +106,14 @@ with the pinned client and model under the `workspace-write` sandbox. Draft-PR
 creation remains the authoritative check of the
 publication token's pull-request write permission because GitHub provides no
 read-only permission probe for that scope.
+
+The target workflow enables unprivileged user namespaces and removes the
+Ubuntu AppArmor restriction for them on its ephemeral GitHub runner before
+secrets are supplied to the adapter. An implement task must produce candidate
+repository changes before validation. Empty output is a failed Codex runtime
+result; repository checks of an unchanged checkout do not satisfy the task.
+The result is still sent to the receiver, while the execute job fails for an
+unsuccessful canonical outcome.
 
 The isolated Codex home is removed after execution. Cleanup first removes
 `auth.json`, then requires a bounded quiet period with no home directory to

@@ -31,6 +31,21 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+      - name: Prepare Codex workspace sandbox
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Restore the runner prerequisites supplied by the former codex-action.
+          userns="$(sysctl -n kernel.unprivileged_userns_clone 2>/dev/null || true)"
+          if [[ -n "$userns" && "$userns" != "1" ]]; then
+            sudo sysctl -w kernel.unprivileged_userns_clone=1
+          fi
+          apparmor="$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || true)"
+          if [[ -n "$apparmor" && "$apparmor" != "0" ]]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          [[ -z "$userns" || "$(sysctl -n kernel.unprivileged_userns_clone)" == "1" ]]
+          [[ -z "$apparmor" || "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" == "0" ]]
       - name: Install Codex CLI
         run: npm install --global @openai/codex@0.154.0
       - name: Install repository validation dependencies
@@ -46,6 +61,17 @@ jobs:
         # Replace the runner shell so the adapter can re-exec with a
         # secret-free environment and leave no secret-bearing ancestor.
         run: exec python3 scripts/codex_target_adapter.py
+      - name: Enforce canonical execution outcome
+        env:
+          EXECUTION_RESULT_JSON: ${{ steps.execute.outputs.execution_result }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          result = json.loads(os.environ["EXECUTION_RESULT_JSON"])
+          if result["execution_status"] not in {"verified", "draft-pr-created", "duplicate-reused"}:
+              raise SystemExit("Target execution did not meet its admitted outcome; see canonical result")
+          PY
 
   report:
     needs: execute

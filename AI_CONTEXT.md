@@ -247,6 +247,11 @@ production evidence.
   the executor environment, run from the repository root under
   `workspace-write`, and verify the publication identity's repository write
   access before invoking Codex.
+- On GitHub-hosted Ubuntu runners, prepare the unprivileged-user-namespace and
+  AppArmor prerequisites for Codex `workspace-write` before handing secrets to
+  the adapter. An implement execution without candidate changes fails before
+  validating the unchanged repository; preserve canonical result delivery
+  while making unsuccessful execution visible as a failed job.
 - Pre-production status and the number of users do not weaken any security,
   approval, isolation, or human-review boundary.
 
