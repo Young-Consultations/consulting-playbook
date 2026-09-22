@@ -2,6 +2,7 @@
 
 - **Date:** 2026-09-22
 - **Decision status:** resolved for target repair; live verification pending
+- **Pending release decision owner:** Joseph, repository owner and release approver.
 - **SDLC phase:** integration and REAL acceptance
 
 ## Context

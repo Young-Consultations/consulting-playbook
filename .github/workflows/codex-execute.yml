@@ -36,16 +36,16 @@ jobs:
         run: |
           set -euo pipefail
           # Restore the runner prerequisites supplied by the former codex-action.
-          userns="$(sysctl -n kernel.unprivileged_userns_clone 2>/dev/null || true)"
-          if [[ -n "$userns" && "$userns" != "1" ]]; then
+          userns="$(sysctl -n kernel.unprivileged_userns_clone)"
+          if [[ "$userns" != "1" ]]; then
             sudo sysctl -w kernel.unprivileged_userns_clone=1
           fi
-          apparmor="$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || true)"
-          if [[ -n "$apparmor" && "$apparmor" != "0" ]]; then
+          apparmor="$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)"
+          if [[ "$apparmor" != "0" ]]; then
             sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           fi
-          [[ -z "$userns" || "$(sysctl -n kernel.unprivileged_userns_clone)" == "1" ]]
-          [[ -z "$apparmor" || "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" == "0" ]]
+          [[ "$(sysctl -n kernel.unprivileged_userns_clone)" == "1" ]]
+          [[ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" == "0" ]]
       - name: Install Codex CLI
         run: npm install --global @openai/codex@0.154.0
       - name: Install repository validation dependencies

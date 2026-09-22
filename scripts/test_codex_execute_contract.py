@@ -159,6 +159,13 @@ def test_security_and_publication_guards() -> None:
         and "kernel.apparmor_restrict_unprivileged_userns=0" in WORKFLOW,
         "GitHub runner no longer prepares the workspace-write sandbox",
     )
+    sandbox_step = WORKFLOW.split("name: Prepare Codex workspace sandbox", 1)[1].split("name: Install Codex CLI", 1)[0]
+    require(
+        "|| true" not in sandbox_step
+        and '[[ "$(sysctl -n kernel.unprivileged_userns_clone)" == "1" ]]' in sandbox_step
+        and '[[ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" == "0" ]]' in sandbox_step,
+        "sandbox preparation must fail closed when a required sysctl is unavailable",
+    )
     require(
         "name: Enforce canonical execution outcome" in WORKFLOW
         and "needs.execute.outputs.execution_result != ''" in WORKFLOW

@@ -197,18 +197,18 @@ the organization release, while current activation is separate mutable
 organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
-The published 2.4.2 compatibility unit remains the rollback baseline. The
-published 2.4.3 control plane selected `codex-adapter-v2.4.3` at
-`1a5da85a4e29b83ba72e1bf4354d7770035cd367`, but deployed REAL preflight run
-35640134916 exposed that this target commit still called the 2.4.2 receiver.
-The 2.4.3 target identity is therefore quarantined from REAL use. This focused
-repair pins the target to the published `ai-sdlc-v2.4.3` receiver and
-regenerates exact no-real-effects evidence in `config/mvp-conformance-pin.json`.
-The owner explicitly authorized replacing the defective 2.4.3 target tag after
-the correction is reviewed and merged; that exceptional rewrite invalidates
-the prior tag-to-commit evidence and requires corresponding control-plane
-registry/attestation rebinding plus fresh deployed preflight before another
-REAL approval. Published tags otherwise remain immutable.
+The published 2.4.2 compatibility unit remains the rollback baseline.
+The one-time 2.4.3 tag replacement and control-plane attestation are complete:
+`codex-adapter-v2.4.3` resolves to
+`050dc7bb4832eab77fca3e070d2ea1917d82e26e`, where the target pins
+the `ai-sdlc-v2.4.3` receiver, and the control-plane tag resolves to
+`3da7ed9b7bf76d00ae35e4accc733ac8f95259c5`.
+REAL issue #150 reached Codex and the receiver but failed to modify the
+repository because the hosted runner was not prepared for `workspace-write`.
+This sandbox and empty-outcome repair is a candidate for a new immutable
+patch release. Do not rewrite the published 2.4.3 tags; publish reviewed
+new identities and require live tool execution and deployed preflight evidence
+before another REAL approval.
 
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft
