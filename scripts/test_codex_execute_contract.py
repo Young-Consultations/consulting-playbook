@@ -65,11 +65,13 @@ class FakeEffects:
         branch_exists: bool | None = None,
         race_branch_exists: bool | None = None,
         validation_result: tuple[bool, str] = (True, "passed"),
+        candidate_changes: bool = True,
     ) -> None:
         self.found = found or []
         self.race = race
         self.publish_failure = publish_failure
         self.validation_result = validation_result
+        self.candidate_changes = candidate_changes
         self.branch_exists = bool(self.found) if branch_exists is None else branch_exists
         self.race_branch_exists = (
             bool(race) if race_branch_exists is None else race_branch_exists
@@ -92,6 +94,9 @@ class FakeEffects:
     def validate_candidate(self, *_: Any) -> tuple[bool, str]:
         self.validation_calls += 1
         return self.validation_result
+
+    def has_candidate_changes(self, *_: Any) -> bool:
+        return self.candidate_changes
 
     def publish(self, *_: Any) -> str:
         self.publish_calls += 1
@@ -146,6 +151,27 @@ def test_security_and_publication_guards() -> None:
     require("persist-credentials: false" in WORKFLOW, "checkout persists credentials")
     require("permissions:\n  contents: read" in WORKFLOW, "workflow permissions are broader than read-only")
     require("environment: consulting-playbook-codex" in WORKFLOW, "target environment boundary is missing")
+    preparation = WORKFLOW.index("name: Prepare Codex workspace sandbox")
+    credential_handoff = WORKFLOW.index("OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}")
+    require(preparation < credential_handoff, "sandbox preparation must precede credential handoff")
+    require(
+        "kernel.unprivileged_userns_clone=1" in WORKFLOW
+        and "kernel.apparmor_restrict_unprivileged_userns=0" in WORKFLOW,
+        "GitHub runner no longer prepares the workspace-write sandbox",
+    )
+    sandbox_step = WORKFLOW.split("name: Prepare Codex workspace sandbox", 1)[1].split("name: Install Codex CLI", 1)[0]
+    require(
+        "|| true" not in sandbox_step
+        and '[[ "$(sysctl -n kernel.unprivileged_userns_clone)" == "1" ]]' in sandbox_step
+        and '[[ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" == "0" ]]' in sandbox_step,
+        "sandbox preparation must fail closed when a required sysctl is unavailable",
+    )
+    require(
+        "name: Enforce canonical execution outcome" in WORKFLOW
+        and "needs.execute.outputs.execution_result != ''" in WORKFLOW
+        and "if: ${{ always()" in WORKFLOW,
+        "failed execution must make the job red while preserving receiver delivery",
+    )
     require(
         "run: exec python3 scripts/codex_target_adapter.py" in workflow_lines,
         "runner shell remains as a secret-bearing ancestor",
@@ -388,6 +414,14 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         "production Codex client, model, sandbox, or workspace differs from policy",
     )
 
+    with patch("codex_target_adapter.subprocess.check_output", side_effect=[b"", b"?? docs/probe.md\0"]) as status:
+        require(not effects.has_candidate_changes(10), "unchanged checkout appeared to have a candidate")
+        require(effects.has_candidate_changes(10), "new repository file was not recognized as a candidate")
+        require(
+            all(call.args[0][:3] == ["git", "status", "--porcelain=v1"] for call in status.call_args_list),
+            "candidate detection no longer examines repository status",
+        )
+
     class StoppedCodexProcess:
         stdin = None
 
@@ -483,6 +517,20 @@ def test_canonical_policy_and_result() -> None:
     require(result["branch_name"] is None and result["pull_request_url"] is None, "verify mode published state")
     require(result["validation_result"] == "passed" and result["test_result"] == "passed", "verify evidence is incomplete")
     require(verify_effects.validation_calls == 1, "verify mode skipped repository validation")
+    unchanged = FakeEffects(candidate_changes=False)
+    blocked = execute(payload(), unchanged)
+    require(
+        blocked["execution_status"] == "failed"
+        and blocked["failure_category"] == "codex-runtime"
+        and blocked["validation_result"] == "not-run"
+        and blocked["test_result"] == "not-run"
+        and blocked["pull_request_url"] is None,
+        "empty implementation was mistaken for a successful no-changes result",
+    )
+    require(
+        unchanged.validation_calls == 0 and unchanged.publish_calls == 0,
+        "empty implementation reached baseline validation or publication",
+    )
     missing_credential = execute(payload(), MissingCredentialEffects())
     require(
         missing_credential["execution_status"] == "failed"

@@ -81,6 +81,7 @@ class AdapterError(Exception):
 class Effects(Protocol):
     def discover(self, branch: str, delivery_id: str, timeout_seconds: float) -> "Ownership": ...
     def codex(self, instructions: str, timeout_seconds: float) -> None: ...
+    def has_candidate_changes(self, timeout_seconds: float) -> bool: ...
     def validate_candidate(self, timeout_seconds: float) -> tuple[bool, str]: ...
     def publish(self, branch: str, delivery_id: str, digest: str, timeout_seconds: float) -> str: ...
 
@@ -251,6 +252,8 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
         phase = "codex"
         effects.codex(payload["instructions"], remaining())
         remaining()
+        if not effects.has_candidate_changes(remaining()):
+            raise AdapterError("codex-runtime", "Codex produced no candidate changes", "failed")
         phase = "validation"
         valid, phase = effects.validate_candidate(remaining())
         remaining()
@@ -459,6 +462,13 @@ class GitHubEffects:
         if proc.returncode:
             raise AdapterError("codex-runtime", "Codex execution failed", "failed")
 
+    def has_candidate_changes(self, timeout_seconds: float) -> bool:
+        env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
+        return bool(subprocess.check_output(
+            ["git", "status", "--porcelain=v1", "-z", "--untracked-files=normal"],
+            cwd=ROOT, env=env, timeout=timeout_seconds,
+        ))
+
     def validate_candidate(self, timeout_seconds: float) -> tuple[bool, str]:
         env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
         deadline = time.monotonic() + timeout_seconds
@@ -489,7 +499,7 @@ class GitHubEffects:
         subprocess.run(["git", "add", "-A"], check=True, cwd=ROOT, env=env, timeout=budget())
         if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT, env=env,
                           timeout=budget()).returncode == 0:
-            raise AdapterError("no-changes", "Codex produced no candidate changes", "no-changes")
+            raise AdapterError("codex-runtime", "Codex produced no candidate changes", "failed")
         subprocess.run(["git", "-c", "user.name=ai-sdlc-target", "-c", "user.email=ai-sdlc@users.noreply.github.com",
                         "commit", "-m", f"AI-SDLC delivery {delivery_id}"], check=True, cwd=ROOT, env=env,
                        timeout=budget())

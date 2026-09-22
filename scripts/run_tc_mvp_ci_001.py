@@ -103,6 +103,10 @@ class TrappedTargetEffects:
         if self.codex_failure:
             raise AdapterError("codex-runtime", "Codex execution failed", "failed")
 
+    def has_candidate_changes(self, timeout_seconds: float) -> bool:
+        # The fixture's successful implementation path produces a candidate.
+        return True
+
     def validate_candidate(self, timeout_seconds: float) -> tuple[bool, str]:
         self.calls["validate"] += 1
         return self.validation
