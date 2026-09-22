@@ -35,9 +35,13 @@ missing GitHub runner sandbox preparation and an empty implementation reported
 as `no-changes`. This candidate restores runner preparation before credential
 handoff and fails an implement task with no candidate changes before repository
 validation. Its regenerated zero-effect evidence is bound by
-`config/mvp-conformance-pin.json`. Publish it through a new immutable patch
-release and rerun deployed preflight before another REAL approval. The published
-2.4.3 and 2.4.2 units are unchanged.
+`config/mvp-conformance-pin.json`. The follow-up candidate pins the
+`ai-sdlc-v2.4.4` receiver and regenerates evidence through the 2.4.4
+conformance wrapper. The 2.4.4 receiver and adapter tags are not published.
+Publish this target only after review and passing exact-head checks, then
+bind its immutable adapter identity into a separately reviewed 2.4.4
+control-plane release. Rerun deployed preflight before another REAL
+approval. The published 2.4.3 and 2.4.2 units are unchanged.
 
 The recovery evidence is bound to
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
