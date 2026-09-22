@@ -140,6 +140,14 @@ def test_exact_dispatch_and_receiver_boundary() -> None:
         in workflow_lines,
         "receiver is not exactly and immutably pinned",
     )
+    receiver = next(
+        line.removeprefix("uses: ") for line in workflow_lines
+        if line.startswith("uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@")
+    )
+    requirements = (ROOT / "docs/requirements/NextMVP.md").read_text(encoding="utf-8")
+    architecture = (ROOT / "docs/architecture/InterfaceArchitecture.md").read_text(encoding="utf-8")
+    require(f"It shall invoke\n`{receiver}`" in requirements, "normative receiver requirement differs from target workflow")
+    require(f"`{receiver}`" in architecture, "interface architecture differs from target workflow")
     require("CODEX_TRUSTED_JOURNAL_AUTHORS" not in WORKFLOW, "target supplies control-plane trust policy")
     require("secrets: inherit" not in WORKFLOW, "workflow broadly inherits secrets")
     receiver = WORKFLOW.split("  report:", 1)[1]

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bind target conformance to the published 2.4.4 receiver."""
+"""Bind target conformance to the future 2.4.4 receiver candidate."""
 from __future__ import annotations
 
 import argparse

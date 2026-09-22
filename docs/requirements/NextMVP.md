@@ -6,13 +6,14 @@ This profile is the normative repository-owned implementation baseline. It uses
 payload contract `ai-sdlc-contract/v2` and fixture-set manifest
 `TC-MVP-CI-001` from the reviewed issue #135 recovery candidate at immutable
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
-The published `ai-sdlc-v2.4.2` control plane and this repository's immutable
-`codex-adapter-v2.4.2` remain the rollback baseline. The 2.4.3 control-plane
-release selected `codex-adapter-v2.4.3`, but deployed REAL preflight exposed
-that the tagged target still called the 2.4.2 receiver. This focused correction
-requires the target to call the published 2.4.3 receiver and requires renewed
-exact-file evidence and live verification before another REAL approval. These
-supplied interface facts are requirements;
+The published `ai-sdlc-v2.4.2` and `codex-adapter-v2.4.2` units remain the
+rollback baseline. The published 2.4.3 control plane selects
+`codex-adapter-v2.4.3` with the matching published receiver. REAL issue #150
+exposed runner sandbox preparation and empty-implementation outcome defects;
+the reviewed target repair merged in PR #62. This follow-up is an unpublished
+2.4.4 target candidate: it requires the target to pin the future matching
+2.4.4 receiver, regenerates exact-file evidence, and requires release and
+live verification before another REAL approval. These interface facts are requirements;
 conformance is established only by the exact-file pin and executable report
 described below.
 
@@ -98,12 +99,14 @@ The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
 It shall invoke
-`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.3`
+`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.4`
 with inputs `execution_result` and `source_issue` and secret
-`CODEX_RESULT_TOKEN`. The 2.4.3 receiver is published, but target-side live
-verification remains pending after the receiver-pin correction. The published
-2.4.2 compatibility unit remains the rollback baseline until that verification
-passes. Receiver outputs are `accepted`, `delivery_id`,
+`CODEX_RESULT_TOKEN`. The 2.4.4 receiver is not published, so this target
+candidate cannot be used for REAL dispatch. Its ordinary conformance checks
+use fake effects and do not prove live receiver delivery. The 2.4.3 release
+remains the currently published path; 2.4.2 remains the rollback baseline.
+The 2.4.4 control-plane release, target binding, and live verification must
+complete before another REAL approval. Receiver outputs are `accepted`, `delivery_id`,
 `correlation_id`, `execution_status`, `failure_category`, and
 `diagnostic_summary`.
 
@@ -211,10 +214,10 @@ pull-request state.
 
 ## Implementation readiness and operational activation
 
-The repository-owned 2.4.0 adapter and no-effects evidence remain the published
-rollback baseline. This change prepares a 2.4.1-targeted
-adapter candidate and refreshed no-effects evidence, but does not claim the
-2.4.1 receiver or a new target adapter tag is published or live-verified.
+The published 2.4.3 adapter remains the current runtime identity, and 2.4.2
+remains the rollback baseline. This change prepares a 2.4.4-targeted
+adapter candidate and refreshed no-effects evidence. It does not claim the
+2.4.4 receiver or adapter tag is published or live-verified.
 Operational activation remains mutable organization control-plane state and is
 neither pinned nor enforced here. This repository must not create a second
 activation switch; routing remains bound to the organization registry until the
