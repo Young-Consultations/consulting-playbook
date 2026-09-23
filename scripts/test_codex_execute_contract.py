@@ -136,10 +136,18 @@ def test_exact_dispatch_and_receiver_boundary() -> None:
     require(inputs.count("execution_input_json:") == 1 and inputs.count("concurrency_group:") == 1, "target inputs differ")
     workflow_lines = {line.strip() for line in WORKFLOW.splitlines()}
     require(
-        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.3"
+        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.4"
         in workflow_lines,
         "receiver is not exactly and immutably pinned",
     )
+    receiver = next(
+        line.removeprefix("uses: ") for line in workflow_lines
+        if line.startswith("uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@")
+    )
+    requirements = (ROOT / "docs/requirements/NextMVP.md").read_text(encoding="utf-8")
+    architecture = (ROOT / "docs/architecture/InterfaceArchitecture.md").read_text(encoding="utf-8")
+    require(f"It shall invoke\n`{receiver}`" in requirements, "normative receiver requirement differs from target workflow")
+    require(f"`{receiver}`" in architecture, "interface architecture differs from target workflow")
     require("CODEX_TRUSTED_JOURNAL_AUTHORS" not in WORKFLOW, "target supplies control-plane trust policy")
     require("secrets: inherit" not in WORKFLOW, "workflow broadly inherits secrets")
     receiver = WORKFLOW.split("  report:", 1)[1]

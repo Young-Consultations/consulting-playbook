@@ -205,10 +205,11 @@ the `ai-sdlc-v2.4.3` receiver, and the control-plane tag resolves to
 `3da7ed9b7bf76d00ae35e4accc733ac8f95259c5`.
 REAL issue #150 reached Codex and the receiver but failed to modify the
 repository because the hosted runner was not prepared for `workspace-write`.
-This sandbox and empty-outcome repair is a candidate for a new immutable
-patch release. Do not rewrite the published 2.4.3 tags; publish reviewed
-new identities and require live tool execution and deployed preflight evidence
-before another REAL approval.
+The sandbox and empty-outcome repair merged in PR #62. The next target
+candidate pins the future `ai-sdlc-v2.4.4` receiver and regenerates
+conformance evidence. Neither 2.4.4 tag is published. Do not rewrite the
+published 2.4.3 tags; publish reviewed new identities and require live tool
+execution and deployed preflight evidence before another REAL approval.
 
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft

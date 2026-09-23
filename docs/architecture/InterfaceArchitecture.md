@@ -44,9 +44,12 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
 - **Compatibility and activation:** the non-recursive target pin binds exact
   schema/fixture blobs at recovery candidate `e27b8a5` plus this workflow,
   adapter, and harness. The published `ai-sdlc-v2.4.2` compatibility unit
-  remains the rollback baseline. The target must call the same 2.4.3 receiver
-  selected by the published control-plane release; renewed live verification
-  remains required after correcting the stale target call.
+  remains the rollback baseline. The current published target calls the
+  2.4.3 receiver. The next target candidate must call
+  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.4`
+  only as part of the reviewed 2.4.4 release composition. That receiver and
+  the matching target adapter tag are not published; no REAL dispatch may use
+  this candidate before publication, registration, and live verification.
   Current activation is separate mutable router state; the target neither
   consumes historical activation nor administers it. No package or observed
   import is a contract.
