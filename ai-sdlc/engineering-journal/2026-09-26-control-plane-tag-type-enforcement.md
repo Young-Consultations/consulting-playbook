@@ -64,3 +64,10 @@ When review identifies a contradiction, compare the requirement hierarchy,
 historical implementation, and release evidence before turning the review
 comment into new enforcement. The useful invariant here is immutable exact
 commit identity, not Git tag object type.
+
+## Closure
+
+DEF-0052 was resolved on 2026-09-26 when .github PR #79 merged at
+`75815fdc83ebd28f53e483b6de71e0107e74356f`. Before merge, exact-head AI-SDLC
+Contract Tests, Target Compatibility, and TC-MVP-E2E-001 all passed with the
+clarified lightweight-or-annotated tag policy and exact commit-identity checks.
