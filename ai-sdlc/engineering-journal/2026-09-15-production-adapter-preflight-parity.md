@@ -52,3 +52,22 @@ This repair establishes production/preflight parity but is not live
 implementation or publication evidence. Keep DEF-0038 open until a fresh
 governed delivery creates a tested draft pull request and its terminal result is
 accepted by the result receiver.
+
+## Closure evidence — 2026-09-26
+
+The production authentication boundary is now live-verified. Fresh governed
+REAL issue [#154](https://github.com/Young-Consultations/portfolio-tasks/issues/154)
+used the published 2.4.5 composition and target run
+[36279165335](https://github.com/Young-Consultations/consulting-playbook/actions/runs/36279165335)
+successfully prepared the workspace sandbox, invoked Codex, produced candidate
+changes, passed validation/tests, published one managed draft PR, and delivered
+an accepted canonical result. Generated PR
+[#66](https://github.com/Young-Consultations/consulting-playbook/pull/66) passed
+conformance and human review and merged at
+`6d3d9694057e787eab74ae45999ad73c804c6067`.
+
+This satisfies the final live publication-permission evidence required by
+DEF-0038 and proves production is no longer pinned to the stale repaired-but-
+unreleased adapter state tracked by DEF-0039. The pinned Codex client/model
+repair tracked by DEF-0037 was already exercised successfully by controlled
+preflight run 34929448831 and is also resolved.
