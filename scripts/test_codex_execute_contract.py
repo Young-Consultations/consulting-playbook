@@ -395,8 +395,8 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
     require(
         "*Username*" in probe["askpass_script"]
         and "*Password*" in probe["askpass_script"]
-        and '*) printf \'%s\\\\n\' "" ;;' in probe["askpass_script"],
-        "publication askpass helper does not explicitly allow only username and password prompts",
+        and "$GIT_PASSWORD" in probe["askpass_script"],
+        "publication askpass helper does not explicitly separate username and password prompts",
     )
     require(login["command"] == ["codex", "login", "--with-api-key"], "Codex login command drifted")
     require(login["input"] == "sentinel-openai-key", "Codex login did not receive the credential over stdin")
@@ -660,8 +660,8 @@ def test_publication_transport_auth_and_failure_classification() -> None:
     require(
         "*Username*" in observed["helper"]
         and "*Password*" in observed["helper"]
-        and '*) printf \'%s\\\\n\' "" ;;' in observed["helper"],
-        "publication helper does not restrict credential responses to expected Git prompts",
+        and "$GIT_PASSWORD" in observed["helper"],
+        "publication helper does not separate expected Git credential prompts",
     )
     require(observed["helper_removed"], "publication askpass helper was retained after push failure")
 
