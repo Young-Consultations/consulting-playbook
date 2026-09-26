@@ -198,18 +198,20 @@ organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
 The published 2.4.2 compatibility unit remains the rollback baseline.
-The one-time 2.4.3 tag replacement and control-plane attestation are complete:
-`codex-adapter-v2.4.3` resolves to
-`050dc7bb4832eab77fca3e070d2ea1917d82e26e`, where the target pins
-the `ai-sdlc-v2.4.3` receiver, and the control-plane tag resolves to
-`3da7ed9b7bf76d00ae35e4accc733ac8f95259c5`.
-REAL issue #150 reached Codex and the receiver but failed to modify the
-repository because the hosted runner was not prepared for `workspace-write`.
-The sandbox and empty-outcome repair merged in PR #62. The next target
-candidate pins the future `ai-sdlc-v2.4.4` receiver and regenerates
-conformance evidence. Neither 2.4.4 tag is published. Do not rewrite the
-published 2.4.3 tags; publish reviewed new identities and require live tool
-execution and deployed preflight evidence before another REAL approval.
+The published 2.4.4 release is the current runtime identity:
+`codex-adapter-v2.4.4` resolves to
+`70ea4342abf7115f6848ea32bb958bbf6be696c1`, and the immutable
+`ai-sdlc-v2.4.4` control-plane tag resolves to
+`adb57508762168b3410f52e8a7b0151078c6e9b9`; publication was attested by
+organization PR #76. REAL issue #151 reached Codex, produced the requested
+candidate, and passed validation/tests, then exposed publication transport
+authentication and failure-classification defects before a remote branch or
+draft PR survived. The next target candidate is 2.4.5: it proves authenticated
+Git push transport with a dry-run before Codex, uses a prompt-aware askpass
+boundary, and distinguishes ordinary push failures from true create races. Do
+not rewrite published 2.4.4 identities. Publish reviewed 2.4.5 identities and
+require matching control-plane release, deployed preflight, and live verification
+before another REAL approval.
 
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft
@@ -246,8 +248,9 @@ production evidence.
   stdin login flow proven by the controlled preflight. Store login state in an
   ephemeral `CODEX_HOME` outside the repository, remove the raw OpenAI key from
   the executor environment, run from the repository root under
-  `workspace-write`, and verify the publication identity's repository write
-  access before invoking Codex.
+  `workspace-write`, and before invoking Codex verify both publication
+  permission metadata and the actual authenticated Git push transport with a
+  non-mutating dry-run.
 - On GitHub-hosted Ubuntu runners, prepare the unprivileged-user-namespace and
   AppArmor prerequisites for Codex `workspace-write` before handing secrets to
   the adapter. An implement execution without candidate changes fails before
