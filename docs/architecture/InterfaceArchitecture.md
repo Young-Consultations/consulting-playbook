@@ -44,16 +44,16 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
 - **Compatibility and activation:** the non-recursive target pin binds exact
   schema/fixture blobs at recovery candidate `e27b8a5` plus this workflow,
   adapter, and harness. The current published target is
-  `codex-adapter-v2.4.4` and calls the published 2.4.4 receiver; 2.4.3 remains
-  the previous known-good generation and 2.4.2 the rollback baseline. The next
-  target candidate must call
-  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.5`
-  only as part of the reviewed 2.4.5 release composition. That receiver and the
-  matching target adapter tag are not yet published; no REAL dispatch may use
-  this candidate before publication, registration, deployed preflight, and live
-  verification. Current activation is separate mutable router state; the target
-  neither consumes historical activation nor administers it. No package or
-  observed import is a contract.
+  `codex-adapter-v2.4.5` at
+  `4f062ca73acfc3458f0d690bf1c7687bafd0a8eb` and calls the published
+  `ai-sdlc-v2.4.5` receiver. The matching control-plane release is published
+  and attested; deployed Runtime Preflight, immutable REAL preflight, and fresh
+  REAL issue #154 all passed. Published 2.4.4 is the immediate rollback
+  generation. Current activation is separate mutable router state; the target
+  neither consumes historical activation nor administers it. The immutable
+  candidate report remains pre-publication compatibility evidence and is not
+  rewritten by later live acceptance. No package or observed import is a
+  contract.
 - **Validation:** exact immutable schemas first, then caller/target/type, supported
   executor/mode, sensitivity, repository policy, concurrency, reconciliation,
   publication permission metadata, and a non-mutating authenticated Git push
