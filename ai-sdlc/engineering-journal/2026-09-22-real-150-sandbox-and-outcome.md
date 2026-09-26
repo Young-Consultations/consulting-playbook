@@ -80,3 +80,18 @@ preflights, then use a fresh delivery identity for the next REAL issue.
 
 Concrete example of a green workflow with evidence that does not establish
 the approved outcome.
+
+## Closure evidence — 2026-09-26
+
+Fresh REAL issue [#154](https://github.com/Young-Consultations/portfolio-tasks/issues/154)
+provides the missing live proof. Target run
+[36279165335](https://github.com/Young-Consultations/consulting-playbook/actions/runs/36279165335)
+completed the `Prepare Codex workspace sandbox` step, Codex successfully
+executed repository commands and produced the required candidate, target checks
+passed, and one managed draft PR was published. PR
+[#66](https://github.com/Young-Consultations/consulting-playbook/pull/66) later
+passed conformance and human review and merged.
+
+This closes DEF-0043 (sandbox preparation) and DEF-0044 (false-green empty
+implementation outcome). The review-only sysctl fail-open defect DEF-0046 was
+corrected in merged PR #62 and is also resolved.
