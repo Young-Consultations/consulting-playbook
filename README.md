@@ -63,12 +63,13 @@ have been removed from the active path. The replacement runs the complete
 scenarios reach that real adapter seam and every prohibited effect counter is
 zero. The 2026-08-13
 [activation-readiness review](ai-sdlc/engineering-journal/2026-08-13-immutable-baseline-activation-blocker.md)
-found cross-repository trigger, payload/result, receiver, branch, fixture, and
-baseline-release blockers. Those compatibility gates are now satisfied for this
-repository by `codex-adapter-v2.3.1`, the published 2.3.1 receiver, and the
-registry's tag/commit/report binding. The target remains disabled because
-operational activation, credentials, retention, reconciliation, and the
-controlled end-to-end test are separate human-governed gates.
+records historical blockers in the 2.3.1-era recovery path. Those blockers were
+subsequently resolved through later immutable releases. The current published
+2.4.5 path has passed control-plane publication attestation, deployed Runtime
+Preflight, immutable REAL preflight, consumer repin, and fresh governed REAL
+issue #154, which created and delivered one managed draft PR successfully.
+Activation remains organization-router state rather than repository-owned state;
+this target must not create a second activation switch.
 
 Upgrades to the organization control-plane release require an explicit reviewed repository change. Rollback must pin the workflow to the previous immutable known-good organization release.
 
