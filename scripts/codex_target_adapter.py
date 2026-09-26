@@ -335,7 +335,8 @@ class GitHubEffects:
         askpass_script = """#!/bin/sh
 case "$1" in
   *Username*) printf '%s\\n' "$GIT_USERNAME" ;;
-  *) printf '%s\\n' "$GIT_PASSWORD" ;;
+  *Password*) printf '%s\\n' "$GIT_PASSWORD" ;;
+  *) printf '%s\\n' "" ;;
 esac
 """
         askpass_path = os.path.join(ROOT, ".git", "ai_sdlc_askpass.sh")
