@@ -78,7 +78,7 @@ jobs:
     if: ${{ always() && needs.execute.outputs.execution_result != '' && needs.execute.outputs.source_issue != '' }}
     permissions:
       contents: read
-    # 2.4.5 candidate: release publication and control-plane binding are separate gates.
+    # Published 2.4.5 receiver; release identity and live acceptance are recorded separately.
     uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.5
     with:
       execution_result: ${{ needs.execute.outputs.execution_result }}
