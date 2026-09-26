@@ -63,3 +63,12 @@ The control-plane `AI_CONTEXT.md` is updated in PR #70 because agents need to pr
 ## Potential consulting or content value
 
 This is a concise example of evidence fidelity: the automation correctly stopped the release, but its model omitted a security-relevant dimension. Improving the evidence did not require weakening the control; it required representing the real boundary more accurately.
+
+## Closure evidence — 2026-09-26
+
+The repaired environment-scoped credential audit is now proven in the deployed
+release path. AI-SDLC Runtime Preflight run
+[36277959203](https://github.com/Young-Consultations/.github/actions/runs/36277959203)
+completed successfully from the attested 2.4.5 control-plane `main` with
+`candidate_mode: false`. DEF-0041 is resolved; no credential was moved or
+duplicated out of its protected environment as a workaround.
