@@ -286,7 +286,10 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
     executions: list[dict[str, Any]] = []
 
     def fake_run(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
-        calls.append({"command": command, **kwargs})
+        call = {"command": command, **kwargs}
+        if command[:3] == ["git", "push", "--dry-run"]:
+            call["askpass_script"] = Path(kwargs["env"]["GIT_ASKPASS"]).read_text(encoding="utf-8")
+        calls.append(call)
         if command == ["codex", "login", "--with-api-key"]:
             auth_path = Path(kwargs["env"]["CODEX_HOME"]) / "auth.json"
             auth_path.write_text(
@@ -374,8 +377,24 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         ".permissions.push",
         timeout_seconds=github.call_args.kwargs["timeout_seconds"],
     )
-    require(len(calls) == 1 and len(executions) == 1, "production runtime did not perform exactly login and execution")
-    login, execution = calls[0], executions[0]
+    require(len(calls) == 2 and len(executions) == 1, "production runtime did not perform transport probe, login, and execution")
+    probe, login, execution = calls[0], calls[1], executions[0]
+    require(probe["command"][:3] == ["git", "push", "--dry-run"], "publication transport was not proven before Codex")
+    require(
+        probe["env"]["GIT_USERNAME"] == "x-access-token"
+        and probe["env"]["GIT_PASSWORD"] == "sentinel-publication-token"
+        and probe["env"]["GIT_TERMINAL_PROMPT"] == "0",
+        "publication dry-run did not use the controlled Git credential boundary",
+    )
+    require(
+        "sentinel-publication-token" not in " ".join(probe["command"])
+        and "sentinel-publication-token" not in probe["askpass_script"],
+        "publication credential leaked into Git arguments or helper content",
+    )
+    require(
+        "*Username*" in probe["askpass_script"] and "$GIT_PASSWORD" in probe["askpass_script"],
+        "publication askpass helper does not distinguish username and password prompts",
+    )
     require(login["command"] == ["codex", "login", "--with-api-key"], "Codex login command drifted")
     require(login["input"] == "sentinel-openai-key", "Codex login did not receive the credential over stdin")
     require(
@@ -488,6 +507,40 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             raise ValueError("failed publication readiness probe did not fail closed")
         require(not unavailable_run.called, "Codex ran after publication readiness failed")
 
+    probe_effects = GitHubEffects()
+    with (
+        patch.dict(
+            os.environ,
+            {
+                "OPENAI_API_KEY": "sentinel-openai-key",
+                "TARGET_PUBLICATION_TOKEN": "sentinel-publication-token",
+            },
+            clear=False,
+        ),
+        patch.object(probe_effects, "_gh", return_value="true\n"),
+        patch(
+            "codex_target_adapter.subprocess.run",
+            return_value=subprocess.CompletedProcess(["git", "push", "--dry-run"], 1),
+        ) as failed_probe,
+        patch("codex_target_adapter.subprocess.Popen") as blocked_codex,
+    ):
+        try:
+            probe_effects.codex("Do not execute.", 30)
+        except AdapterError as exc:
+            require(
+                exc.category == "publication"
+                and exc.safe_message == "Publication git transport readiness check failed",
+                "transport denial did not retain publication readiness classification",
+            )
+        else:
+            raise ValueError("failed Git transport readiness probe did not fail closed")
+        require(failed_probe.call_count == 1, "transport readiness did not stop at the failed dry-run")
+        require(not blocked_codex.called, "Codex started after Git transport readiness failed")
+        require(
+            "OPENAI_API_KEY" in os.environ,
+            "OpenAI credential was consumed before publication transport readiness passed",
+        )
+
     with (
         patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),
         patch.object(effects, "_gh", side_effect=KeyError("TARGET_PUBLICATION_TOKEN")),
@@ -501,12 +554,19 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             raise ValueError("missing publication credential was misclassified by the Codex effect")
         require(not missing_token_run.called, "Codex ran without the publication credential")
 
+    def fail_login_after_transport_probe(
+        command: list[str], **kwargs: Any
+    ) -> subprocess.CompletedProcess[str]:
+        if command[:3] == ["git", "push", "--dry-run"]:
+            return subprocess.CompletedProcess(command, 0)
+        return subprocess.CompletedProcess(command, 1)
+
     with (
         patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),
         patch.object(effects, "_gh", return_value="true\n"),
         patch(
             "codex_target_adapter.subprocess.run",
-            return_value=subprocess.CompletedProcess(["codex", "login"], 1),
+            side_effect=fail_login_after_transport_probe,
         ) as failed_login,
     ):
         try:
@@ -515,8 +575,67 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             require(exc.category == "authentication", "login failure used the wrong category")
         else:
             raise ValueError("failed Codex login did not fail closed")
-        require(failed_login.call_count == 1, "Codex execution continued after failed login")
+        require(failed_login.call_count == 2, "Codex login did not follow exactly one successful transport probe")
 
+
+
+def test_publication_transport_auth_and_failure_classification() -> None:
+    def exercise(stderr: bytes) -> tuple[AdapterError, dict[str, Any]]:
+        effects = GitHubEffects()
+        effects._publication_token = "sentinel-publication-token"
+        observed: dict[str, Any] = {}
+
+        def fake_publish_run(
+            command: list[str], **kwargs: Any
+        ) -> subprocess.CompletedProcess[Any]:
+            if command[:3] == ["git", "diff", "--cached"]:
+                return subprocess.CompletedProcess(command, 1)
+            if command[:2] == ["git", "push"]:
+                observed["command"] = command
+                observed["env"] = kwargs["env"]
+                helper_path = Path(kwargs["env"]["GIT_ASKPASS"])
+                observed["helper_path"] = helper_path
+                observed["helper"] = helper_path.read_text(encoding="utf-8")
+                return subprocess.CompletedProcess(command, 1, stderr=stderr)
+            return subprocess.CompletedProcess(command, 0)
+
+        with patch("codex_target_adapter.subprocess.run", side_effect=fake_publish_run):
+            try:
+                effects.publish("codex/delivery-42", "delivery-42", "a" * 64, 30)
+            except AdapterError as exc:
+                observed["helper_removed"] = not observed["helper_path"].exists()
+                return exc, observed
+        raise ValueError("failed publication unexpectedly succeeded")
+
+    denied, observed = exercise(b"fatal: Authentication failed for repository")
+    require(
+        denied.category == "publication"
+        and denied.status == "failed"
+        and denied.safe_message == "Draft branch publication failed",
+        "ordinary Git publication failure was misclassified as a create race",
+    )
+    require(
+        observed["env"]["GIT_USERNAME"] == "x-access-token"
+        and observed["env"]["GIT_PASSWORD"] == "sentinel-publication-token"
+        and observed["env"]["GIT_TERMINAL_PROMPT"] == "0",
+        "publication push did not use the controlled Git credential environment",
+    )
+    require(
+        "sentinel-publication-token" not in " ".join(observed["command"])
+        and "sentinel-publication-token" not in observed["helper"],
+        "publication token leaked into Git arguments or helper content",
+    )
+    require(
+        "*Username*" in observed["helper"] and "$GIT_PASSWORD" in observed["helper"],
+        "publication helper does not answer Git username and password prompts separately",
+    )
+    require(observed["helper_removed"], "publication askpass helper was retained after push failure")
+
+    raced, _ = exercise(b"! [rejected] HEAD -> delivery (non-fast-forward)\nerror: failed to push some refs")
+    require(
+        raced.category == "publication" and raced.safe_message == "create-race",
+        "non-fast-forward publication race no longer enters reconciliation",
+    )
 
 def test_canonical_policy_and_result() -> None:
     verify_effects = FakeEffects()
