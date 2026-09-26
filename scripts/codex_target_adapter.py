@@ -327,6 +327,29 @@ class GitHubEffects:
         return subprocess.check_output(["gh", *args], text=True, env=env, stderr=subprocess.DEVNULL,
                                        timeout=timeout_seconds)
 
+
+    def _publication_git_environment(self) -> tuple[dict[str, str], str]:
+        """Create a secret-free askpass helper and publication-only Git environment."""
+        env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
+        token = self._publication_credential()
+        askpass_script = """#!/bin/sh
+case "$1" in
+  *Username*) printf '%s\\n' "$GIT_USERNAME" ;;
+  *) printf '%s\\n' "$GIT_PASSWORD" ;;
+esac
+"""
+        askpass_path = os.path.join(ROOT, ".git", "ai_sdlc_askpass.sh")
+        with open(askpass_path, "w", encoding="utf-8") as askpass_file:
+            askpass_file.write(askpass_script)
+        os.chmod(askpass_path, 0o700)
+        return {
+            **env,
+            "GIT_ASKPASS": askpass_path,
+            "GIT_TERMINAL_PROMPT": "0",
+            "GIT_USERNAME": "x-access-token",
+            "GIT_PASSWORD": token,
+        }, askpass_path
+
     def discover(self, branch: str, delivery_id: str, timeout_seconds: float) -> Ownership:
         branch_names = self._gh(
             "api",
@@ -358,9 +381,11 @@ class GitHubEffects:
                 raise subprocess.TimeoutExpired("codex", timeout_seconds)
             return remaining
 
-        # Fail before invoking Codex when the publication identity cannot push
-        # to this repository. PR creation is still exercised by publication,
-        # because GitHub exposes no read-only check for a token's PR-write scope.
+        # Fail before invoking Codex unless the publication identity can use the
+        # same authenticated Git transport required for the eventual branch push.
+        # API permission metadata is checked first, then an actual dry-run push
+        # closes the gap that previously allowed a cost-bearing Codex execution
+        # to succeed before publication authentication failed.
         try:
             can_push = self._gh(
                 "api",
@@ -379,6 +404,32 @@ class GitHubEffects:
             raise AdapterError(
                 "authorization",
                 "Publication identity does not have repository write access",
+                "failed",
+            )
+
+        remote = f"https://github.com/{TARGET}.git"
+        run_id = os.getenv("GITHUB_RUN_ID", "local")
+        run_attempt = os.getenv("GITHUB_RUN_ATTEMPT", "1")
+        probe_ref = f"refs/heads/ai-sdlc-preflight-{run_id}-{run_attempt}"
+        push_env, askpass_path = self._publication_git_environment()
+        try:
+            probe = subprocess.run(
+                ["git", "push", "--dry-run", remote, f"HEAD:{probe_ref}"],
+                cwd=ROOT,
+                env=push_env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=budget(),
+            )
+        finally:
+            try:
+                os.remove(askpass_path)
+            except OSError:
+                pass
+        if probe.returncode:
+            raise AdapterError(
+                "publication",
+                "Publication git transport readiness check failed",
                 "failed",
             )
 
@@ -487,7 +538,6 @@ class GitHubEffects:
 
     def publish(self, branch: str, delivery_id: str, digest: str, timeout_seconds: float) -> str:
         env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
-        token = self._publication_credential()
         deadline = time.monotonic() + timeout_seconds
         def budget() -> float:
             remaining = deadline - time.monotonic()
@@ -504,22 +554,30 @@ class GitHubEffects:
                         "commit", "-m", f"AI-SDLC delivery {delivery_id}"], check=True, cwd=ROOT, env=env,
                        timeout=budget())
         remote = f"https://github.com/{TARGET}.git"
-        askpass_script = f"#!/bin/sh\necho 'x-access-token:{token}'\n"
-        askpass_path = os.path.join(ROOT, ".git", "ai_sdlc_askpass.sh")
+        push_env, askpass_path = self._publication_git_environment()
         try:
-            with open(askpass_path, "w", encoding="utf-8") as askpass_file:
-                askpass_file.write(askpass_script)
-            os.chmod(askpass_path, 0o700)
-            push_env = {**env, "GIT_ASKPASS": askpass_path, "GIT_USERNAME": "x-access-token"}
-            pushed = subprocess.run(["git", "push", remote, f"HEAD:refs/heads/{branch}"], cwd=ROOT, env=push_env,
-                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=budget())
+            pushed = subprocess.run(
+                ["git", "push", remote, f"HEAD:refs/heads/{branch}"],
+                cwd=ROOT,
+                env=push_env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                timeout=budget(),
+            )
         finally:
             try:
                 os.remove(askpass_path)
             except OSError:
                 pass
         if pushed.returncode:
-            raise AdapterError("publication", "create-race")
+            stderr_text = (pushed.stderr or b"").decode("utf-8", errors="replace").lower()
+            if "non-fast-forward" in stderr_text or "fetch first" in stderr_text:
+                raise AdapterError("publication", "create-race")
+            raise AdapterError(
+                "publication",
+                "Draft branch publication failed",
+                "failed",
+            )
         body = f"<!-- {MARKER}: {delivery_id}; payload-sha256: {digest} -->\n\nAutomated draft; human review and merge are required."
         # The commit is already durable on the remote branch. Retry only PR
         # creation so a transient GitHub CLI/API failure cannot strand that
