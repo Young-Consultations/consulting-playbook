@@ -1,62 +1,66 @@
-# Engineering Journal: control-plane tag-type enforcement
+# Engineering Journal: control-plane release tag policy drift
 
 **Date:** 2026-09-26  
 **Defect:** DEF-0052  
 **Affected repository:** `Young-Consultations/.github`  
-**Detection:** automated PR review of publication-attestation PR #79
+**Detection:** automated PR review followed by cross-release audit
 
 ## What happened
 
-The controlled release procedure requires each published control-plane
-`ai-sdlc-vX.Y.Z` tag to be annotated. Candidate PR #78 merged at
-`afe09d320268581bc83021cbfc80bf2a0f0bff91`, after which
-`ai-sdlc-v2.4.5` was created at that exact commit. Publication-attestation PR
-#79 initially recorded the release as published and all exact-head checks were
-green.
+Publication-attestation PR #79 recorded `ai-sdlc-v2.4.5` at reviewed candidate
+merge commit `afe09d320268581bc83021cbfc80bf2a0f0bff91`. Copilot review observed
+that the tag is lightweight while `docs/releases.md` said the controlled
+release procedure required an annotated tag.
 
-Copilot review then identified that the Git ref API returned
-`object.type: commit`, proving the tag was lightweight rather than annotated.
-The release identity pointed to the correct commit, but it did not satisfy the
-documented release policy.
+The first response treated that as a release-policy violation and added
+annotated-only enforcement to lifecycle tests, target compatibility, and
+Runtime Preflight.
 
-## Why the existing gates missed it
+A cross-release inspection then showed that `ai-sdlc-v2.4.0` through
+`ai-sdlc-v2.4.5` are all lightweight tags. The authoritative software
+requirement for the atomic release unit requires an immutable published identity
+and tag-integrity evidence, but does not require an annotated Git tag object.
 
-The release checks treated "resolves to the reviewed commit" as sufficient
-evidence. The lifecycle test used `git rev-list`, target compatibility resolved
-the receiver tag to a commit, and Runtime Preflight dereferenced either
-lightweight or annotated tags. None of those checks asserted the required tag
-object type.
+The release owner clarified that annotated tags are not required.
 
-This was an enforcement gap between the authoritative release procedure and
-the executable release evidence.
+## Actual defect
 
-## Repair
+The defect was not the 2.4.5 tag. The defect was release-procedure
+documentation that had become more restrictive than the approved requirement
+and established release mechanism.
 
-PR #79 now adds three fail-closed checks:
+The procedure introduced an untraced implementation detail, "annotated tag",
+and review correctly detected the textual contradiction. Because that detail
+was not backed by an approved requirement or ADR, enforcing it would have
+created unnecessary release work and encouraged rewriting an otherwise correct
+immutable release identity.
 
-1. the release lifecycle test requires
-   `git cat-file -t refs/tags/<release>` to return `tag`;
-2. the release-aware target verifier requires the published control-plane ref
-   object to have type `tag` and then verifies its dereferenced commit matches
-   the attested commit;
-3. deployed Runtime Preflight rejects a lightweight control-plane release tag.
+## Resolution
 
-After the change, exact-head CI fails for the current 2.4.5 tag as intended:
-Target Compatibility reports
-`published control-plane release tag must be annotated`, and the lifecycle
-test reports `commit` instead of `tag`.
+PR #79 now defines the control-plane release policy explicitly:
 
-## Release decision
+- the release tag name is immutable after publication;
+- the tag must independently resolve to the exact reviewed candidate merge
+  commit recorded in the manifest/runtime evidence;
+- lightweight and annotated Git tags are both acceptable;
+- no published tag may be moved, deleted, or recreated as part of normal
+  release handling.
 
-PR #79 remains blocked and was converted back to draft. The tag discrepancy
-must be resolved through the controlled release process or an explicit
-release-owner variance must be recorded before publication attestation can
-merge. The source consumer remains on 2.4.4 and no new REAL execution is
-authorized.
+The temporary annotated-only enforcement added during investigation was
+removed. Existing commit-identity checks remain in the release lifecycle,
+release-aware compatibility verifier, and Runtime Preflight.
+
+`ai-sdlc-v2.4.5` is intentionally left unchanged at
+`afe09d320268581bc83021cbfc80bf2a0f0bff91`.
 
 ## SDLC learning
 
-A release policy stated only in documentation is not a release gate. Immutable
-identity evidence must validate both *what commit a reference reaches* and any
-required properties of the reference itself. For control-plane release tags,
-tag type is part of the release contract, not merely Git metadata.
+Documentation can create false requirements just as code can violate real
+requirements. A procedural rule should not become an executable gate unless it
+traces to an approved requirement, architecture decision, security boundary, or
+explicit owner decision.
+
+When review identifies a contradiction, compare the requirement hierarchy,
+historical implementation, and release evidence before turning the review
+comment into new enforcement. The useful invariant here is immutable exact
+commit identity, not Git tag object type.
