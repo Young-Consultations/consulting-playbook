@@ -6,14 +6,18 @@ This profile is the normative repository-owned implementation baseline. It uses
 payload contract `ai-sdlc-contract/v2` and fixture-set manifest
 `TC-MVP-CI-001` from the reviewed issue #135 recovery candidate at immutable
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
-The published `ai-sdlc-v2.4.2` and `codex-adapter-v2.4.2` units remain the
-rollback baseline. The published 2.4.3 control plane selects
-`codex-adapter-v2.4.3` with the matching published receiver. REAL issue #150
-exposed runner sandbox preparation and empty-implementation outcome defects;
-the reviewed target repair merged in PR #62. This follow-up is an unpublished
-2.4.4 target candidate: it requires the target to pin the future matching
-2.4.4 receiver, regenerates exact-file evidence, and requires release and
-live verification before another REAL approval. These interface facts are requirements;
+The published `ai-sdlc-v2.4.4` control plane selects
+`codex-adapter-v2.4.4` at
+`70ea4342abf7115f6848ea32bb958bbf6be696c1` with the matching published
+receiver; 2.4.3 remains the previous known-good control-plane generation and
+2.4.2 remains the rollback baseline. REAL issue #151 proved Codex execution,
+candidate validation, and repository tests under 2.4.4, then failed during
+branch publication with no remote branch or draft PR. This follow-up is an
+unpublished 2.4.5 target candidate: it repairs publication authentication,
+restores a real authenticated Git transport readiness check before Codex,
+regenerates exact-file evidence, and pins the future matching 2.4.5 receiver.
+Release, registration, deployed preflight, and live verification remain required
+before another REAL approval. These interface facts are requirements;
 conformance is established only by the exact-file pin and executable report
 described below.
 
@@ -99,16 +103,16 @@ The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
 It shall invoke
-`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.4`
+`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.5`
 with inputs `execution_result` and `source_issue` and secret
-`CODEX_RESULT_TOKEN`. The 2.4.4 receiver is not published, so this target
-candidate cannot be used for REAL dispatch. Its ordinary conformance checks
-use fake effects and do not prove live receiver delivery. The 2.4.3 release
-remains the currently published path; 2.4.2 remains the rollback baseline.
-The 2.4.4 control-plane release, target binding, and live verification must
-complete before another REAL approval. Receiver outputs are `accepted`, `delivery_id`,
-`correlation_id`, `execution_status`, `failure_category`, and
-`diagnostic_summary`.
+`CODEX_RESULT_TOKEN`. The 2.4.5 receiver is not yet published, so this target
+candidate cannot be used for REAL dispatch. Its ordinary conformance checks use
+fake effects and do not prove live receiver delivery. The published 2.4.4 release
+remains the current path; 2.4.3 remains the previous known-good generation and
+2.4.2 the rollback baseline. The 2.4.5 control-plane release, target binding,
+deployed preflight, and live verification must complete before another REAL
+approval. Receiver outputs are `accepted`, `delivery_id`, `correlation_id`,
+`execution_status`, `failure_category`, and `diagnostic_summary`.
 
 The receiver is the canonical organization-owned result transport. Consulting
 Playbook shall invoke that interface and shall not build a competing receiver.
@@ -150,9 +154,13 @@ against the exact immutable schema; require target
 type (`automation`, `documentation`, `feature`, or `testing`), local repository
 and consulting-content policy, and `draft_pr_only: true`; validate and use the
 supplied `concurrency_group`; and fail closed when caller authentication,
-authorization, or routing evidence is stale or improper. It shall not read or
-enforce mutable activation state: receipt from the authenticated organization
-router is downstream of the router's current activation decision.
+authorization, or routing evidence is stale or improper. Before invoking Codex,
+the publication identity shall both report repository push permission and
+successfully exercise the authenticated Git push transport with a non-mutating
+dry-run. Failure or indeterminate transport readiness shall stop the delivery
+before the cost-bearing executor is invoked. It shall not read or enforce mutable
+activation state: receipt from the authenticated organization router is downstream
+of the router's current activation decision.
 
 `delivery_id` is the sole idempotency identity and stays stable across retries;
 `correlation_id` is the observability identity. Processing is at least once with
