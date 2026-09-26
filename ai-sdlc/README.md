@@ -33,6 +33,10 @@ Requirements / Architecture reconciliation
 
 The arrows show a common path, not mandatory bureaucracy. For example, a minor resolved defect may require only a ledger row, while a non-defect process insight may require only a journal entry.
 
+## Acceptance checks before implementation
+
+Before changing files, derive concise, reviewable acceptance checks from the approved issue's intent and constraints so the planned outcome is explicit. After implementation, collect test results and other evidence against those checks. Passing a check alone does not prove the original intent was correctly understood; reviewers still compare implementation evidence with the approved requirement and resolve any mismatch through the authoritative requirement and reconciliation path.
+
 ## Authority and reconciliation
 
 Authoritative product requirements, architecture, interfaces, and decisions remain in the approved documents of their owning repositories. Evidence found during implementation must be reconciled there by the proper authority; neither this learning system nor an implementation artifact silently changes product truth.
