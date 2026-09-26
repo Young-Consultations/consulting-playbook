@@ -290,21 +290,6 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         if command[:3] == ["git", "push", "--dry-run"]:
             helper = Path(kwargs["env"]["GIT_ASKPASS"])
             call["askpass_script"] = helper.read_text(encoding="utf-8")
-            call["askpass_username"] = subprocess.check_output(
-                [str(helper), "Username for 'https://github.com':"],
-                env=kwargs["env"],
-                text=True,
-            ).strip()
-            call["askpass_password"] = subprocess.check_output(
-                [str(helper), "Password for 'https://x-access-token@github.com':"],
-                env=kwargs["env"],
-                text=True,
-            ).strip()
-            call["askpass_unexpected"] = subprocess.check_output(
-                [str(helper), "Credential for unexpected prompt:"],
-                env=kwargs["env"],
-                text=True,
-            ).strip()
         calls.append(call)
         if command == ["codex", "login", "--with-api-key"]:
             auth_path = Path(kwargs["env"]["CODEX_HOME"]) / "auth.json"
@@ -412,12 +397,6 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         and "*Password*" in probe["askpass_script"]
         and '*) printf \'%s\\\\n\' "" ;;' in probe["askpass_script"],
         "publication askpass helper does not explicitly allow only username and password prompts",
-    )
-    require(
-        probe["askpass_username"] == "x-access-token"
-        and probe["askpass_password"] == "sentinel-publication-token"
-        and probe["askpass_unexpected"] == "",
-        "publication askpass helper exposed credentials to an unexpected prompt",
     )
     require(login["command"] == ["codex", "login", "--with-api-key"], "Codex login command drifted")
     require(login["input"] == "sentinel-openai-key", "Codex login did not receive the credential over stdin")
@@ -601,6 +580,35 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             raise ValueError("failed Codex login did not fail closed")
         require(failed_login.call_count == 2, "Codex login did not follow exactly one successful transport probe")
 
+
+
+
+def test_publication_askpass_prompt_allowlist() -> None:
+    effects = GitHubEffects()
+    effects._publication_token = "sentinel-publication-token"
+    env, helper_path = effects._publication_git_environment()
+    helper = Path(helper_path)
+    try:
+        username = subprocess.check_output(
+            [str(helper), "Username for 'https://github.com':"],
+            env=env,
+            text=True,
+        ).strip()
+        password = subprocess.check_output(
+            [str(helper), "Password for 'https://x-access-token@github.com':"],
+            env=env,
+            text=True,
+        ).strip()
+        unexpected = subprocess.check_output(
+            [str(helper), "Credential for unexpected prompt:"],
+            env=env,
+            text=True,
+        ).strip()
+    finally:
+        helper.unlink(missing_ok=True)
+    require(username == "x-access-token", "askpass did not return the publication username")
+    require(password == "sentinel-publication-token", "askpass did not return the publication password")
+    require(unexpected == "", "askpass exposed a credential to an unexpected prompt")
 
 
 def test_publication_transport_auth_and_failure_classification() -> None:
