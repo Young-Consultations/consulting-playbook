@@ -223,11 +223,13 @@ pull-request state.
 
 ## Implementation readiness and operational activation
 
-The published 2.4.3 adapter remains the current runtime identity, and 2.4.2
-remains the rollback baseline. This change prepares a 2.4.4-targeted
-adapter candidate and refreshed no-effects evidence. It does not claim the
-2.4.4 receiver or adapter tag is published or live-verified.
-Operational activation remains mutable organization control-plane state and is
-neither pinned nor enforced here. This repository must not create a second
-activation switch; routing remains bound to the organization registry until the
-new immutable adapter tag and evidence are registered.
+The published 2.4.5 adapter is the current runtime identity and published 2.4.4
+is the immediate rollback generation. The 2.4.5 target/control-plane release,
+deployed Runtime Preflight, immutable REAL preflight, portfolio consumer repin,
+and fresh REAL issue #154 have all completed successfully. Operational
+activation remains mutable organization control-plane state and is neither
+pinned nor administered here. This repository must not create a second
+activation switch; routing remains owned by the organization registry/router.
+The successful REAL delivery is live acceptance evidence, while the checked-in
+zero-effect conformance report remains immutable pre-publication compatibility
+evidence.
