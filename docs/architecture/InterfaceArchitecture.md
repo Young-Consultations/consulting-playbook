@@ -43,18 +43,21 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   detail, and branch/draft metadata when applicable.
 - **Compatibility and activation:** the non-recursive target pin binds exact
   schema/fixture blobs at recovery candidate `e27b8a5` plus this workflow,
-  adapter, and harness. The published `ai-sdlc-v2.4.2` compatibility unit
-  remains the rollback baseline. The current published target calls the
-  2.4.3 receiver. The next target candidate must call
-  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.4`
-  only as part of the reviewed 2.4.4 release composition. That receiver and
-  the matching target adapter tag are not published; no REAL dispatch may use
-  this candidate before publication, registration, and live verification.
-  Current activation is separate mutable router state; the target neither
-  consumes historical activation nor administers it. No package or observed
-  import is a contract.
+  adapter, and harness. The current published target is
+  `codex-adapter-v2.4.4` and calls the published 2.4.4 receiver; 2.4.3 remains
+  the previous known-good generation and 2.4.2 the rollback baseline. The next
+  target candidate must call
+  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.5`
+  only as part of the reviewed 2.4.5 release composition. That receiver and the
+  matching target adapter tag are not yet published; no REAL dispatch may use
+  this candidate before publication, registration, deployed preflight, and live
+  verification. Current activation is separate mutable router state; the target
+  neither consumes historical activation nor administers it. No package or
+  observed import is a contract.
 - **Validation:** exact immutable schemas first, then caller/target/type, supported
-  executor/mode, sensitivity, repository policy, concurrency, and reconciliation.
+  executor/mode, sensitivity, repository policy, concurrency, reconciliation,
+  publication permission metadata, and a non-mutating authenticated Git push
+  transport probe before cost-bearing Codex execution.
 - **Retries/idempotency:** router retries retain logical delivery identity;
   concurrency is optimization only. Preflight observes branch and pull-request
   state independently before Codex; disagreement is ambiguous and fail-closed.
