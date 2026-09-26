@@ -28,20 +28,21 @@ the two required string inputs `execution_input_json` and
 `concurrency_group`. No `workflow_call`, artifact/run-ID, field-by-field, or
 fallback entry point is active.
 
-The published 2.4.3 target pins the organization receiver to
-`ai-sdlc-v2.4.3`, Codex CLI to `0.154.0`, model to `gpt-5.3-codex`, and the
-runtime schema validator to `4.26.0`. Issue #150 reached Codex but exposed
-missing GitHub runner sandbox preparation and an empty implementation reported
-as `no-changes`. This candidate restores runner preparation before credential
-handoff and fails an implement task with no candidate changes before repository
-validation. Its regenerated zero-effect evidence is bound by
-`config/mvp-conformance-pin.json`. The follow-up candidate pins the
-`ai-sdlc-v2.4.4` receiver and regenerates evidence through the 2.4.4
-conformance wrapper. The 2.4.4 receiver and adapter tags are not published.
-Publish this target only after review and passing exact-head checks, then
-bind its immutable adapter identity into a separately reviewed 2.4.4
-control-plane release. Rerun deployed preflight before another REAL
-approval. The published 2.4.3 and 2.4.2 units are unchanged.
+The published 2.4.4 target is `codex-adapter-v2.4.4` at
+`70ea4342abf7115f6848ea32bb958bbf6be696c1`; it pins the organization receiver
+to `ai-sdlc-v2.4.4`, Codex CLI to `0.154.0`, model to `gpt-5.3-codex`, and
+the runtime schema validator to `4.26.0`. REAL issue #151 proved Codex,
+candidate validation, and tests could succeed under that release, then exposed a
+publication-transport defect before any remote branch or draft PR survived. The
+2.4.5 repair candidate preserves the immutable 2.4.4 evidence, proves the actual
+authenticated Git push transport with a dry-run before Codex, uses a
+prompt-aware askpass boundary, and distinguishes ordinary push failure from a
+true branch create race. Its regenerated zero-effect evidence is bound by
+`config/mvp-conformance-pin.json` and it pins the future matching
+`ai-sdlc-v2.4.5` receiver. Do not use this candidate for REAL dispatch until
+the reviewed adapter tag, matching control-plane 2.4.5 release, deployed
+preflight, and live verification are complete. The published 2.4.4 and 2.4.3
+units remain unchanged.
 
 The recovery evidence is bound to
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
@@ -92,7 +93,8 @@ pull request. Target execution can never merge
 automatically; human review and merge are always required.
 
 Before implementation, the production adapter confirms that the separate
-publication identity has write access to this repository. It then mirrors the
+publication identity reports repository write access and proves the same authenticated
+Git push transport used by publication with a non-mutating dry-run. It then mirrors the
 controlled authentication preflight: the API key enters only `codex login
 --with-api-key` over standard input, login state is stored in a fresh temporary
 `CODEX_HOME`, and the runner shell is replaced before the adapter re-executes
