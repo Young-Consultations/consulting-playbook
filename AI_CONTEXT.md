@@ -197,21 +197,23 @@ the organization release, while current activation is separate mutable
 organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
-The published 2.4.2 compatibility unit remains the rollback baseline.
-The published 2.4.4 release is the current runtime identity:
-`codex-adapter-v2.4.4` resolves to
-`70ea4342abf7115f6848ea32bb958bbf6be696c1`, and the immutable
-`ai-sdlc-v2.4.4` control-plane tag resolves to
-`adb57508762168b3410f52e8a7b0151078c6e9b9`; publication was attested by
-organization PR #76. REAL issue #151 reached Codex, produced the requested
-candidate, and passed validation/tests, then exposed publication transport
-authentication and failure-classification defects before a remote branch or
-draft PR survived. The next target candidate is 2.4.5: it proves authenticated
-Git push transport with a dry-run before Codex, uses a prompt-aware askpass
-boundary, and distinguishes ordinary push failures from true create races. Do
-not rewrite published 2.4.4 identities. Publish reviewed 2.4.5 identities and
-require matching control-plane release, deployed preflight, and live verification
-before another REAL approval.
+The published 2.4.2 compatibility unit remains a historical rollback
+baseline. The current runtime identity is the published 2.4.5 release:
+`codex-adapter-v2.4.5` resolves to
+`4f062ca73acfc3458f0d690bf1c7687bafd0a8eb`, and
+`ai-sdlc-v2.4.5` resolves to reviewed control-plane commit
+`afe09d320268581bc83021cbfc80bf2a0f0bff91`; publication was attested by
+organization PR #79. Deployed Runtime Preflight run 36277959203 and immutable
+REAL preflight run 36278028013 passed before the portfolio consumer advanced.
+Fresh REAL issue #154 then exercised the full published path with delivery
+`task-8f1f5318e2789a4b49ff22be64c700bc`: target run 36279165335 prepared the
+sandbox, ran Codex, passed validation/tests, published one managed draft PR,
+delivered the canonical result through the 2.4.5 receiver, and projected it back
+to the source issue. PR #66 passed conformance and human review and merged at
+`6d3d9694057e787eab74ae45999ad73c804c6067`. The transport dry-run,
+prompt-aware askpass boundary, fail-closed empty-implementation rule, and
+sandbox preparation are now live-verified. Published 2.4.4 remains the immediate
+rollback generation. Do not rewrite published release identities.
 
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft
