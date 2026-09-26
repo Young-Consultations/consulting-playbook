@@ -83,3 +83,13 @@ only after merged, controlled evidence supports a narrower claim.
 This is a reusable example of why configuration presence, simulated contract
 tests, transport success, and live dependency readiness must be reported as
 different evidence rather than collapsed into one green status.
+
+## Closure evidence — 2026-09-26
+
+The missing live credential-readiness gate is now proven operational. The manual
+Codex authentication preflight was merged and controlled run
+[34929448831](https://github.com/Young-Consultations/consulting-playbook/actions/runs/34929448831)
+completed successfully using the pinned client/model and protected environment.
+DEF-0034 is therefore resolved. Later REAL 2.4.5 execution #154 also completed
+Codex execution successfully, but that broader delivery is not substituted for
+the narrower provider-readiness claim of this preflight.
