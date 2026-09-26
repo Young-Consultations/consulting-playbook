@@ -288,7 +288,23 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
     def fake_run(command: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
         call = {"command": command, **kwargs}
         if command[:3] == ["git", "push", "--dry-run"]:
-            call["askpass_script"] = Path(kwargs["env"]["GIT_ASKPASS"]).read_text(encoding="utf-8")
+            helper = Path(kwargs["env"]["GIT_ASKPASS"])
+            call["askpass_script"] = helper.read_text(encoding="utf-8")
+            call["askpass_username"] = subprocess.check_output(
+                [str(helper), "Username for 'https://github.com':"],
+                env=kwargs["env"],
+                text=True,
+            ).strip()
+            call["askpass_password"] = subprocess.check_output(
+                [str(helper), "Password for 'https://x-access-token@github.com':"],
+                env=kwargs["env"],
+                text=True,
+            ).strip()
+            call["askpass_unexpected"] = subprocess.check_output(
+                [str(helper), "Credential for unexpected prompt:"],
+                env=kwargs["env"],
+                text=True,
+            ).strip()
         calls.append(call)
         if command == ["codex", "login", "--with-api-key"]:
             auth_path = Path(kwargs["env"]["CODEX_HOME"]) / "auth.json"
@@ -392,8 +408,16 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         "publication credential leaked into Git arguments or helper content",
     )
     require(
-        "*Username*" in probe["askpass_script"] and "$GIT_PASSWORD" in probe["askpass_script"],
-        "publication askpass helper does not distinguish username and password prompts",
+        "*Username*" in probe["askpass_script"]
+        and "*Password*" in probe["askpass_script"]
+        and '*) printf \'%s\\\\n\' "" ;;' in probe["askpass_script"],
+        "publication askpass helper does not explicitly allow only username and password prompts",
+    )
+    require(
+        probe["askpass_username"] == "x-access-token"
+        and probe["askpass_password"] == "sentinel-publication-token"
+        and probe["askpass_unexpected"] == "",
+        "publication askpass helper exposed credentials to an unexpected prompt",
     )
     require(login["command"] == ["codex", "login", "--with-api-key"], "Codex login command drifted")
     require(login["input"] == "sentinel-openai-key", "Codex login did not receive the credential over stdin")
@@ -626,8 +650,10 @@ def test_publication_transport_auth_and_failure_classification() -> None:
         "publication token leaked into Git arguments or helper content",
     )
     require(
-        "*Username*" in observed["helper"] and "$GIT_PASSWORD" in observed["helper"],
-        "publication helper does not answer Git username and password prompts separately",
+        "*Username*" in observed["helper"]
+        and "*Password*" in observed["helper"]
+        and '*) printf \'%s\\\\n\' "" ;;' in observed["helper"],
+        "publication helper does not restrict credential responses to expected Git prompts",
     )
     require(observed["helper_removed"], "publication askpass helper was retained after push failure")
 
