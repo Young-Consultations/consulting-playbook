@@ -116,3 +116,11 @@ target execution, reports both identities in preflight evidence, updates the
 target conformance binding, and regenerates the complete no-real-effects report.
 DEF-0037 tracks this defect. It remains open until the change is merged and a
 controlled preflight succeeds.
+
+## Closure evidence — 2026-09-26
+
+The diagnostic repairs merged, and controlled preflight run
+[34929448831](https://github.com/Young-Consultations/consulting-playbook/actions/runs/34929448831)
+completed successfully on the repaired workflow. The staged diagnostics no
+longer block identifying provider readiness, and startup-banner handling no
+longer masks provider failure categories. DEF-0035 and DEF-0036 are resolved.
