@@ -135,3 +135,26 @@ delivery dependency fails, and of a previously learned safety mechanism being
 lost during architecture convergence. It supports the emerging concept of
 cost-bearing API execution safeguards without treating that broader concept as
 an approved standard yet.
+
+## Closure evidence — 2026-09-26
+
+The 2.4.5 repair completed its entire release and acceptance sequence:
+
+- target repair PR #64 merged and `codex-adapter-v2.4.5` was published at
+  `4f062ca73acfc3458f0d690bf1c7687bafd0a8eb`;
+- control-plane 2.4.5 publication was attested by PR #79;
+- deployed Runtime Preflight run 36277959203 passed;
+- immutable REAL preflight run 36278028013 passed;
+- portfolio consumer PR #153 advanced the source router to 2.4.5;
+- fresh REAL issue #154 used new delivery identity
+  `task-8f1f5318e2789a4b49ff22be64c700bc`;
+- target run 36279165335 produced one managed draft PR, passed validation/tests,
+  and delivered an accepted canonical result through the 2.4.5 receiver;
+- PR #66 passed conformance and human review and merged at
+  `6d3d9694057e787eab74ae45999ad73c804c6067`.
+
+DEF-0048 is resolved. The same release sequence also supplies closure evidence
+for the already-corrected 2.4.4/2.4.5 release-state documentation lineage.
+Current-state target requirements, architecture, README, workflow commentary,
+and `AI_CONTEXT.md` are reconciled in the post-REAL closure change; historical
+candidate evidence remains unchanged.
