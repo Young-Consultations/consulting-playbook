@@ -43,25 +43,32 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   detail, and branch/draft metadata when applicable.
 - **Compatibility and activation:** the non-recursive target pin binds exact
   schema/fixture blobs at recovery candidate `e27b8a5` plus this workflow,
-  adapter, and harness. The current published target is
+  adapter, and harness. The current published target remains
   `codex-adapter-v2.4.5` at
-  `4f062ca73acfc3458f0d690bf1c7687bafd0a8eb` and calls the published
-  `ai-sdlc-v2.4.5` receiver at
-  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.5`.
-  The matching control-plane release is published and attested; deployed Runtime
-  Preflight, immutable REAL preflight, and fresh
-  REAL issue #154 all passed. Published 2.4.4 remains immutable previous-
-  generation evidence but is not an execution-safe rollback for cost-bearing
-  implementation because REAL #151 exposed its publication-transport defect.
-  Current activation is separate mutable router state; the target
-  neither consumes historical activation nor administers it. The immutable
-  candidate report remains pre-publication compatibility evidence and is not
-  rewritten by later live acceptance. No package or observed import is a
-  contract.
+  `4f062ca73acfc3458f0d690bf1c7687bafd0a8eb`. REAL #154 proved its initial
+  end-to-end path, while REAL #156 exposed a result-journal identity mismatch on
+  equivalent redelivery. The next target candidate is
+  `codex-adapter-v2.4.6`, which calls the future
+  `ai-sdlc-v2.4.6` receiver at
+  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.6`.
+  Before Codex, the candidate mints a short-lived installation token from the
+  dedicated GitHub App `ai-sdlc-result-writer` (App ID `5100679`), installed
+  only on `portfolio-tasks`, and invokes the matching organization-owned
+  credential preflight. The result receiver later mints a fresh token from the
+  same App private key so a long-running Codex job cannot outlive the result
+  credential. Published 2.4.4 remains immutable previous-generation evidence
+  but is not an execution-safe rollback for cost-bearing implementation because
+  REAL #151 exposed its publication-transport defect. Current activation is
+  separate mutable router state; the target neither consumes historical
+  activation nor administers it. The immutable candidate report remains
+  pre-publication compatibility evidence and is not rewritten by later live
+  acceptance. No package or observed import is a contract.
 - **Validation:** exact immutable schemas first, then caller/target/type, supported
   executor/mode, sensitivity, repository policy, concurrency, reconciliation,
-  publication permission metadata, and a non-mutating authenticated Git push
-  transport probe before cost-bearing Codex execution.
+  result-writer source binding, GitHub App slug, issue-comment create/delete
+  capability, no-op repository-dispatch capability, publication permission
+  metadata, and a non-mutating authenticated Git push transport probe before
+  cost-bearing Codex execution.
 - **Retries/idempotency:** router retries retain logical delivery identity;
   concurrency is optimization only. Preflight observes branch and pull-request
   state independently before Codex; disagreement is ambiguous and fail-closed.
