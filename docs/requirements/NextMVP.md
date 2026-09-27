@@ -17,7 +17,7 @@ REAL preflight all passed. Fresh REAL issue #154 then produced one managed draft
 PR through the published 2.4.5 path with validation and tests passed, and the
 receiver/source projection completed successfully. The immutable candidate
 conformance report remains pre-publication evidence and is not rewritten by
-later live verification. Published 2.4.4 is the immediate rollback generation.
+later live verification. Published 2.4.4 remains immutable previous-generation evidence, but REAL #151 proved it is not an execution-safe rollback for cost-bearing implementation because its publication transport can lose successful Codex work. Any rollback that may invoke Codex must select a separately reviewed safe release or disable REAL execution.
 These interface facts are requirements; conformance is established by the
 exact-file pin and executable report described below, while live acceptance is
 preserved separately in the governed workflow and source issue evidence.
@@ -223,8 +223,7 @@ pull-request state.
 
 ## Implementation readiness and operational activation
 
-The published 2.4.5 adapter is the current runtime identity and published 2.4.4
-is the immediate rollback generation. The 2.4.5 target/control-plane release,
+The published 2.4.5 adapter is the current runtime identity. Published 2.4.4 remains immutable previous-generation evidence, but REAL #151 proved it is not an execution-safe rollback for cost-bearing implementation because its publication transport can lose successful Codex work. Any rollback that may invoke Codex must select a separately reviewed safe release or disable REAL execution. The 2.4.5 target/control-plane release,
 deployed Runtime Preflight, immutable REAL preflight, portfolio consumer repin,
 and fresh REAL issue #154 have all completed successfully. Operational
 activation remains mutable organization control-plane state and is neither
