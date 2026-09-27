@@ -63,9 +63,11 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   activation nor administers it. The immutable candidate report remains
   pre-publication compatibility evidence and is not rewritten by later live
   acceptance. No package or observed import is a contract.
-- **Validation:** exact immutable schemas first, then caller/target/type, supported
-  executor/mode, sensitivity, repository policy, concurrency, reconciliation,
-  result-writer source binding, GitHub App slug, issue-comment create/delete
+- **Validation:** authenticate the dispatch caller and validate the exact
+  immutable input schema, target, task type, executor/mode, branch policy, and
+  transport concurrency before minting or exercising the result-writer
+  credential; then validate result-writer source binding, GitHub App slug,
+  issue-comment create/delete
   capability, no-op repository-dispatch capability, publication permission
   metadata, and a non-mutating authenticated Git push transport probe before
   cost-bearing Codex execution.
