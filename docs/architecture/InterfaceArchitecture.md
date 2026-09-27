@@ -50,8 +50,10 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.5`.
   The matching control-plane release is published and attested; deployed Runtime
   Preflight, immutable REAL preflight, and fresh
-  REAL issue #154 all passed. Published 2.4.4 is the immediate rollback
-  generation. Current activation is separate mutable router state; the target
+  REAL issue #154 all passed. Published 2.4.4 remains immutable previous-
+  generation evidence but is not an execution-safe rollback for cost-bearing
+  implementation because REAL #151 exposed its publication-transport defect.
+  Current activation is separate mutable router state; the target
   neither consumes historical activation nor administers it. The immutable
   candidate report remains pre-publication compatibility evidence and is not
   rewritten by later live acceptance. No package or observed import is a
