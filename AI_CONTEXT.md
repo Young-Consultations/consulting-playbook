@@ -267,9 +267,11 @@ production evidence.
   the executor environment, run from the repository root under
   `workspace-write`, and before invoking Codex verify both publication
   permission metadata and the actual authenticated Git push transport with a
-  non-mutating dry-run. For the 2.4.6 candidate, the result-delivery boundary
-  must also mint and capability-check the dedicated `ai-sdlc-result-writer`
-  installation token before the OpenAI credential is exposed. Result-writer
+  non-mutating dry-run. For the 2.4.6 candidate, the workflow must first reuse
+  the adapter's admission gate so an unauthorized or malformed dispatch cannot
+  exercise source credentials; only then may the result-delivery boundary mint
+  and capability-check the dedicated `ai-sdlc-result-writer` installation
+  token before the OpenAI credential is exposed. Result-writer
   credentials must not cross into the Codex adapter environment.
 - On GitHub-hosted Ubuntu runners, prepare the unprivileged-user-namespace and
   AppArmor prerequisites for Codex `workspace-write` before handing secrets to
