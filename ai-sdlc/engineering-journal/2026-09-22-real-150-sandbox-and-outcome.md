@@ -1,7 +1,7 @@
 # 2026-09-22 — REAL #150 reached Codex but did not implement
 
 - **Date:** 2026-09-22
-- **Decision status:** resolved for target repair; live verification pending
+- **Decision status:** resolved — target repair and live REAL verification complete
 - **Pending release decision owner:** Joseph, repository owner and release approver.
 - **SDLC phase:** integration and REAL acceptance
 
@@ -71,10 +71,10 @@ The resolved runner prerequisite and implement outcome rule are recorded there.
 
 ## Follow-up
 
-Review the repair PR and its exact conformance checks. Merge and publish a new
-adapter release, compose and publish the matching control-plane patch release,
-run a protected shell/file operation probe plus deployed Runtime and REAL
-preflights, then use a fresh delivery identity for the next REAL issue.
+Completed. The repair was merged and published through the 2.4.5 target/control-
+plane release, deployed Runtime and REAL preflights passed, and fresh REAL issue
+#154 successfully exercised repository shell/file operations and produced one
+managed draft PR. DEF-0043, DEF-0044, and DEF-0046 are resolved.
 
 ## Potential consulting or content value
 
