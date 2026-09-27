@@ -212,8 +212,11 @@ delivered the canonical result through the 2.4.5 receiver, and projected it back
 to the source issue. PR #66 passed conformance and human review and merged at
 `6d3d9694057e787eab74ae45999ad73c804c6067`. The transport dry-run,
 prompt-aware askpass boundary, fail-closed empty-implementation rule, and
-sandbox preparation are now live-verified. Published 2.4.4 remains the immediate
-rollback generation. Do not rewrite published release identities.
+sandbox preparation are now live-verified. Published 2.4.4 remains immutable
+previous-generation evidence but is not an execution-safe rollback for cost-bearing
+implementation because REAL #151 exposed its publication-transport defect. Any
+rollback that may invoke Codex requires a separately reviewed safe release or REAL
+execution must remain disabled. Do not rewrite published release identities.
 
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft
