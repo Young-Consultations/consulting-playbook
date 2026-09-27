@@ -164,10 +164,23 @@ def test_security_and_publication_guards() -> None:
     require("persist-credentials: false" in WORKFLOW, "checkout persists credentials")
     require("permissions:\n  contents: read" in WORKFLOW, "workflow permissions are broader than read-only")
     require("environment: consulting-playbook-codex" in WORKFLOW, "target environment boundary is missing")
+    request_authorization = WORKFLOW.index("name: Authorize request and bind result-writer source")
+    token_mint = WORKFLOW.index("name: Mint bounded result-writer preflight token")
     result_preflight = WORKFLOW.index("name: Prove result-delivery prerequisites before Codex")
     preparation = WORKFLOW.index("name: Prepare Codex workspace sandbox")
     credential_handoff = WORKFLOW.index("OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}")
-    require(result_preflight < credential_handoff, "result delivery preflight must precede Codex credential handoff")
+    require(
+        request_authorization < token_mint < result_preflight < credential_handoff,
+        "caller/schema authorization, App token mint, result preflight, and Codex credential handoff are out of order",
+    )
+    authorization_step = WORKFLOW.split(
+        "name: Authorize request and bind result-writer source", 1
+    )[1].split("name: Mint bounded result-writer preflight token", 1)[0]
+    require(
+        "from codex_target_adapter import admit" in authorization_step
+        and "CODEX_TARGET_TRUSTED_CALLERS" in authorization_step,
+        "result preflight does not reuse the target's authoritative admission gate",
+    )
     require(preparation < credential_handoff, "sandbox preparation must precede credential handoff")
     require(
         "uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0"
