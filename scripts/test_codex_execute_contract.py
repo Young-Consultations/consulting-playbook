@@ -136,7 +136,7 @@ def test_exact_dispatch_and_receiver_boundary() -> None:
     require(inputs.count("execution_input_json:") == 1 and inputs.count("concurrency_group:") == 1, "target inputs differ")
     workflow_lines = {line.strip() for line in WORKFLOW.splitlines()}
     require(
-        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.5"
+        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.6"
         in workflow_lines,
         "receiver is not exactly and immutably pinned",
     )
@@ -151,7 +151,12 @@ def test_exact_dispatch_and_receiver_boundary() -> None:
     require("CODEX_TRUSTED_JOURNAL_AUTHORS" not in WORKFLOW, "target supplies control-plane trust policy")
     require("secrets: inherit" not in WORKFLOW, "workflow broadly inherits secrets")
     receiver = WORKFLOW.split("  report:", 1)[1]
-    require(receiver.count("CODEX_RESULT_TOKEN:") == 1, "receiver must receive only its delivery token")
+    require("CODEX_RESULT_TOKEN:" not in receiver, "long-lived result token must not remain in receiver interface")
+    require(
+        receiver.count("RESULT_WRITER_PRIVATE_KEY:") == 1
+        and "AI_SDLC_RESULT_WRITER_PRIVATE_KEY" in receiver,
+        "receiver must receive only the dedicated result-writer App private key",
+    )
 
 
 def test_security_and_publication_guards() -> None:
@@ -159,9 +164,37 @@ def test_security_and_publication_guards() -> None:
     require("persist-credentials: false" in WORKFLOW, "checkout persists credentials")
     require("permissions:\n  contents: read" in WORKFLOW, "workflow permissions are broader than read-only")
     require("environment: consulting-playbook-codex" in WORKFLOW, "target environment boundary is missing")
+    result_preflight = WORKFLOW.index("name: Prove result-delivery prerequisites before Codex")
     preparation = WORKFLOW.index("name: Prepare Codex workspace sandbox")
     credential_handoff = WORKFLOW.index("OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}")
+    require(result_preflight < credential_handoff, "result delivery preflight must precede Codex credential handoff")
     require(preparation < credential_handoff, "sandbox preparation must precede credential handoff")
+    require(
+        "uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0"
+        in WORKFLOW,
+        "result writer token action is not immutably pinned",
+    )
+    require('app-id: "5100679"' in WORKFLOW, "result writer GitHub App ID drifted")
+    require("repositories: portfolio-tasks" in WORKFLOW, "result writer token is not repository-bounded")
+    require(
+        "permission-issues: write" in WORKFLOW and "permission-contents: write" in WORKFLOW,
+        "result writer token permissions do not match the receiver boundary",
+    )
+    require(
+        "uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v2.4.6"
+        in WORKFLOW,
+        "result delivery preflight is not pinned to the matching control-plane candidate",
+    )
+    require(
+        '[[ "$APP_SLUG" == "ai-sdlc-result-writer" ]]' in WORKFLOW,
+        "result writer App slug is not explicitly bound",
+    )
+    execute_step = WORKFLOW.split("- id: execute", 1)[1].split("- name: Enforce canonical execution outcome", 1)[0]
+    require(
+        "AI_SDLC_RESULT_WRITER_PRIVATE_KEY" not in execute_step
+        and "result-writer-token" not in execute_step,
+        "result-writer credential crossed into the Codex adapter environment",
+    )
     require(
         "kernel.unprivileged_userns_clone=1" in WORKFLOW
         and "kernel.apparmor_restrict_unprivileged_userns=0" in WORKFLOW,
