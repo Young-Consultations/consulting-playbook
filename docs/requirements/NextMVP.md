@@ -21,7 +21,7 @@ result-writer identity mismatch: the deployed credential authored journal
 markers as `mightyjoe909` while the immutable result trust policy expected
 `github-actions[bot]`. The source failed closed and no second Codex execution
 occurred, but the receiver forwarded an equivalent result twice. The next target
-candidate is 2.4.6. It uses the dedicated GitHub App
+candidate is 3.0.0. It uses the dedicated GitHub App
 `ai-sdlc-result-writer` (App ID `5100679`), installed only on
 `portfolio-tasks`, to mint a repository-bounded short-lived installation
 token and run the organization-owned result credential capability preflight
@@ -117,14 +117,14 @@ The target workflow is `.github/workflows/codex-execute.yml`, exposes only
 The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
-The 2.4.6 target is an unpublished candidate. It shall invoke
+The 3.0.0 target is an unpublished candidate. It shall invoke
 `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.0`
 with inputs `execution_result` and `source_issue` and secret
 `RESULT_WRITER_PRIVATE_KEY`, supplied from the target's
 `AI_SDLC_RESULT_WRITER_PRIVATE_KEY` secret. The receiver shall mint a fresh
 short-lived installation token from the dedicated `ai-sdlc-result-writer`
 GitHub App rather than accepting a long-lived `CODEX_RESULT_TOKEN`. Published
-2.4.5 remains the current runtime until the 2.4.6 adapter and control-plane
+2.4.5 remains the current runtime until the 3.0.0 adapter and control-plane
 release are reviewed, tagged, attested, preflighted, and live-verified. REAL
 issue #154 remains successful initial-path evidence for 2.4.5; REAL #156 remains
 the redelivery defect evidence that blocks full acceptance. Ordinary conformance
