@@ -44,10 +44,10 @@ conformance and human review and merged at
 then reused the same managed draft without a second Codex execution but exposed
 DEF-0064: the deployed result credential's comment author did not match the
 immutable receiver result-author policy, so the receiver could not recognize
-its own prior journal evidence. The unpublished 2.4.6 target candidate binds
+its own prior journal evidence. The unpublished 3.0.0 target candidate binds
 that result path to the dedicated `ai-sdlc-result-writer` GitHub App
 (App ID `5100679`), capability-checks a short-lived repository-scoped token
-before Codex, and pins the future matching 2.4.6 receiver, which will mint a
+before Codex, and pins the future matching 3.0.0 receiver, which will mint a
 fresh post-execution token. Published 2.4.4 remains immutable
 previous-generation evidence, but REAL #151 proved it is not an execution-safe
 rollback for cost-bearing implementation because its publication transport can
@@ -80,7 +80,7 @@ subsequently resolved through later immutable releases. The current published
 2.4.5 path has passed control-plane publication attestation, deployed Runtime
 Preflight, consumer repin, and the initial governed REAL issue #154. Full
 redelivery acceptance remains blocked by DEF-0064 from REAL issue #156. The
-2.4.6 candidate is pre-publication evidence only until its immutable target and
+3.0.0 candidate is pre-publication evidence only until its immutable target and
 control-plane releases plus controlled REAL redelivery pass. Activation remains
 organization-router state rather than repository-owned state;
 this target must not create a second activation switch.
@@ -246,3 +246,6 @@ interface, approval/content boundaries, and fake conformance requirements.
 Existing run-ID branches are legacy and are not adopted automatically. Rollback
 must disable dispatch first and must not redeliver identities already published
 until operators reconcile their managed PRs.
+
+The immutable `codex-adapter-v2.4.6` tag remains unused evidence because issue #85 reclassified the receiver-secret interface change as MAJOR. The active corrective candidate is 3.0.0; no `ai-sdlc-v2.4.6` control-plane release is authorized.
+
