@@ -31,12 +31,11 @@ independent assurance.
 
 ## Evidence
 
-- portfolio-tasks issue #141
-- portfolio-tasks PR #142, merge commit
-  `278fa1baa47900a58a51368b1c370f01d36a45c8`
-- fresh portfolio issue #154 approved with the single label action
-- target run 36279165335 and resulting consulting-playbook PR #66
-- PR #66 merge commit `6d3d9694057e787eab74ae45999ad73c804c6067`
+- [portfolio-tasks issue #141](https://github.com/Young-Consultations/portfolio-tasks/issues/141)
+- [portfolio-tasks PR #142](https://github.com/Young-Consultations/portfolio-tasks/pull/142), merge commit [`278fa1b...`](https://github.com/Young-Consultations/portfolio-tasks/commit/278fa1baa47900a58a51368b1c370f01d36a45c8)
+- [fresh portfolio issue #154](https://github.com/Young-Consultations/portfolio-tasks/issues/154) approved with the single label action
+- [target run 36279165335](https://github.com/Young-Consultations/consulting-playbook/actions/runs/36279165335) and resulting [consulting-playbook PR #66](https://github.com/Young-Consultations/consulting-playbook/pull/66)
+- PR #66 merge commit [`6d3d969...`](https://github.com/Young-Consultations/consulting-playbook/commit/6d3d9694057e787eab74ae45999ad73c804c6067)
 
 ## What implementation or testing exposed
 
