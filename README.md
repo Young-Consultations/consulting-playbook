@@ -40,8 +40,20 @@ passed validation and target checks, published exactly one delivery-owned branch
 and managed draft PR #66, delivered the canonical result through the 2.4.5
 receiver, and projected that result back to the source issue. PR #66 passed
 conformance and human review and merged at
-`6d3d9694057e787eab74ae45999ad73c804c6067`. Published 2.4.4 remains immutable previous-generation evidence, but REAL #151 proved it is not an execution-safe rollback for cost-bearing implementation because its publication transport can lose successful Codex work. Any rollback that may invoke Codex must select a separately reviewed safe release or disable REAL execution.
-Older release evidence remains historical.
+`6d3d9694057e787eab74ae45999ad73c804c6067`. REAL redelivery issue #156
+then reused the same managed draft without a second Codex execution but exposed
+DEF-0064: the deployed result credential's comment author did not match the
+immutable receiver result-author policy, so the receiver could not recognize
+its own prior journal evidence. The unpublished 2.4.6 target candidate binds
+that result path to the dedicated `ai-sdlc-result-writer` GitHub App
+(App ID `5100679`), capability-checks a short-lived repository-scoped token
+before Codex, and pins the future matching 2.4.6 receiver, which will mint a
+fresh post-execution token. Published 2.4.4 remains immutable
+previous-generation evidence, but REAL #151 proved it is not an execution-safe
+rollback for cost-bearing implementation because its publication transport can
+lose successful Codex work. Any rollback that may invoke Codex must select a
+separately reviewed safe release or disable REAL execution. Older release
+evidence remains historical.
 
 The recovery evidence is bound to
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
@@ -66,9 +78,11 @@ zero. The 2026-08-13
 records historical blockers in the 2.3.1-era recovery path. Those blockers were
 subsequently resolved through later immutable releases. The current published
 2.4.5 path has passed control-plane publication attestation, deployed Runtime
-Preflight, immutable REAL preflight, consumer repin, and fresh governed REAL
-issue #154, which created and delivered one managed draft PR successfully.
-Activation remains organization-router state rather than repository-owned state;
+Preflight, consumer repin, and the initial governed REAL issue #154. Full
+redelivery acceptance remains blocked by DEF-0064 from REAL issue #156. The
+2.4.6 candidate is pre-publication evidence only until its immutable target and
+control-plane releases plus controlled REAL redelivery pass. Activation remains
+organization-router state rather than repository-owned state;
 this target must not create a second activation switch.
 
 Upgrades to the organization control-plane release require an explicit reviewed repository change. Rollback must pin the workflow to the previous immutable known-good organization release.
