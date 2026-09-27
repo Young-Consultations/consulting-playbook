@@ -1,9 +1,9 @@
 # Authority docs lagged the published compatibility baseline
 
 **Date:** 2026-08-24  
-**Defect:** DEF-0030  
+**Defect:** DEF-0055  
 **Repository:** `Young-Consultations/portfolio-tasks`  
-**Related:** portfolio-tasks #109, #117, #135, PR #138; consulting-playbook #35
+**Related:** [portfolio-tasks #109](https://github.com/Young-Consultations/portfolio-tasks/issues/109), [#117](https://github.com/Young-Consultations/portfolio-tasks/issues/117), [#135](https://github.com/Young-Consultations/portfolio-tasks/issues/135), [PR #138](https://github.com/Young-Consultations/portfolio-tasks/pull/138); [consulting-playbook #35](https://github.com/Young-Consultations/consulting-playbook/issues/35)
 
 ## Observation
 
@@ -19,7 +19,7 @@ The inconsistency was classified high severity because it sat directly on the ac
 
 ## Resolution
 
-`portfolio-tasks` PR #138 reconciled the active repository state to `ai-sdlc-v2.3.2` and was merged at `d0970fcd570cb27b50113f33e1f18f45640e9073`.
+[`portfolio-tasks` PR #138](https://github.com/Young-Consultations/portfolio-tasks/pull/138) reconciled the active repository state to `ai-sdlc-v2.3.2` and was merged at `d0970fcd570cb27b50113f33e1f18f45640e9073`.
 
 The merged change updated the active release baseline, `AI_CONTEXT.md`, README/interface/traceability material, router and receiver immutable pins, conformance pin/report evidence, and tests. Historical `c609…` and 2.3.1 records remain historical evidence rather than current execution guidance. The portfolio backlog prompts were also reconciled and #116 was closed as historical conformance work superseded by accepted current evidence.
 
@@ -38,3 +38,11 @@ This check should occur after release publication/live verification and before m
 ## AI-SDLC lesson
 
 As AI-assisted delivery matures, defects do not stay concentrated in source code. Requirements, architecture, release metadata, AI context, issue prompts, and verification evidence can become the defect-bearing artifacts. A green implementation can therefore be unsafe to advance when the authority layer is stale.
+
+## Historical capture note
+
+This journal was originally written against proposed defect ID `DEF-0030` in
+consulting-playbook issue #35. That proposed ID was never inserted into the
+authoritative Defect Ledger and later numbering overlapped with unrelated defect
+records. The canonical recovered identifier is `DEF-0055`; the historical
+proposed ID is retained only for traceability to the original issue.
