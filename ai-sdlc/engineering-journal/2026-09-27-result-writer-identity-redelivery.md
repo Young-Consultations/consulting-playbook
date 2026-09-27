@@ -91,15 +91,27 @@ recorded in this journal.
 ## Acceptance consequence
 
 Repository implementation and SIM evidence are necessary but are not sufficient
-to resolve DEF-0064. Resolution requires:
+to resolve DEF-0064.
 
-- a reviewed immutable `codex-adapter-v2.4.6`;
-- a matching reviewed and published `ai-sdlc-v2.4.6` control-plane release
+The initial repair plan prepared immutable `codex-adapter-v2.4.6`. Subsequent
+release-policy review identified DEF-0066 / organization issue #85: changing
+the reusable receiver secret from `CODEX_RESULT_TOKEN` to
+`RESULT_WRITER_PRIVATE_KEY` is a MAJOR interface change under the approved
+SemVer policy. The 2.4.6 target tag is therefore retained unchanged as unused
+historical candidate evidence; no matching `ai-sdlc-v2.4.6` control-plane
+release is authorized for this interface.
+
+Resolution now requires:
+
+- a reviewed immutable `codex-adapter-v3.0.0`;
+- a matching reviewed and published `ai-sdlc-v3.0.0` control-plane release
   whose result trust policy names the GitHub App bot identity;
 - successful deployed prerequisite preflight; and
 - a controlled REAL same-delivery redelivery proving one managed draft, no
   second Codex execution, one trusted receiver effect, and one source
   projection.
 
-Until that evidence exists, 2.4.5 remains the published runtime and the REAL
+The payload contract remains `ai-sdlc-contract/v2`; the major release
+classification applies to the workflow credential interface. Until the
+3.0.0 evidence exists, 2.4.5 remains the published runtime and the REAL
 redelivery acceptance gate remains open.
