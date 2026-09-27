@@ -31,24 +31,44 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+      - name: Install repository validation dependencies
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]==4.26.0'
       - id: result-source
-        name: Validate result-writer source binding
+        name: Authorize request and bind result-writer source
         shell: bash
         env:
           EXECUTION_INPUT_JSON: ${{ inputs.execution_input_json }}
+          CONCURRENCY_GROUP: ${{ inputs.concurrency_group }}
+          CALLER_LOGIN: ${{ github.actor }}
+          TRUSTED_CALLERS: ${{ secrets.CODEX_TARGET_TRUSTED_CALLERS }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json
           import os
           import re
+          import sys
 
-          value = json.loads(os.environ["EXECUTION_INPUT_JSON"])
-          source_issue = value.get("source_issue")
-          if not isinstance(source_issue, str) or re.fullmatch(
+          sys.path.insert(0, "scripts")
+          from codex_target_adapter import admit
+
+          trusted_callers = {
+              value.strip()
+              for value in os.environ.get("TRUSTED_CALLERS", "").split(",")
+              if value.strip()
+          }
+          payload = admit(
+              os.environ.get("EXECUTION_INPUT_JSON", ""),
+              os.environ.get("CONCURRENCY_GROUP", ""),
+              os.environ.get("CALLER_LOGIN", ""),
+              trusted_callers,
+          )
+          source_issue = payload["source_issue"]
+          if re.fullmatch(
               r"Young-Consultations/portfolio-tasks#[1-9][0-9]*", source_issue
           ) is None:
-              raise SystemExit("result credential preflight requires the governed portfolio-tasks source issue")
+              raise SystemExit(
+                  "result credential preflight requires the governed portfolio-tasks source issue"
+              )
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
               stream.write(f"source_issue={source_issue}\n")
           PY
@@ -91,8 +111,6 @@ jobs:
           [[ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" == "0" ]]
       - name: Install Codex CLI
         run: npm install --global @openai/codex@0.154.0
-      - name: Install repository validation dependencies
-        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]==4.26.0'
       - id: execute
         env:
           EXECUTION_INPUT_JSON: ${{ inputs.execution_input_json }}
