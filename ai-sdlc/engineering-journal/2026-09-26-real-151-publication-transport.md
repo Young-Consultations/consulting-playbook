@@ -1,7 +1,7 @@
 # 2026-09-26 — REAL #151 spent Codex work before publication transport failed
 
 - **Date:** 2026-09-26
-- **Decision status:** target repair defined; 2.4.5 release and live verification pending
+- **Decision status:** resolved — 2.4.5 release and fresh REAL publication verified
 - **Decision owner:** Joseph, repository owner and release approver
 - **SDLC phase:** REAL acceptance, defect investigation, and release repair
 
