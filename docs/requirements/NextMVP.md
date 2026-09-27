@@ -117,7 +117,7 @@ The target workflow is `.github/workflows/codex-execute.yml`, exposes only
 The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
-The 2.4.6 candidate shall invoke
+The 2.4.6 target is an unpublished candidate. It shall invoke
 `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.6`
 with inputs `execution_result` and `source_issue` and secret
 `RESULT_WRITER_PRIVATE_KEY`, supplied from the target's
