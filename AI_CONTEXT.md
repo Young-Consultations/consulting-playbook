@@ -214,15 +214,17 @@ failed closed after the receiver forwarded the equivalent result a second time.
 
 The resolved repair identity is the organization-owned GitHub App
 `ai-sdlc-result-writer`, App ID `5100679`, installed only on
-`Young-Consultations/portfolio-tasks`. The unpublished 2.4.6 target candidate
+`Young-Consultations/portfolio-tasks`. The unpublished 3.0.0 target candidate
 mints a repository-bounded short-lived installation token and runs the
 organization-owned result-credential capability preflight before the OpenAI
-credential reaches the adapter. The future matching 2.4.6 receiver must mint a
+credential reaches the adapter. The future matching 3.0.0 receiver must mint a
 fresh installation token after execution so a long Codex run cannot outlive
 the result credential. The App token and private key do not enter the Codex
 adapter environment. This candidate is implementation evidence only; 2.4.5
 remains the active published runtime until the target tag, matching control-plane
 release, deployed preflights, and controlled REAL redelivery acceptance pass.
+
+The immutable `codex-adapter-v2.4.6` tag at `d1bc6175afaf339d6de9b4d6bf2cf4efc1684d72` is unused pre-release evidence. Organization issue #85 records that the required receiver-secret rename/meaning change is MAJOR under the approved SemVer policy, so no `ai-sdlc-v2.4.6` control-plane release may publish that interface. The corrected candidate is 3.0.0; the payload contract remains `ai-sdlc-contract/v2`.
 
 Published 2.4.4 remains immutable previous-generation evidence but is not an
 execution-safe rollback for cost-bearing implementation because REAL #151
@@ -267,7 +269,7 @@ production evidence.
   the executor environment, run from the repository root under
   `workspace-write`, and before invoking Codex verify both publication
   permission metadata and the actual authenticated Git push transport with a
-  non-mutating dry-run. For the 2.4.6 candidate, the workflow must first reuse
+  non-mutating dry-run. For the 3.0.0 candidate, the workflow must first reuse
   the adapter's admission gate so an unauthorized or malformed dispatch cannot
   exercise source credentials; only then may the result-delivery boundary mint
   and capability-check the dedicated `ai-sdlc-result-writer` installation
@@ -351,7 +353,7 @@ must:
   state.
 - DEF-0064 remains open: portfolio issue #156 proved that correct target
   redelivery semantics are insufficient when the deployed result writer cannot
-  authenticate its own durable receiver evidence. The 2.4.6 candidate binds the
+  authenticate its own durable receiver evidence. The 3.0.0 candidate binds the
   result path to GitHub App `ai-sdlc-result-writer` (App ID `5100679`) and
   adds a pre-Codex identity/capability gate plus fresh post-execution token
   generation. Do not treat this as resolved until the matching immutable
