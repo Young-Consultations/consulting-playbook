@@ -1,7 +1,7 @@
 # 2026-09-18 — Runtime Preflight modeled the wrong credential scope
 
 - **Date:** 2026-09-18
-- **Decision status:** unresolved — repair merged; deployed rerun pending
+- **Decision status:** resolved — deployed Runtime Preflight passed
 - **Decision owner:** Joseph Young, control-plane repository owner, tracked by [Young-Consultations/.github issue #69](https://github.com/Young-Consultations/.github/issues/69)
 - **SDLC phase:** release-production
 
@@ -54,11 +54,10 @@ The control-plane `AI_CONTEXT.md` is updated in PR #70 because agents need to pr
 
 ## Follow-up
 
-1. **Completed:** review and merge control-plane PR #70.
-2. Rerun `AI-SDLC Runtime Preflight` on `main` with `candidate_mode: false`.
-3. Require the environment credential-metadata boundary to pass.
-4. Update DEF-0041 with the successful run and resolve it.
-5. Only then move portfolio PR #146 forward.
+Completed. Control-plane PR #70 merged, and deployed Runtime Preflight run
+36277959203 passed on attested 2.4.5 `main` with `candidate_mode: false`,
+including the environment credential-metadata boundary. DEF-0041 is resolved.
+The portfolio consumer advanced only after the required release/preflight gates.
 
 ## Potential consulting or content value
 
