@@ -1,7 +1,7 @@
 # Authority docs lagged the published compatibility baseline
 
 **Date:** 2026-08-24  
-**Defect:** DEF-0030  
+**Defect:** DEF-0055  
 **Repository:** `Young-Consultations/portfolio-tasks`  
 **Related:** portfolio-tasks #109, #117, #135, PR #138; consulting-playbook #35
 
@@ -38,3 +38,11 @@ This check should occur after release publication/live verification and before m
 ## AI-SDLC lesson
 
 As AI-assisted delivery matures, defects do not stay concentrated in source code. Requirements, architecture, release metadata, AI context, issue prompts, and verification evidence can become the defect-bearing artifacts. A green implementation can therefore be unsafe to advance when the authority layer is stale.
+
+## Historical capture note
+
+This journal was originally written against proposed defect ID `DEF-0030` in
+consulting-playbook issue #35. That proposed ID was never inserted into the
+authoritative Defect Ledger and later numbering overlapped with unrelated defect
+records. The canonical recovered identifier is `DEF-0055`; the historical
+proposed ID is retained only for traceability to the original issue.
