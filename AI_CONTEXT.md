@@ -319,15 +319,16 @@ must:
   `c6090e5bbadcc2102a1cb91875466e9decdada1e` remains evidence only.
 - The former issue #114 `workflow_call` adapter, repository-defined payload and
   branch/result semantics, and 26-case local oracle are obsolete and removed.
-  The active workflow calls `scripts/codex_target_adapter.py`; the checked-in
-  report passes all 29 organization scenarios, invokes the real adapter seam in
-  22, and records zero prohibited effects. The merged-main replacement
-  conformance run 31857176623 is green. Immutable tag
-  `codex-adapter-v2.3.1` resolves to
-  `666323d3828a695f3614e6a61bae93aca0531e15`; the 2.3.1 receiver and the
-  registry's report binding passed live verification. This is target evidence
-  only. Credentials and operational governance have not been confirmed, and
-  the target remains disabled.
+  The active workflow calls `scripts/codex_target_adapter.py`. Historical
+  2.3.1 recovery evidence remains preserved: its checked-in report passed all
+  29 organization scenarios, invoked the real adapter seam in 22, and recorded
+  zero prohibited effects; immutable `codex-adapter-v2.3.1` resolved to
+  `666323d3828a695f3614e6a61bae93aca0531e15`. Do not treat that historical
+  state as the current runtime. The published 2.4.5 target composition has
+  passed publication attestation, deployed Runtime Preflight, immutable REAL
+  preflight, portfolio consumer repin, and fresh governed REAL issue #154.
+  Current activation remains organization-router state, not repository-owned
+  state.
 - Static wrapper comments are not idempotency evidence. The exact adapter and
   harness blobs are bound by the pin and exercised by the shared oracle.
   Preflight must observe both branch existence and all pull-request state before
