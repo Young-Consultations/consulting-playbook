@@ -111,8 +111,11 @@ published and were exercised by REAL issue #154. That delivery produced one
 managed draft PR, returned a receiver-accepted canonical terminal result, and
 projected the correlated result to the source issue. Ordinary conformance checks
 remain zero-effect compatibility evidence and do not replace that live
-acceptance evidence. Published 2.4.4 is the immediate rollback generation.
-Receiver outputs are `accepted`, `delivery_id`, `correlation_id`,
+acceptance evidence. Published 2.4.4 remains immutable previous-generation
+evidence but is not an execution-safe rollback for cost-bearing implementation
+because REAL #151 exposed its publication-transport defect. Any rollback that
+may invoke Codex requires a separately reviewed safe release or REAL execution
+must remain disabled. Receiver outputs are `accepted`, `delivery_id`, `correlation_id`,
 `execution_status`, `failure_category`, and `diagnostic_summary`.
 
 The receiver is the canonical organization-owned result transport. Consulting
