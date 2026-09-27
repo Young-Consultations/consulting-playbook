@@ -28,11 +28,11 @@ metadata contradict the repository's own governance rules.
 
 ## Evidence
 
-- consulting-playbook issue #39
-- Young-Consultations/.github PR #54
-- `.github/docs/releases.md`
-- Contract Tests run 32905851061
-- merge commit `df0ca3f66d16223412f190fef36e03acbad5f22b`
+- [consulting-playbook issue #39](https://github.com/Young-Consultations/consulting-playbook/issues/39)
+- [Young-Consultations/.github PR #54](https://github.com/Young-Consultations/.github/pull/54)
+- [authoritative release policy](https://github.com/Young-Consultations/.github/blob/main/docs/releases.md)
+- [Contract Tests run 32905851061](https://github.com/Young-Consultations/.github/actions/runs/32905851061)
+- [merge commit `df0ca3f...`](https://github.com/Young-Consultations/.github/commit/df0ca3f66d16223412f190fef36e03acbad5f22b)
 
 ## What implementation or testing exposed
 
