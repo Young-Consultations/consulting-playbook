@@ -3,7 +3,7 @@
 **Date:** 2026-08-24  
 **Defect:** DEF-0055  
 **Repository:** `Young-Consultations/portfolio-tasks`  
-**Related:** portfolio-tasks #109, #117, #135, PR #138; consulting-playbook #35
+**Related:** [portfolio-tasks #109](https://github.com/Young-Consultations/portfolio-tasks/issues/109), [#117](https://github.com/Young-Consultations/portfolio-tasks/issues/117), [#135](https://github.com/Young-Consultations/portfolio-tasks/issues/135), [PR #138](https://github.com/Young-Consultations/portfolio-tasks/pull/138); [consulting-playbook #35](https://github.com/Young-Consultations/consulting-playbook/issues/35)
 
 ## Observation
 
@@ -19,7 +19,7 @@ The inconsistency was classified high severity because it sat directly on the ac
 
 ## Resolution
 
-`portfolio-tasks` PR #138 reconciled the active repository state to `ai-sdlc-v2.3.2` and was merged at `d0970fcd570cb27b50113f33e1f18f45640e9073`.
+[`portfolio-tasks` PR #138](https://github.com/Young-Consultations/portfolio-tasks/pull/138) reconciled the active repository state to `ai-sdlc-v2.3.2` and was merged at `d0970fcd570cb27b50113f33e1f18f45640e9073`.
 
 The merged change updated the active release baseline, `AI_CONTEXT.md`, README/interface/traceability material, router and receiver immutable pins, conformance pin/report evidence, and tests. Historical `c609…` and 2.3.1 records remain historical evidence rather than current execution guidance. The portfolio backlog prompts were also reconciled and #116 was closed as historical conformance work superseded by accepted current evidence.
 
