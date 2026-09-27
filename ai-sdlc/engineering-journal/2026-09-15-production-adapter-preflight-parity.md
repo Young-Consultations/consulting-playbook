@@ -39,7 +39,7 @@ that its GitHub identity has write access to the target repository. This check
 cannot prove pull-request write scope without performing a publication effect,
 so successful draft creation remains the final evidence for that permission.
 
-## Evidence and remaining gate
+## Evidence and historical remaining gate
 
 Executable tests cover the successful login/execution sequence, immediate
 environment consumption, one-shot auth-state delivery and removal, ambient
@@ -48,10 +48,11 @@ denied repository write access, failed publication-readiness classification,
 and failed login. The canonical 29-scenario conformance report was regenerated
 with all prohibited effects at zero.
 
-This repair establishes production/preflight parity but is not live
-implementation or publication evidence. Keep DEF-0038 open until a fresh
-governed delivery creates a tested draft pull request and its terminal result is
-accepted by the result receiver.
+At the time of this repair, production/preflight parity was established but
+live implementation/publication evidence was still pending. DEF-0038 therefore
+remained open until a fresh governed delivery created a tested draft pull
+request and its terminal result was accepted by the result receiver. The
+closure section below records that later evidence.
 
 ## Closure evidence — 2026-09-26
 
