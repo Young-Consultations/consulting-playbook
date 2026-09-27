@@ -40,8 +40,8 @@ passed validation and target checks, published exactly one delivery-owned branch
 and managed draft PR #66, delivered the canonical result through the 2.4.5
 receiver, and projected that result back to the source issue. PR #66 passed
 conformance and human review and merged at
-`6d3d9694057e787eab74ae45999ad73c804c6067`. Published 2.4.4 remains the
-immediate rollback generation; older release evidence remains historical.
+`6d3d9694057e787eab74ae45999ad73c804c6067`. Published 2.4.4 remains immutable previous-generation evidence, but REAL #151 proved it is not an execution-safe rollback for cost-bearing implementation because its publication transport can lose successful Codex work. Any rollback that may invoke Codex must select a separately reviewed safe release or disable REAL execution.
+Older release evidence remains historical.
 
 The recovery evidence is bound to
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
