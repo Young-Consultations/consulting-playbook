@@ -170,8 +170,12 @@ credentials.
 ## Required adapter behavior
 
 Before the adapter can receive the OpenAI credential or invoke Codex, the target
-workflow shall require the governed source to match
-`Young-Consultations/portfolio-tasks#<issue>`; mint an installation token for
+workflow shall reuse the adapter's `admit()` gate to authenticate the dispatch
+caller and validate the canonical execution input, target, task type, mode,
+branch policy, and transport concurrency value. Only an admitted request may
+cross into result-credential probing. The workflow shall then require the
+governed source to match `Young-Consultations/portfolio-tasks#<issue>`; mint
+an installation token for
 GitHub App `ai-sdlc-result-writer` (App ID `5100679`) scoped only to
 `portfolio-tasks` with Issues write and Contents write; require the token's
 reported app slug to equal `ai-sdlc-result-writer`; and invoke the
