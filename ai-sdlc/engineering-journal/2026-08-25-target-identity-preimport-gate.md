@@ -29,10 +29,10 @@ inside the harness even though the final status is failure.
 
 ## Evidence
 
-- consulting-playbook issue #41
-- Young-Consultations/.github PR #54
-- TC-MVP-E2E-001 Acceptance run 32905851105
-- merge commit `df0ca3f66d16223412f190fef36e03acbad5f22b`
+- [consulting-playbook issue #41](https://github.com/Young-Consultations/consulting-playbook/issues/41)
+- [Young-Consultations/.github PR #54](https://github.com/Young-Consultations/.github/pull/54)
+- [TC-MVP-E2E-001 Acceptance run 32905851105](https://github.com/Young-Consultations/.github/actions/runs/32905851105)
+- [merge commit `df0ca3f...`](https://github.com/Young-Consultations/.github/commit/df0ca3f66d16223412f190fef36e03acbad5f22b)
 
 ## What implementation or testing exposed
 
