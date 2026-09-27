@@ -32,7 +32,7 @@ an execution-safe rollback for cost-bearing implementation because its
 publication transport can lose successful Codex work. Any rollback that may
 invoke Codex must select a separately reviewed safe release or disable REAL
 execution.
-These interface facts are requirements; conformance is established by the
+The immutable `codex-adapter-v2.4.6` tag is retained as unused pre-release evidence because the receiver secret-interface change was subsequently classified as MAJOR under the organization release policy; it must not be selected by the registry or a control-plane release. These interface facts are requirements; conformance is established by the
 exact-file pin and executable report described below, while live acceptance is
 preserved separately in the governed workflow and source issue evidence.
 
@@ -118,7 +118,7 @@ The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
 The 2.4.6 target is an unpublished candidate. It shall invoke
-`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.6`
+`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.0`
 with inputs `execution_result` and `source_issue` and secret
 `RESULT_WRITER_PRIVATE_KEY`, supplied from the target's
 `AI_SDLC_RESULT_WRITER_PRIVATE_KEY` secret. The receiver shall mint a fresh
@@ -180,7 +180,7 @@ GitHub App `ai-sdlc-result-writer` (App ID `5100679`) scoped only to
 `portfolio-tasks` with Issues write and Contents write; require the token's
 reported app slug to equal `ai-sdlc-result-writer`; and invoke the
 organization-owned
-`codex-result-credential-preflight@ai-sdlc-v2.4.6`. That preflight shall prove
+`codex-result-credential-preflight@ai-sdlc-v3.0.0`. That preflight shall prove
 the trusted result-author identity, issue-comment create/delete access, and the
 dedicated no-op repository-dispatch capability. Any failure stops the delivery
 before cost-bearing execution. The installation token shall not be supplied to
@@ -270,10 +270,10 @@ execution. The 2.4.5 target/control-plane release, deployed Runtime Preflight,
 immutable REAL preflight, portfolio consumer repin, and fresh REAL issue #154
 all completed successfully; REAL #156 subsequently blocked full redelivery
 acceptance because the deployed result-writer identity disagreed with the
-immutable receiver trust policy. The 2.4.6 target candidate repairs the target
+immutable receiver trust policy. The 3.0.0 target candidate repairs the target
 side of that deployment boundary by proving the dedicated GitHub App credential
 before Codex and by handing only the App private key to the future receiver so
-it can mint a fresh post-execution token. 2.4.6 is not active or published until
+it can mint a fresh post-execution token. 3.0.0 is not active or published until
 its target tag, matching control-plane release, deployed preflights, and a
 controlled REAL same-delivery test pass. Operational activation remains mutable
 organization control-plane state and is neither pinned nor administered here.
