@@ -3,6 +3,8 @@
 - **Date:** 2026-08-25
 - **Decision status:** unresolved — incident reverted; prevention control still open
 - **SDLC phase:** implementation
+- **Decision owner:** Young-Consultations repository owner / maintainer
+- **Tracking:** [Young-Consultations/.github #80](https://github.com/Young-Consultations/.github/issues/80)
 
 ## Context
 
@@ -34,10 +36,11 @@ evidence-backed fail-closed prevention rule.
 
 ## Evidence
 
-- consulting-playbook issue #36
-- portfolio-tasks #119
-- direct-main commits `1e13ced...`, `170edce...`, and `d2b072d...`
-- Young-Consultations/.github PR #54 for the intended implementation path
+- [consulting-playbook issue #36](https://github.com/Young-Consultations/consulting-playbook/issues/36)
+- [portfolio-tasks #119](https://github.com/Young-Consultations/portfolio-tasks/issues/119)
+- direct-main commits [`1e13ced...`](https://github.com/Young-Consultations/portfolio-tasks/commit/1e13cedebaadf992564578325149fa444142a925), [`170edce...`](https://github.com/Young-Consultations/portfolio-tasks/commit/170edce0e536b6f8cca76242eb84c1c0087aae82), and [`d2b072d...`](https://github.com/Young-Consultations/portfolio-tasks/commit/d2b072dbca93a588e1dcc3a1428ec3313a675e17)
+- [Young-Consultations/.github PR #54](https://github.com/Young-Consultations/.github/pull/54) for the intended implementation path
+- [tracking issue Young-Consultations/.github #80](https://github.com/Young-Consultations/.github/issues/80)
 
 ## What implementation or testing exposed
 
@@ -48,7 +51,7 @@ content.
 
 ## Requirement or architecture implications
 
-The repository owner/change-control authority must decide the durable prevention
+The Young-Consultations repository owner / maintainer is the accountable decision owner for [tracking issue #80](https://github.com/Young-Consultations/.github/issues/80) and must decide the durable prevention
 boundary: repository ruleset/branch protection, connector/tool guard, mandatory
 pre-write branch validation, or a combination. Until that decision is made,
 this journal does not promote a proposed mechanism to authoritative policy.
@@ -66,7 +69,7 @@ requirement/architecture decision is approved and implemented.
 
 ## Follow-up
 
-Keep DEF-0056 open. Select and implement the authoritative fail-closed control,
+Keep DEF-0056 open and track the decision/implementation in [Young-Consultations/.github #80](https://github.com/Young-Consultations/.github/issues/80). Select and implement the authoritative fail-closed control,
 add executable evidence that omitted/default-branch implementation writes are
 blocked, and then determine whether repository AI context requires an update.
 
