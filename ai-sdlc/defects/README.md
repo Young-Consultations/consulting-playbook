@@ -4,7 +4,7 @@ The [CSV ledger](defect-ledger.csv) is the quantitative source of truth for evid
 
 ## Recording a defect
 
-1. Confirm evidence and assign a stable `defect_id`.
+1. Confirm evidence. Allocate the stable `defect_id` only when inserting the ledger row; do not reserve canonical IDs in issue titles, backlog prose, or planning notes. If historical material contains a proposed ID that was never inserted, preserve it only as a non-canonical alias in `notes`.
 2. Classify `origin`, `origin_phase`, and `type` using the [taxonomy](defect-taxonomy.md).
 3. Use the controlled values and calculations in the [metrics definition](metrics-definition.md).
 4. Add one CSV row; quote fields containing commas, quotes, or line breaks using standard CSV escaping.
