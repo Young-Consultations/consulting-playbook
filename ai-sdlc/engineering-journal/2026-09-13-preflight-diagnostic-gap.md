@@ -1,7 +1,7 @@
 # 2026-09-13 — Preflight failure diagnostics need executable evidence
 
 - **Date:** 2026-09-13
-- **Decision status:** unresolved; implementation repair proposed, live provider cause unknown
+- **Decision status:** resolved — diagnostics repaired and controlled preflight passed
 - **SDLC phase:** release-production
 
 ## Context
@@ -114,5 +114,14 @@ preflight delegated a release-critical model choice to a stale client default.
 The repair pins Codex CLI `0.154.0` and `gpt-5.3-codex` in both preflight and
 target execution, reports both identities in preflight evidence, updates the
 target conformance binding, and regenerates the complete no-real-effects report.
-DEF-0037 tracks this defect. It remains open until the change is merged and a
-controlled preflight succeeds.
+DEF-0037 tracked this defect. That statement records the gate at the time of the
+addendum; the change later merged and controlled preflight run 34929448831
+succeeded, so DEF-0037 is resolved.
+
+## Closure evidence — 2026-09-26
+
+The diagnostic repairs merged, and controlled preflight run
+[34929448831](https://github.com/Young-Consultations/consulting-playbook/actions/runs/34929448831)
+completed successfully on the repaired workflow. The staged diagnostics no
+longer block identifying provider readiness, and startup-banner handling no
+longer masks provider failure categories. DEF-0035 and DEF-0036 are resolved.

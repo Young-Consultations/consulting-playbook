@@ -28,21 +28,20 @@ the two required string inputs `execution_input_json` and
 `concurrency_group`. No `workflow_call`, artifact/run-ID, field-by-field, or
 fallback entry point is active.
 
-The published 2.4.4 target is `codex-adapter-v2.4.4` at
-`70ea4342abf7115f6848ea32bb958bbf6be696c1`; it pins the organization receiver
-to `ai-sdlc-v2.4.4`, Codex CLI to `0.154.0`, model to `gpt-5.3-codex`, and
-the runtime schema validator to `4.26.0`. REAL issue #151 proved Codex,
-candidate validation, and tests could succeed under that release, then exposed a
-publication-transport defect before any remote branch or draft PR survived. The
-2.4.5 repair candidate preserves the immutable 2.4.4 evidence, proves the actual
-authenticated Git push transport with a dry-run before Codex, uses a
-prompt-aware askpass boundary, and distinguishes ordinary push failure from a
-true branch create race. Its regenerated zero-effect evidence is bound by
-`config/mvp-conformance-pin.json` and it pins the future matching
-`ai-sdlc-v2.4.5` receiver. Do not use this candidate for REAL dispatch until
-the reviewed adapter tag, matching control-plane 2.4.5 release, deployed
-preflight, and live verification are complete. The published 2.4.4 and 2.4.3
-units remain unchanged.
+The published 2.4.5 target is `codex-adapter-v2.4.5` at
+`4f062ca73acfc3458f0d690bf1c7687bafd0a8eb`; it pins the organization receiver
+to `ai-sdlc-v2.4.5`, Codex CLI to `0.154.0`, model to `gpt-5.3-codex`, and
+the runtime schema validator to `4.26.0`. Its immutable pre-publication
+conformance evidence remains bound by `config/mvp-conformance-pin.json`.
+Organization release 2.4.5 was attested, deployed Runtime Preflight and immutable
+REAL preflight passed, and fresh REAL issue #154 then exercised the published
+path end to end. Target run 36279165335 prepared the sandbox, executed Codex,
+passed validation and target checks, published exactly one delivery-owned branch
+and managed draft PR #66, delivered the canonical result through the 2.4.5
+receiver, and projected that result back to the source issue. PR #66 passed
+conformance and human review and merged at
+`6d3d9694057e787eab74ae45999ad73c804c6067`. Published 2.4.4 remains immutable previous-generation evidence, but REAL #151 proved it is not an execution-safe rollback for cost-bearing implementation because its publication transport can lose successful Codex work. Any rollback that may invoke Codex must select a separately reviewed safe release or disable REAL execution.
+Older release evidence remains historical.
 
 The recovery evidence is bound to
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
@@ -64,12 +63,13 @@ have been removed from the active path. The replacement runs the complete
 scenarios reach that real adapter seam and every prohibited effect counter is
 zero. The 2026-08-13
 [activation-readiness review](ai-sdlc/engineering-journal/2026-08-13-immutable-baseline-activation-blocker.md)
-found cross-repository trigger, payload/result, receiver, branch, fixture, and
-baseline-release blockers. Those compatibility gates are now satisfied for this
-repository by `codex-adapter-v2.3.1`, the published 2.3.1 receiver, and the
-registry's tag/commit/report binding. The target remains disabled because
-operational activation, credentials, retention, reconciliation, and the
-controlled end-to-end test are separate human-governed gates.
+records historical blockers in the 2.3.1-era recovery path. Those blockers were
+subsequently resolved through later immutable releases. The current published
+2.4.5 path has passed control-plane publication attestation, deployed Runtime
+Preflight, immutable REAL preflight, consumer repin, and fresh governed REAL
+issue #154, which created and delivered one managed draft PR successfully.
+Activation remains organization-router state rather than repository-owned state;
+this target must not create a second activation switch.
 
 Upgrades to the organization control-plane release require an explicit reviewed repository change. Rollback must pin the workflow to the previous immutable known-good organization release.
 

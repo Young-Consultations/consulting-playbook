@@ -1,7 +1,7 @@
 # 2026-09-18 — Runtime Preflight modeled the wrong credential scope
 
 - **Date:** 2026-09-18
-- **Decision status:** unresolved — repair merged; deployed rerun pending
+- **Decision status:** resolved — deployed Runtime Preflight passed
 - **Decision owner:** Joseph Young, control-plane repository owner, tracked by [Young-Consultations/.github issue #69](https://github.com/Young-Consultations/.github/issues/69)
 - **SDLC phase:** release-production
 
@@ -54,12 +54,20 @@ The control-plane `AI_CONTEXT.md` is updated in PR #70 because agents need to pr
 
 ## Follow-up
 
-1. **Completed:** review and merge control-plane PR #70.
-2. Rerun `AI-SDLC Runtime Preflight` on `main` with `candidate_mode: false`.
-3. Require the environment credential-metadata boundary to pass.
-4. Update DEF-0041 with the successful run and resolve it.
-5. Only then move portfolio PR #146 forward.
+Completed. Control-plane PR #70 merged, and deployed Runtime Preflight run
+36277959203 passed on attested 2.4.5 `main` with `candidate_mode: false`,
+including the environment credential-metadata boundary. DEF-0041 is resolved.
+The portfolio consumer advanced only after the required release/preflight gates.
 
 ## Potential consulting or content value
 
 This is a concise example of evidence fidelity: the automation correctly stopped the release, but its model omitted a security-relevant dimension. Improving the evidence did not require weakening the control; it required representing the real boundary more accurately.
+
+## Closure evidence — 2026-09-26
+
+The repaired environment-scoped credential audit is now proven in the deployed
+release path. AI-SDLC Runtime Preflight run
+[36277959203](https://github.com/Young-Consultations/.github/actions/runs/36277959203)
+completed successfully from the attested 2.4.5 control-plane `main` with
+`candidate_mode: false`. DEF-0041 is resolved; no credential was moved or
+duplicated out of its protected environment as a workaround.

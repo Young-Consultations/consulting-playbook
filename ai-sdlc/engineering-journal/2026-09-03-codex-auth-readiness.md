@@ -1,7 +1,7 @@
 # 2026-09-03 — Codex authentication readiness
 
 - **Date:** 2026-09-03
-- **Decision status:** unresolved
+- **Decision status:** resolved — controlled provider preflight passed
 - **SDLC phase:** release-production
 
 ## Context
@@ -71,15 +71,24 @@ only after merged, controlled evidence supports a narrower claim.
 
 ## Follow-up
 
-1. Review and merge the manual preflight workflow.
-2. Run it through the protected environment after restoring the credential.
-3. Close `DEF-0034` only when a controlled run passes; retain the run as
-   time-specific readiness evidence.
-4. Create and approve a new delivery identity for any later implementation
-   retry; do not reuse a terminal failed delivery.
+Completed. The manual preflight merged and controlled run 34929448831 passed
+through the protected environment. That run is retained as time-specific
+provider-readiness evidence and DEF-0034 is resolved. Later implementation
+retries continued to require fresh delivery identities; terminal failed
+deliveries were not reused.
 
 ## Potential consulting or content value
 
 This is a reusable example of why configuration presence, simulated contract
 tests, transport success, and live dependency readiness must be reported as
 different evidence rather than collapsed into one green status.
+
+## Closure evidence — 2026-09-26
+
+The missing live credential-readiness gate is now proven operational. The manual
+Codex authentication preflight was merged and controlled run
+[34929448831](https://github.com/Young-Consultations/consulting-playbook/actions/runs/34929448831)
+completed successfully using the pinned client/model and protected environment.
+DEF-0034 is therefore resolved. Later REAL 2.4.5 execution #154 also completed
+Codex execution successfully, but that broader delivery is not substituted for
+the narrower provider-readiness claim of this preflight.

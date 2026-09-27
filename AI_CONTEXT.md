@@ -197,21 +197,26 @@ the organization release, while current activation is separate mutable
 organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
-The published 2.4.2 compatibility unit remains the rollback baseline.
-The published 2.4.4 release is the current runtime identity:
-`codex-adapter-v2.4.4` resolves to
-`70ea4342abf7115f6848ea32bb958bbf6be696c1`, and the immutable
-`ai-sdlc-v2.4.4` control-plane tag resolves to
-`adb57508762168b3410f52e8a7b0151078c6e9b9`; publication was attested by
-organization PR #76. REAL issue #151 reached Codex, produced the requested
-candidate, and passed validation/tests, then exposed publication transport
-authentication and failure-classification defects before a remote branch or
-draft PR survived. The next target candidate is 2.4.5: it proves authenticated
-Git push transport with a dry-run before Codex, uses a prompt-aware askpass
-boundary, and distinguishes ordinary push failures from true create races. Do
-not rewrite published 2.4.4 identities. Publish reviewed 2.4.5 identities and
-require matching control-plane release, deployed preflight, and live verification
-before another REAL approval.
+The published 2.4.2 compatibility unit remains a historical rollback
+baseline. The current runtime identity is the published 2.4.5 release:
+`codex-adapter-v2.4.5` resolves to
+`4f062ca73acfc3458f0d690bf1c7687bafd0a8eb`, and
+`ai-sdlc-v2.4.5` resolves to reviewed control-plane commit
+`afe09d320268581bc83021cbfc80bf2a0f0bff91`; publication was attested by
+organization PR #79. Deployed Runtime Preflight run 36277959203 and immutable
+REAL preflight run 36278028013 passed before the portfolio consumer advanced.
+Fresh REAL issue #154 then exercised the full published path with delivery
+`task-8f1f5318e2789a4b49ff22be64c700bc`: target run 36279165335 prepared the
+sandbox, ran Codex, passed validation/tests, published one managed draft PR,
+delivered the canonical result through the 2.4.5 receiver, and projected it back
+to the source issue. PR #66 passed conformance and human review and merged at
+`6d3d9694057e787eab74ae45999ad73c804c6067`. The transport dry-run,
+prompt-aware askpass boundary, fail-closed empty-implementation rule, and
+sandbox preparation are now live-verified. Published 2.4.4 remains immutable
+previous-generation evidence but is not an execution-safe rollback for cost-bearing
+implementation because REAL #151 exposed its publication-transport defect. Any
+rollback that may invoke Codex requires a separately reviewed safe release or REAL
+execution must remain disabled. Do not rewrite published release identities.
 
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft
@@ -317,15 +322,16 @@ must:
   `c6090e5bbadcc2102a1cb91875466e9decdada1e` remains evidence only.
 - The former issue #114 `workflow_call` adapter, repository-defined payload and
   branch/result semantics, and 26-case local oracle are obsolete and removed.
-  The active workflow calls `scripts/codex_target_adapter.py`; the checked-in
-  report passes all 29 organization scenarios, invokes the real adapter seam in
-  22, and records zero prohibited effects. The merged-main replacement
-  conformance run 31857176623 is green. Immutable tag
-  `codex-adapter-v2.3.1` resolves to
-  `666323d3828a695f3614e6a61bae93aca0531e15`; the 2.3.1 receiver and the
-  registry's report binding passed live verification. This is target evidence
-  only. Credentials and operational governance have not been confirmed, and
-  the target remains disabled.
+  The active workflow calls `scripts/codex_target_adapter.py`. Historical
+  2.3.1 recovery evidence remains preserved: its checked-in report passed all
+  29 organization scenarios, invoked the real adapter seam in 22, and recorded
+  zero prohibited effects; immutable `codex-adapter-v2.3.1` resolved to
+  `666323d3828a695f3614e6a61bae93aca0531e15`. Do not treat that historical
+  state as the current runtime. The published 2.4.5 target composition has
+  passed publication attestation, deployed Runtime Preflight, immutable REAL
+  preflight, portfolio consumer repin, and fresh governed REAL issue #154.
+  Current activation remains organization-router state, not repository-owned
+  state.
 - Static wrapper comments are not idempotency evidence. The exact adapter and
   harness blobs are bound by the pin and exercised by the shared oracle.
   Preflight must observe both branch existence and all pull-request state before

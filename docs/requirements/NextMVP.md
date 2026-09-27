@@ -6,20 +6,21 @@ This profile is the normative repository-owned implementation baseline. It uses
 payload contract `ai-sdlc-contract/v2` and fixture-set manifest
 `TC-MVP-CI-001` from the reviewed issue #135 recovery candidate at immutable
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
-The published `ai-sdlc-v2.4.4` control plane selects
-`codex-adapter-v2.4.4` at
-`70ea4342abf7115f6848ea32bb958bbf6be696c1` with the matching published
-receiver; 2.4.3 remains the previous known-good control-plane generation and
-2.4.2 remains the rollback baseline. REAL issue #151 proved Codex execution,
-candidate validation, and repository tests under 2.4.4, then failed during
-branch publication with no remote branch or draft PR. This follow-up is an
-unpublished 2.4.5 target candidate: it repairs publication authentication,
-restores a real authenticated Git transport readiness check before Codex,
-regenerates exact-file evidence, and pins the future matching 2.4.5 receiver.
-Release, registration, deployed preflight, and live verification remain required
-before another REAL approval. These interface facts are requirements;
-conformance is established only by the exact-file pin and executable report
-described below.
+The published `ai-sdlc-v2.4.5` control plane selects
+`codex-adapter-v2.4.5` at
+`4f062ca73acfc3458f0d690bf1c7687bafd0a8eb` with the matching published
+receiver. The adapter preserves the authenticated Git transport dry-run before
+cost-bearing Codex execution, prompt-aware publication credential boundary, and
+truthful publication failure classification introduced after REAL issue #151.
+Organization publication attestation, deployed Runtime Preflight, and immutable
+REAL preflight all passed. Fresh REAL issue #154 then produced one managed draft
+PR through the published 2.4.5 path with validation and tests passed, and the
+receiver/source projection completed successfully. The immutable candidate
+conformance report remains pre-publication evidence and is not rewritten by
+later live verification. Published 2.4.4 remains immutable previous-generation evidence, but REAL #151 proved it is not an execution-safe rollback for cost-bearing implementation because its publication transport can lose successful Codex work. Any rollback that may invoke Codex must select a separately reviewed safe release or disable REAL execution.
+These interface facts are requirements; conformance is established by the
+exact-file pin and executable report described below, while live acceptance is
+preserved separately in the governed workflow and source issue evidence.
 
 The current MVP contribution accepts **one already admitted task**, validates it,
 and in implement mode produces or reuses **one validated managed draft pull
@@ -105,13 +106,16 @@ result separately; it does not return execution success directly to the router.
 It shall invoke
 `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.5`
 with inputs `execution_result` and `source_issue` and secret
-`CODEX_RESULT_TOKEN`. The 2.4.5 receiver is not yet published, so this target
-candidate cannot be used for REAL dispatch. Its ordinary conformance checks use
-fake effects and do not prove live receiver delivery. The published 2.4.4 release
-remains the current path; 2.4.3 remains the previous known-good generation and
-2.4.2 the rollback baseline. The 2.4.5 control-plane release, target binding,
-deployed preflight, and live verification must complete before another REAL
-approval. Receiver outputs are `accepted`, `delivery_id`, `correlation_id`,
+`CODEX_RESULT_TOKEN`. The 2.4.5 receiver and matching target adapter are
+published and were exercised by REAL issue #154. That delivery produced one
+managed draft PR, returned a receiver-accepted canonical terminal result, and
+projected the correlated result to the source issue. Ordinary conformance checks
+remain zero-effect compatibility evidence and do not replace that live
+acceptance evidence. Published 2.4.4 remains immutable previous-generation
+evidence but is not an execution-safe rollback for cost-bearing implementation
+because REAL #151 exposed its publication-transport defect. Any rollback that
+may invoke Codex requires a separately reviewed safe release or REAL execution
+must remain disabled. Receiver outputs are `accepted`, `delivery_id`, `correlation_id`,
 `execution_status`, `failure_category`, and `diagnostic_summary`.
 
 The receiver is the canonical organization-owned result transport. Consulting
@@ -222,11 +226,12 @@ pull-request state.
 
 ## Implementation readiness and operational activation
 
-The published 2.4.3 adapter remains the current runtime identity, and 2.4.2
-remains the rollback baseline. This change prepares a 2.4.4-targeted
-adapter candidate and refreshed no-effects evidence. It does not claim the
-2.4.4 receiver or adapter tag is published or live-verified.
-Operational activation remains mutable organization control-plane state and is
-neither pinned nor enforced here. This repository must not create a second
-activation switch; routing remains bound to the organization registry until the
-new immutable adapter tag and evidence are registered.
+The published 2.4.5 adapter is the current runtime identity. Published 2.4.4 remains immutable previous-generation evidence, but REAL #151 proved it is not an execution-safe rollback for cost-bearing implementation because its publication transport can lose successful Codex work. Any rollback that may invoke Codex must select a separately reviewed safe release or disable REAL execution. The 2.4.5 target/control-plane release,
+deployed Runtime Preflight, immutable REAL preflight, portfolio consumer repin,
+and fresh REAL issue #154 have all completed successfully. Operational
+activation remains mutable organization control-plane state and is neither
+pinned nor administered here. This repository must not create a second
+activation switch; routing remains owned by the organization registry/router.
+The successful REAL delivery is live acceptance evidence, while the checked-in
+zero-effect conformance report remains immutable pre-publication compatibility
+evidence.

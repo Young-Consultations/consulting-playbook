@@ -1,7 +1,7 @@
 # 2026-09-22 — REAL #150 reached Codex but did not implement
 
 - **Date:** 2026-09-22
-- **Decision status:** resolved for target repair; live verification pending
+- **Decision status:** resolved — target repair and live REAL verification complete
 - **Pending release decision owner:** Joseph, repository owner and release approver.
 - **SDLC phase:** integration and REAL acceptance
 
@@ -71,12 +71,27 @@ The resolved runner prerequisite and implement outcome rule are recorded there.
 
 ## Follow-up
 
-Review the repair PR and its exact conformance checks. Merge and publish a new
-adapter release, compose and publish the matching control-plane patch release,
-run a protected shell/file operation probe plus deployed Runtime and REAL
-preflights, then use a fresh delivery identity for the next REAL issue.
+Completed. The repair was merged and published through the 2.4.5 target/control-
+plane release, deployed Runtime and REAL preflights passed, and fresh REAL issue
+#154 successfully exercised repository shell/file operations and produced one
+managed draft PR. DEF-0043, DEF-0044, and DEF-0046 are resolved.
 
 ## Potential consulting or content value
 
 Concrete example of a green workflow with evidence that does not establish
 the approved outcome.
+
+## Closure evidence — 2026-09-26
+
+Fresh REAL issue [#154](https://github.com/Young-Consultations/portfolio-tasks/issues/154)
+provides the missing live proof. Target run
+[36279165335](https://github.com/Young-Consultations/consulting-playbook/actions/runs/36279165335)
+completed the `Prepare Codex workspace sandbox` step, Codex successfully
+executed repository commands and produced the required candidate, target checks
+passed, and one managed draft PR was published. PR
+[#66](https://github.com/Young-Consultations/consulting-playbook/pull/66) later
+passed conformance and human review and merged.
+
+This closes DEF-0043 (sandbox preparation) and DEF-0044 (false-green empty
+implementation outcome). The review-only sysctl fail-open defect DEF-0046 was
+corrected in merged PR #62 and is also resolved.
