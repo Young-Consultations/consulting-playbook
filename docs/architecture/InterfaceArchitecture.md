@@ -48,9 +48,9 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   `4f062ca73acfc3458f0d690bf1c7687bafd0a8eb`. REAL #154 proved its initial
   end-to-end path, while REAL #156 exposed a result-journal identity mismatch on
   equivalent redelivery. The next target candidate is
-  `codex-adapter-v2.4.6`, which calls the future
-  `ai-sdlc-v2.4.6` receiver at
-  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.6`.
+  `codex-adapter-v3.0.0`, which calls the future
+  `ai-sdlc-v3.0.0` receiver at
+  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.0`.
   Before Codex, the candidate mints a short-lived installation token from the
   dedicated GitHub App `ai-sdlc-result-writer` (App ID `5100679`), installed
   only on `portfolio-tasks`, and invokes the matching organization-owned
@@ -63,6 +63,7 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   activation nor administers it. The immutable candidate report remains
   pre-publication compatibility evidence and is not rewritten by later live
   acceptance. No package or observed import is a contract.
+  The earlier immutable `codex-adapter-v2.4.6` candidate is retained as unused evidence after release-policy review classified the required receiver-secret change as MAJOR; it is not a valid active registry binding.
 - **Validation:** authenticate the dispatch caller and validate the exact
   immutable input schema, target, task type, executor/mode, branch policy, and
   transport concurrency before minting or exercising the result-writer
