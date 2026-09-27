@@ -205,18 +205,30 @@ baseline. The current runtime identity is the published 2.4.5 release:
 `afe09d320268581bc83021cbfc80bf2a0f0bff91`; publication was attested by
 organization PR #79. Deployed Runtime Preflight run 36277959203 and immutable
 REAL preflight run 36278028013 passed before the portfolio consumer advanced.
-Fresh REAL issue #154 then exercised the full published path with delivery
-`task-8f1f5318e2789a4b49ff22be64c700bc`: target run 36279165335 prepared the
-sandbox, ran Codex, passed validation/tests, published one managed draft PR,
-delivered the canonical result through the 2.4.5 receiver, and projected it back
-to the source issue. PR #66 passed conformance and human review and merged at
-`6d3d9694057e787eab74ae45999ad73c804c6067`. The transport dry-run,
-prompt-aware askpass boundary, fail-closed empty-implementation rule, and
-sandbox preparation are now live-verified. Published 2.4.4 remains immutable
-previous-generation evidence but is not an execution-safe rollback for cost-bearing
-implementation because REAL #151 exposed its publication-transport defect. Any
-rollback that may invoke Codex requires a separately reviewed safe release or REAL
-execution must remain disabled. Do not rewrite published release identities.
+Fresh REAL issue #154 then exercised the initial published path successfully.
+REAL redelivery issue #156 subsequently proved target-side managed-draft reuse
+without a second Codex execution, but exposed DEF-0064: the runtime result
+credential authored receiver journal markers as `mightyjoe909` while the
+immutable 2.4.5 result trust policy expected `github-actions[bot]`. The source
+failed closed after the receiver forwarded the equivalent result a second time.
+
+The resolved repair identity is the organization-owned GitHub App
+`ai-sdlc-result-writer`, App ID `5100679`, installed only on
+`Young-Consultations/portfolio-tasks`. The unpublished 2.4.6 target candidate
+mints a repository-bounded short-lived installation token and runs the
+organization-owned result-credential capability preflight before the OpenAI
+credential reaches the adapter. The future matching 2.4.6 receiver must mint a
+fresh installation token after execution so a long Codex run cannot outlive
+the result credential. The App token and private key do not enter the Codex
+adapter environment. This candidate is implementation evidence only; 2.4.5
+remains the active published runtime until the target tag, matching control-plane
+release, deployed preflights, and controlled REAL redelivery acceptance pass.
+
+Published 2.4.4 remains immutable previous-generation evidence but is not an
+execution-safe rollback for cost-bearing implementation because REAL #151
+exposed its publication-transport defect. Any rollback that may invoke Codex
+requires a separately reviewed safe release or REAL execution must remain
+disabled. Do not rewrite published release identities.
 
 Do not add automatic approval, merge, deployment, production operations, or
 autonomous decision-making, and do not make production-readiness claims. A draft
@@ -255,7 +267,12 @@ production evidence.
   the executor environment, run from the repository root under
   `workspace-write`, and before invoking Codex verify both publication
   permission metadata and the actual authenticated Git push transport with a
-  non-mutating dry-run.
+  non-mutating dry-run. For the 2.4.6 candidate, the workflow must first reuse
+  the adapter's admission gate so an unauthorized or malformed dispatch cannot
+  exercise source credentials; only then may the result-delivery boundary mint
+  and capability-check the dedicated `ai-sdlc-result-writer` installation
+  token before the OpenAI credential is exposed. Result-writer
+  credentials must not cross into the Codex adapter environment.
 - On GitHub-hosted Ubuntu runners, prepare the unprivileged-user-namespace and
   AppArmor prerequisites for Codex `workspace-write` before handing secrets to
   the adapter. An implement execution without candidate changes fails before
@@ -332,6 +349,13 @@ must:
   preflight, portfolio consumer repin, and fresh governed REAL issue #154.
   Current activation remains organization-router state, not repository-owned
   state.
+- DEF-0064 remains open: portfolio issue #156 proved that correct target
+  redelivery semantics are insufficient when the deployed result writer cannot
+  authenticate its own durable receiver evidence. The 2.4.6 candidate binds the
+  result path to GitHub App `ai-sdlc-result-writer` (App ID `5100679`) and
+  adds a pre-Codex identity/capability gate plus fresh post-execution token
+  generation. Do not treat this as resolved until the matching immutable
+  control-plane release and controlled REAL same-delivery test pass.
 - Static wrapper comments are not idempotency evidence. The exact adapter and
   harness blobs are bound by the pin and exercised by the shared oracle.
   Preflight must observe both branch existence and all pull-request state before

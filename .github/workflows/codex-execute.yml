@@ -31,6 +31,69 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+      - name: Install repository validation dependencies
+        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]==4.26.0'
+      - id: result-source
+        name: Authorize request and bind result-writer source
+        shell: bash
+        env:
+          EXECUTION_INPUT_JSON: ${{ inputs.execution_input_json }}
+          CONCURRENCY_GROUP: ${{ inputs.concurrency_group }}
+          CALLER_LOGIN: ${{ github.actor }}
+          TRUSTED_CALLERS: ${{ secrets.CODEX_TARGET_TRUSTED_CALLERS }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          import sys
+
+          sys.path.insert(0, "scripts")
+          from codex_target_adapter import admit
+
+          trusted_callers = {
+              value.strip()
+              for value in os.environ.get("TRUSTED_CALLERS", "").split(",")
+              if value.strip()
+          }
+          payload = admit(
+              os.environ.get("EXECUTION_INPUT_JSON", ""),
+              os.environ.get("CONCURRENCY_GROUP", ""),
+              os.environ.get("CALLER_LOGIN", ""),
+              trusted_callers,
+          )
+          source_issue = payload["source_issue"]
+          if re.fullmatch(
+              r"Young-Consultations/portfolio-tasks#[1-9][0-9]*", source_issue
+          ) is None:
+              raise SystemExit(
+                  "result credential preflight requires the governed portfolio-tasks source issue"
+              )
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
+              stream.write(f"source_issue={source_issue}\n")
+          PY
+      - name: Mint bounded result-writer preflight token
+        id: result-writer-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: "5100679"
+          private-key: ${{ secrets.AI_SDLC_RESULT_WRITER_PRIVATE_KEY }}
+          owner: Young-Consultations
+          repositories: portfolio-tasks
+          permission-issues: write
+          permission-contents: write
+      - name: Verify result-writer GitHub App identity
+        shell: bash
+        env:
+          APP_SLUG: ${{ steps.result-writer-token.outputs.app-slug }}
+        run: |
+          set -euo pipefail
+          [[ "$APP_SLUG" == "ai-sdlc-result-writer" ]]
+      - name: Prove result-delivery prerequisites before Codex
+        uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v2.4.6
+        with:
+          result-token: ${{ steps.result-writer-token.outputs.token }}
+          source-issue: ${{ steps.result-source.outputs.source_issue }}
       - name: Prepare Codex workspace sandbox
         shell: bash
         run: |
@@ -48,8 +111,6 @@ jobs:
           [[ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns)" == "0" ]]
       - name: Install Codex CLI
         run: npm install --global @openai/codex@0.154.0
-      - name: Install repository validation dependencies
-        run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]==4.26.0'
       - id: execute
         env:
           EXECUTION_INPUT_JSON: ${{ inputs.execution_input_json }}
@@ -78,10 +139,10 @@ jobs:
     if: ${{ always() && needs.execute.outputs.execution_result != '' && needs.execute.outputs.source_issue != '' }}
     permissions:
       contents: read
-    # 2.4.5 candidate: release publication and control-plane binding are separate gates.
-    uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.5
+    # 2.4.6 candidate: release publication and control-plane binding are separate gates.
+    uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.6
     with:
       execution_result: ${{ needs.execute.outputs.execution_result }}
       source_issue: ${{ needs.execute.outputs.source_issue }}
     secrets:
-      CODEX_RESULT_TOKEN: ${{ secrets.CODEX_RESULT_TOKEN }}
+      RESULT_WRITER_PRIVATE_KEY: ${{ secrets.AI_SDLC_RESULT_WRITER_PRIVATE_KEY }}

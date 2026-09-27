@@ -15,9 +15,23 @@ truthful publication failure classification introduced after REAL issue #151.
 Organization publication attestation, deployed Runtime Preflight, and immutable
 REAL preflight all passed. Fresh REAL issue #154 then produced one managed draft
 PR through the published 2.4.5 path with validation and tests passed, and the
-receiver/source projection completed successfully. The immutable candidate
-conformance report remains pre-publication evidence and is not rewritten by
-later live verification. Published 2.4.4 remains immutable previous-generation evidence, but REAL #151 proved it is not an execution-safe rollback for cost-bearing implementation because its publication transport can lose successful Codex work. Any rollback that may invoke Codex must select a separately reviewed safe release or disable REAL execution.
+receiver/source projection completed successfully. REAL redelivery issue #156
+later proved target-side managed-draft reuse but exposed a receiver
+result-writer identity mismatch: the deployed credential authored journal
+markers as `mightyjoe909` while the immutable result trust policy expected
+`github-actions[bot]`. The source failed closed and no second Codex execution
+occurred, but the receiver forwarded an equivalent result twice. The next target
+candidate is 2.4.6. It uses the dedicated GitHub App
+`ai-sdlc-result-writer` (App ID `5100679`), installed only on
+`portfolio-tasks`, to mint a repository-bounded short-lived installation
+token and run the organization-owned result credential capability preflight
+before Codex. The immutable candidate conformance report remains pre-publication
+evidence and is not rewritten by later live verification. Published 2.4.4
+remains immutable previous-generation evidence, but REAL #151 proved it is not
+an execution-safe rollback for cost-bearing implementation because its
+publication transport can lose successful Codex work. Any rollback that may
+invoke Codex must select a separately reviewed safe release or disable REAL
+execution.
 These interface facts are requirements; conformance is established by the
 exact-file pin and executable report described below, while live acceptance is
 preserved separately in the governed workflow and source issue evidence.
@@ -103,14 +117,18 @@ The target workflow is `.github/workflows/codex-execute.yml`, exposes only
 The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
-It shall invoke
-`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.5`
+The 2.4.6 target is an unpublished candidate. It shall invoke
+`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v2.4.6`
 with inputs `execution_result` and `source_issue` and secret
-`CODEX_RESULT_TOKEN`. The 2.4.5 receiver and matching target adapter are
-published and were exercised by REAL issue #154. That delivery produced one
-managed draft PR, returned a receiver-accepted canonical terminal result, and
-projected the correlated result to the source issue. Ordinary conformance checks
-remain zero-effect compatibility evidence and do not replace that live
+`RESULT_WRITER_PRIVATE_KEY`, supplied from the target's
+`AI_SDLC_RESULT_WRITER_PRIVATE_KEY` secret. The receiver shall mint a fresh
+short-lived installation token from the dedicated `ai-sdlc-result-writer`
+GitHub App rather than accepting a long-lived `CODEX_RESULT_TOKEN`. Published
+2.4.5 remains the current runtime until the 2.4.6 adapter and control-plane
+release are reviewed, tagged, attested, preflighted, and live-verified. REAL
+issue #154 remains successful initial-path evidence for 2.4.5; REAL #156 remains
+the redelivery defect evidence that blocks full acceptance. Ordinary conformance
+checks remain zero-effect compatibility evidence and do not replace live
 acceptance evidence. Published 2.4.4 remains immutable previous-generation
 evidence but is not an execution-safe rollback for cost-bearing implementation
 because REAL #151 exposed its publication-transport defect. Any rollback that
@@ -150,6 +168,23 @@ target is not an organization approval authority and receives no control-plane
 credentials.
 
 ## Required adapter behavior
+
+Before the adapter can receive the OpenAI credential or invoke Codex, the target
+workflow shall reuse the adapter's `admit()` gate to authenticate the dispatch
+caller and validate the canonical execution input, target, task type, mode,
+branch policy, and transport concurrency value. Only an admitted request may
+cross into result-credential probing. The workflow shall then require the
+governed source to match `Young-Consultations/portfolio-tasks#<issue>`; mint
+an installation token for
+GitHub App `ai-sdlc-result-writer` (App ID `5100679`) scoped only to
+`portfolio-tasks` with Issues write and Contents write; require the token's
+reported app slug to equal `ai-sdlc-result-writer`; and invoke the
+organization-owned
+`codex-result-credential-preflight@ai-sdlc-v2.4.6`. That preflight shall prove
+the trusted result-author identity, issue-comment create/delete access, and the
+dedicated no-op repository-dispatch capability. Any failure stops the delivery
+before cost-bearing execution. The installation token shall not be supplied to
+the Codex adapter.
 
 Before any executor or publisher effect, the adapter shall authenticate and
 authorize the admitted caller; format-check and validate `execution_input_json`
@@ -226,12 +261,23 @@ pull-request state.
 
 ## Implementation readiness and operational activation
 
-The published 2.4.5 adapter is the current runtime identity. Published 2.4.4 remains immutable previous-generation evidence, but REAL #151 proved it is not an execution-safe rollback for cost-bearing implementation because its publication transport can lose successful Codex work. Any rollback that may invoke Codex must select a separately reviewed safe release or disable REAL execution. The 2.4.5 target/control-plane release,
-deployed Runtime Preflight, immutable REAL preflight, portfolio consumer repin,
-and fresh REAL issue #154 have all completed successfully. Operational
-activation remains mutable organization control-plane state and is neither
-pinned nor administered here. This repository must not create a second
-activation switch; routing remains owned by the organization registry/router.
-The successful REAL delivery is live acceptance evidence, while the checked-in
-zero-effect conformance report remains immutable pre-publication compatibility
-evidence.
+The published 2.4.5 adapter remains the current runtime identity. Published
+2.4.4 remains immutable previous-generation evidence, but REAL #151 proved it
+is not an execution-safe rollback for cost-bearing implementation because its
+publication transport can lose successful Codex work. Any rollback that may
+invoke Codex must select a separately reviewed safe release or disable REAL
+execution. The 2.4.5 target/control-plane release, deployed Runtime Preflight,
+immutable REAL preflight, portfolio consumer repin, and fresh REAL issue #154
+all completed successfully; REAL #156 subsequently blocked full redelivery
+acceptance because the deployed result-writer identity disagreed with the
+immutable receiver trust policy. The 2.4.6 target candidate repairs the target
+side of that deployment boundary by proving the dedicated GitHub App credential
+before Codex and by handing only the App private key to the future receiver so
+it can mint a fresh post-execution token. 2.4.6 is not active or published until
+its target tag, matching control-plane release, deployed preflights, and a
+controlled REAL same-delivery test pass. Operational activation remains mutable
+organization control-plane state and is neither pinned nor administered here.
+This repository must not create a second activation switch; routing remains
+owned by the organization registry/router. The checked-in zero-effect
+conformance report is pre-publication compatibility evidence, not live
+acceptance.
