@@ -118,15 +118,14 @@ by REAL #151. After updating the normative Next-MVP and interface architecture,
 
 ## Follow-up
 
-Review and merge the 2.4.5 target repair only after exact-head conformance
-passes. Publish a new immutable target tag, prepare and publish the matching
-organization 2.4.5 control-plane release, run deployed Runtime and REAL
-preflights, then use a fresh portfolio delivery identity for the next harmless
-REAL execution. Issue #151 remains terminal failure evidence and must not be
-reused.
+The consulting-playbook repair/release sequence is complete: the 2.4.5 target
+and control-plane releases were published, deployed Runtime and REAL preflights
+passed, and fresh REAL issue #154 produced one managed draft PR. Issue #151
+remains terminal failure evidence and was not reused.
 
-Separately audit the current Slugger canonical adapter to decide whether the
-pre-Codex transport dry-run lost during convergence should be restored there.
+The separate organization-level safety decision remains tracked by
+Young-Consultations/.github#77, including whether equivalent pre-cost publication
+readiness evidence is required for Slugger and other registered targets.
 
 ## Potential consulting or content value
 
@@ -155,6 +154,7 @@ The 2.4.5 repair completed its entire release and acceptance sequence:
 
 DEF-0048 is resolved. The same release sequence also supplies closure evidence
 for the already-corrected 2.4.4/2.4.5 release-state documentation lineage.
-Current-state target requirements, architecture, README, workflow commentary,
-and `AI_CONTEXT.md` are reconciled in the post-REAL closure change; historical
-candidate evidence remains unchanged.
+Current-state target requirements, architecture, README, and `AI_CONTEXT.md`
+are reconciled in the post-REAL closure change. The exact pinned workflow blob,
+including its historical candidate-era comment, is intentionally unchanged
+because it is part of immutable 2.4.5 conformance evidence.
