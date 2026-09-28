@@ -43,13 +43,15 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   detail, and branch/draft metadata when applicable.
 - **Compatibility and activation:** the non-recursive target pin binds exact
   schema/fixture blobs at recovery candidate `e27b8a5` plus this workflow,
-  adapter, and harness. The current published target remains
-  `codex-adapter-v2.4.5` at
-  `4f062ca73acfc3458f0d690bf1c7687bafd0a8eb`. REAL #154 proved its initial
-  end-to-end path, while REAL #156 exposed a result-journal identity mismatch on
-  equivalent redelivery. The current published target is `codex-adapter-v3.0.0`, whose receiver pin
-  exposed DEF-0073 when a valid 3.0.1 admission reached the 3.0.0 receiver. The
-  next corrective target candidate is `codex-adapter-v3.0.2`, which pins the
+  adapter, and harness. The current published source/control-plane release is
+  `ai-sdlc-v3.0.1`, and its enabled consulting target registry entry selects
+  published `codex-adapter-v3.0.0` at
+  `0fa11c078b248ea3201f0aa0f2912fce299a7766`. Published
+  `codex-adapter-v2.4.5` remains earlier initial-live-path evidence: REAL #154
+  proved that path, while REAL #156 later exposed the result-journal identity
+  defect that drove the 3.0.0 repair. REAL #159 then exposed DEF-0073 when a
+  valid 3.0.1 admission reached the 3.0.0 receiver. The next corrective target
+  candidate is `codex-adapter-v3.0.2`, which pins the
   future `ai-sdlc-v3.0.2` receiver at
   `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.2`.
   Before Codex, the candidate mints a short-lived installation token from the
