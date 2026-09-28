@@ -99,14 +99,32 @@ architecture already assign reconciliation to the source and prohibit inventing 
 The repair does not change the canonical contract or ownership boundary. The unresolved automatic
 reconciliation deadline must remain out of AI_CONTEXT until its owner makes that decision.
 
+## Verification
+
+Portfolio-tasks PR #161 merged to `main` at
+`76c2942c7e7a099ce2e940a7470ba2bbf40a801e`. The live recovery workflow was then exercised
+against source issue #159 and the original failed target run 36441714913:
+
+- recovery run
+  [36478712289](https://github.com/Young-Consultations/portfolio-tasks/actions/runs/36478712289)
+  completed successfully;
+- the workflow authenticated the human operator and immutable control-plane trust policy;
+- it loaded the exact target workflow evidence and revalidated the delivery binding;
+- source issue #159 now contains exactly one trusted `ai-sdlc-reconciliation:v1` marker written by
+  `github-actions[bot]`;
+- `status:queued` was removed; and
+- no `execution-result/v2` was fabricated and no Codex, branch, PR, receiver, publication, or
+  automatic retry effect was created.
+
+This closes DEF-0067. The original `Invalid keyData` result-writer private-key/configuration
+failure remains a separate prerequisite defect and still blocks another REAL acceptance execution.
+
 ## Follow-up
 
-1. Review and merge portfolio-tasks PR #161 after CI and human review.
-2. Exercise the reconciliation workflow against #159 and run 36441714913, confirming the queued
-   projection is removed and exactly one recovery marker is retained.
-3. Repair and re-verify the separate result-writer private-key configuration before another REAL
+1. Repair and re-verify the separate result-writer private-key configuration before another REAL
    execution.
-4. Preserve the original logical delivery identity for any authorized unchanged retry.
+2. Preserve the original logical delivery identity for any authorized unchanged retry.
+3. Resume the #159 REAL acceptance sequence only after the result-writer prerequisite is proven.
 
 ## Potential consulting or content value
 
