@@ -116,15 +116,24 @@ against source issue #159 and the original failed target run 36441714913:
 - no `execution-result/v2` was fabricated and no Codex, branch, PR, receiver, publication, or
   automatic retry effect was created.
 
-This closes DEF-0067. The original `Invalid keyData` result-writer private-key/configuration
-failure remains a separate prerequisite defect and still blocks another REAL acceptance execution.
+This closes DEF-0067. A later unchanged retry, REAL run
+[36480321187](https://github.com/Young-Consultations/consulting-playbook/actions/runs/36480321187),
+proved the earlier `Invalid keyData` prerequisite corrected: both result-writer installation-token
+mints succeeded, the App identity check passed as `ai-sdlc-result-writer`, and the bounded
+result-delivery prerequisite probe passed before Codex.
+
+That run then exposed the separate receiver compatibility defect DEF-0073 /
+[Young-Consultations/.github#100](https://github.com/Young-Consultations/.github/issues/100):
+the approved 3.0.1 source admission was rejected by the pinned 3.0.0 receiver because the receiver
+incorrectly forced source/control-plane release identity to equal receiver implementation release
+identity.
 
 ## Follow-up
 
-1. Repair and re-verify the separate result-writer private-key configuration before another REAL
-   execution.
+1. Repair DEF-0073 / Young-Consultations/.github#100 through the immutable release process.
 2. Preserve the original logical delivery identity for any authorized unchanged retry.
-3. Resume the #159 REAL acceptance sequence only after the result-writer prerequisite is proven.
+3. Reconcile #159 after failed target attempts as needed, and resume the REAL acceptance sequence
+   only after the corrected receiver compatibility path is published and verified.
 
 ## Potential consulting or content value
 
