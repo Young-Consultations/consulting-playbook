@@ -136,7 +136,7 @@ def test_exact_dispatch_and_receiver_boundary() -> None:
     require(inputs.count("execution_input_json:") == 1 and inputs.count("concurrency_group:") == 1, "target inputs differ")
     workflow_lines = {line.strip() for line in WORKFLOW.splitlines()}
     require(
-        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.0"
+        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.2"
         in workflow_lines,
         "receiver is not exactly and immutably pinned",
     )
@@ -194,7 +194,7 @@ def test_security_and_publication_guards() -> None:
         "result writer token permissions do not match the receiver boundary",
     )
     require(
-        "uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v3.0.0"
+        "uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v3.0.2"
         in WORKFLOW,
         "result delivery preflight is not pinned to the matching control-plane candidate",
     )
