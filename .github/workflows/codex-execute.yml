@@ -90,7 +90,7 @@ jobs:
           set -euo pipefail
           [[ "$APP_SLUG" == "ai-sdlc-result-writer" ]]
       - name: Prove result-delivery prerequisites before Codex
-        uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v3.0.2
+        uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v3.0.3
         with:
           result-token: ${{ steps.result-writer-token.outputs.token }}
           source-issue: ${{ steps.result-source.outputs.source_issue }}
@@ -139,8 +139,8 @@ jobs:
     if: ${{ always() && needs.execute.outputs.execution_result != '' && needs.execute.outputs.source_issue != '' }}
     permissions:
       contents: read
-    # 3.0.2 candidate: release publication and control-plane binding are separate gates.
-    uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.2
+    # 3.0.3 candidate: release publication and control-plane binding are separate gates.
+    uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.3
     with:
       execution_result: ${{ needs.execute.outputs.execution_result }}
       source_issue: ${{ needs.execute.outputs.source_issue }}
