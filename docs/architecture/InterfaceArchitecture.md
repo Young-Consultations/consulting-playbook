@@ -44,16 +44,19 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
 - **Compatibility and activation:** the non-recursive target pin binds exact
   schema/fixture blobs at recovery candidate `e27b8a5` plus this workflow,
   adapter, and harness. The current published source/control-plane release is
-  `ai-sdlc-v3.0.1`, and its enabled consulting target registry entry selects
-  published `codex-adapter-v3.0.0` at
-  `0fa11c078b248ea3201f0aa0f2912fce299a7766`. Published
+  `ai-sdlc-v3.0.2`, and its enabled consulting target registry entry selects
+  published `codex-adapter-v3.0.2` at
+  `3bde0dc760088b9af21454a0f70ed498dae043a7`. Published
   `codex-adapter-v2.4.5` remains earlier initial-live-path evidence: REAL #154
   proved that path, while REAL #156 later exposed the result-journal identity
-  defect that drove the 3.0.0 repair. REAL #159 then exposed DEF-0073 when a
-  valid 3.0.1 admission reached the 3.0.0 receiver. The next corrective target
-  candidate is `codex-adapter-v3.0.2`, which pins the
-  future `ai-sdlc-v3.0.2` receiver at
-  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.2`.
+  defect that drove the 3.0.0 repair. REAL #159 exposed DEF-0073 at the 3.0.0
+  receiver; 3.0.2 repaired that receiver compatibility boundary and passed
+  deployed Runtime Preflight plus immutable REAL preflight before source
+  adoption. After #159 reconciliation preserved its original 3.0.1 admission,
+  DEF-0086 exposed the router's cross-release admission-reuse defect. The next
+  corrective target candidate is `codex-adapter-v3.0.3`, which pins the
+  future `ai-sdlc-v3.0.3` receiver at
+  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.3`.
   Before Codex, the candidate mints a short-lived installation token from the
   dedicated GitHub App `ai-sdlc-result-writer` (App ID `5100679`), installed
   only on `portfolio-tasks`, and invokes the matching organization-owned

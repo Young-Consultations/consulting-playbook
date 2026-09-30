@@ -7,19 +7,21 @@ payload contract `ai-sdlc-contract/v2` and fixture-set manifest
 `TC-MVP-CI-001` from the reviewed issue #135 recovery candidate at immutable
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
 The current published source/control-plane release is
-`ai-sdlc-v3.0.1`. Its enabled consulting target registry entry selects
-published `codex-adapter-v3.0.0` at
-`0fa11c078b248ea3201f0aa0f2912fce299a7766`. The earlier published 2.4.5
+`ai-sdlc-v3.0.2`. Its enabled consulting target registry entry selects
+published `codex-adapter-v3.0.2` at
+`3bde0dc760088b9af21454a0f70ed498dae043a7`. The earlier published 2.4.5
 composition remains initial-live-path evidence: REAL issue #154 produced one
 managed draft PR with validation/tests and receiver/source projection
-successful. REAL redelivery issue #156 later proved target-side managed-draft
-reuse but exposed the result-writer identity mismatch that drove the 3.0.0
-repair. The 3.0.0 target uses the dedicated GitHub App
-`ai-sdlc-result-writer` (App ID `5100679`), installed only on
-`portfolio-tasks`, to mint a repository-bounded short-lived installation
-token and run the organization-owned result credential capability preflight
-before Codex. The immutable candidate conformance report remains pre-publication
-evidence and is not rewritten by later live verification. Published 2.4.4
+successful. REAL redelivery issue #156 later exposed the result-writer identity
+mismatch that drove the 3.0.0 App-credential repair; REAL #159 then exposed
+DEF-0073 at the 3.0.0 receiver. Published 3.0.2 repaired that receiver
+compatibility boundary and passed deployed Runtime Preflight plus immutable
+REAL preflight before source adoption. The current 3.x target path uses the
+dedicated GitHub App `ai-sdlc-result-writer` (App ID `5100679`), installed
+only on `portfolio-tasks`, to mint a repository-bounded short-lived
+installation token and run the organization-owned result credential capability
+preflight before Codex. The 3.0.3 candidate conformance report remains
+pre-publication evidence and is not rewritten by later live verification. Published 2.4.4
 remains immutable previous-generation evidence, but REAL #151 proved it is not
 an execution-safe rollback for cost-bearing implementation because its
 publication transport can lose successful Codex work. Any rollback that may
@@ -110,21 +112,29 @@ The target workflow is `.github/workflows/codex-execute.yml`, exposes only
 The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
-The 3.0.2 target is an unpublished corrective candidate for .github#100 / DEF-0073. It shall invoke
-`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.2`
+The current published source/control-plane release is `ai-sdlc-v3.0.2`, and
+the current published consulting target is immutable
+`codex-adapter-v3.0.2` at
+`3bde0dc760088b9af21454a0f70ed498dae043a7`. Deployed Runtime Preflight
+36640642872 and immutable REAL preflight 36640734704 passed before the
+portfolio source consumer adopted 3.0.2.
+
+REAL #159 was then reconciled successfully after its failed 3.0.0-target
+attempt, preserving the original trusted 3.0.1 admission. That state exposed
+DEF-0086: the 3.0.2 router cannot reuse the preserved predecessor admission on
+an authorized unchanged retry. The next corrective target candidate is
+`codex-adapter-v3.0.3`. It shall invoke
+`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.3`
 with inputs `execution_result` and `source_issue` and secret
 `RESULT_WRITER_PRIVATE_KEY`, supplied from the target's
-`AI_SDLC_RESULT_WRITER_PRIVATE_KEY` secret. The receiver shall mint a fresh
-short-lived installation token from the dedicated `ai-sdlc-result-writer`
-GitHub App rather than accepting a long-lived `CODEX_RESULT_TOKEN`. The
-current published source/control-plane release is `ai-sdlc-v3.0.1`, and the
-current published consulting target is `codex-adapter-v3.0.0`. REAL issue
-#154 remains successful initial-path evidence for 2.4.5; REAL #156 remains the
-earlier redelivery identity evidence; REAL #159 is the current DEF-0073
-split-release receiver compatibility evidence that the 3.0.2 corrective
-candidate must resolve. Ordinary conformance
-checks remain zero-effect compatibility evidence and do not replace live
-acceptance evidence. Published 2.4.4 remains immutable previous-generation
+`AI_SDLC_RESULT_WRITER_PRIVATE_KEY` secret. The matching receiver shall mint
+a fresh short-lived installation token from the dedicated
+`ai-sdlc-result-writer` GitHub App rather than accepting a long-lived
+`CODEX_RESULT_TOKEN`. The 3.0.3 target is pre-publication evidence only until
+its immutable tag, matching control-plane release, deployed preflights, source
+repin, and controlled REAL acceptance complete. Ordinary conformance checks
+remain zero-effect compatibility evidence and do not replace live acceptance
+evidence. Published 2.4.4 remains immutable previous-generation
 evidence but is not an execution-safe rollback for cost-bearing implementation
 because REAL #151 exposed its publication-transport defect. Any rollback that
 may invoke Codex requires a separately reviewed safe release or REAL execution
@@ -175,7 +185,7 @@ GitHub App `ai-sdlc-result-writer` (App ID `5100679`) scoped only to
 `portfolio-tasks` with Issues write and Contents write; require the token's
 reported app slug to equal `ai-sdlc-result-writer`; and invoke the
 organization-owned
-`codex-result-credential-preflight@ai-sdlc-v3.0.2`. That preflight shall prove
+`codex-result-credential-preflight@ai-sdlc-v3.0.3`. That preflight shall prove
 the trusted result-author identity, issue-comment create/delete access, and the
 dedicated no-op repository-dispatch capability. Any failure stops the delivery
 before cost-bearing execution. The installation token shall not be supplied to
@@ -257,19 +267,24 @@ pull-request state.
 ## Implementation readiness and operational activation
 
 The current published source/control-plane runtime is
-`ai-sdlc-v3.0.1`, and its enabled consulting target is published
-`codex-adapter-v3.0.0`. Published 2.4.5 remains immutable initial-live-path
-evidence, and published 2.4.4 remains immutable previous-generation evidence,
-but REAL #151 proved 2.4.4 is not an execution-safe rollback for cost-bearing
-implementation because its publication transport can lose successful Codex
-work. Any rollback that may invoke Codex must select a separately reviewed safe
-release or disable REAL execution. The 3.0.0 target established the dedicated
-GitHub App result-writer boundary and passed the result-delivery prerequisite
-checks in REAL #159, but its pinned 3.0.0 receiver then rejected the valid 3.0.1
-admission under DEF-0073. The unpublished 3.0.2 corrective target candidate
-repins both the result credential preflight and receiver to 3.0.2; it is not a
+`ai-sdlc-v3.0.2`, and its enabled consulting target is published
+`codex-adapter-v3.0.2` at
+`3bde0dc760088b9af21454a0f70ed498dae043a7`. Published 2.4.5 remains
+immutable initial-live-path evidence, and published 2.4.4 remains immutable
+previous-generation evidence, but REAL #151 proved 2.4.4 is not an
+execution-safe rollback for cost-bearing implementation because its
+publication transport can lose successful Codex work. Any rollback that may
+invoke Codex must select a separately reviewed safe release or disable REAL
+execution.
+
+The 3.0.2 path passed deployed Runtime Preflight and immutable REAL preflight
+and is source-adopted, but #159 recovery then exposed DEF-0086 at the router's
+cross-release admission-reuse boundary. The unpublished 3.0.3 corrective
+target candidate repins both the result credential preflight and receiver to
+3.0.3 while leaving the target adapter implementation unchanged. It is not a
 published or active replacement until the target tag, matching control-plane
-release, deployed preflights, and controlled REAL acceptance complete.
+release, deployed preflights, source repin, and controlled REAL acceptance
+complete.
 Operational activation remains mutable
 organization control-plane state and is neither pinned nor administered here.
 This repository must not create a second activation switch; routing remains
