@@ -7,19 +7,21 @@ payload contract `ai-sdlc-contract/v2` and fixture-set manifest
 `TC-MVP-CI-001` from the reviewed issue #135 recovery candidate at immutable
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
 The current published source/control-plane release is
-`ai-sdlc-v3.0.1`. Its enabled consulting target registry entry selects
-published `codex-adapter-v3.0.0` at
-`0fa11c078b248ea3201f0aa0f2912fce299a7766`. The earlier published 2.4.5
+`ai-sdlc-v3.0.2`. Its enabled consulting target registry entry selects
+published `codex-adapter-v3.0.2` at
+`3bde0dc760088b9af21454a0f70ed498dae043a7`. The earlier published 2.4.5
 composition remains initial-live-path evidence: REAL issue #154 produced one
 managed draft PR with validation/tests and receiver/source projection
-successful. REAL redelivery issue #156 later proved target-side managed-draft
-reuse but exposed the result-writer identity mismatch that drove the 3.0.0
-repair. The 3.0.0 target uses the dedicated GitHub App
-`ai-sdlc-result-writer` (App ID `5100679`), installed only on
-`portfolio-tasks`, to mint a repository-bounded short-lived installation
-token and run the organization-owned result credential capability preflight
-before Codex. The immutable candidate conformance report remains pre-publication
-evidence and is not rewritten by later live verification. Published 2.4.4
+successful. REAL redelivery issue #156 later exposed the result-writer identity
+mismatch that drove the 3.0.0 App-credential repair; REAL #159 then exposed
+DEF-0073 at the 3.0.0 receiver. Published 3.0.2 repaired that receiver
+compatibility boundary and passed deployed Runtime Preflight plus immutable
+REAL preflight before source adoption. The current 3.x target path uses the
+dedicated GitHub App `ai-sdlc-result-writer` (App ID `5100679`), installed
+only on `portfolio-tasks`, to mint a repository-bounded short-lived
+installation token and run the organization-owned result credential capability
+preflight before Codex. The 3.0.3 candidate conformance report remains
+pre-publication evidence and is not rewritten by later live verification. Published 2.4.4
 remains immutable previous-generation evidence, but REAL #151 proved it is not
 an execution-safe rollback for cost-bearing implementation because its
 publication transport can lose successful Codex work. Any rollback that may
