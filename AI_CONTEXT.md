@@ -197,34 +197,41 @@ the organization release, while current activation is separate mutable
 organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
-The published 2.4.2 compatibility unit remains a historical rollback
-baseline. The current runtime identity is the published 2.4.5 release:
-`codex-adapter-v2.4.5` resolves to
-`4f062ca73acfc3458f0d690bf1c7687bafd0a8eb`, and
-`ai-sdlc-v2.4.5` resolves to reviewed control-plane commit
-`afe09d320268581bc83021cbfc80bf2a0f0bff91`; publication was attested by
-organization PR #79. Deployed Runtime Preflight run 36277959203 and immutable
-REAL preflight run 36278028013 passed before the portfolio consumer advanced.
-Fresh REAL issue #154 then exercised the initial published path successfully.
-REAL redelivery issue #156 subsequently proved target-side managed-draft reuse
-without a second Codex execution, but exposed DEF-0064: the runtime result
-credential authored receiver journal markers as `mightyjoe909` while the
-immutable 2.4.5 result trust policy expected `github-actions[bot]`. The source
-failed closed after the receiver forwarded the equivalent result a second time.
+The published 2.4.2 and 2.4.5 compatibility units remain historical
+evidence. The current published source/control-plane runtime is
+`ai-sdlc-v3.0.2`, and the enabled consulting target is immutable
+`codex-adapter-v3.0.2` at
+`3bde0dc760088b9af21454a0f70ed498dae043a7`. Deployed Runtime Preflight
+36640642872 and immutable REAL preflight 36640734704 passed before the
+portfolio source consumer adopted 3.0.2.
 
-The resolved repair identity is the organization-owned GitHub App
-`ai-sdlc-result-writer`, App ID `5100679`, installed only on
-`Young-Consultations/portfolio-tasks`. The unpublished 3.0.0 target candidate
-mints a repository-bounded short-lived installation token and runs the
-organization-owned result-credential capability preflight before the OpenAI
-credential reaches the adapter. The future matching 3.0.0 receiver must mint a
-fresh installation token after execution so a long Codex run cannot outlive
-the result credential. The App token and private key do not enter the Codex
-adapter environment. This candidate is implementation evidence only; 2.4.5
-remains the active published runtime until the target tag, matching control-plane
-release, deployed preflights, and controlled REAL redelivery acceptance pass.
+Fresh REAL #154 remains the initial 2.4.5 live-path proof. REAL #156 later
+exposed DEF-0064 at the result-writer identity/redelivery boundary, leading to
+the organization-owned GitHub App `ai-sdlc-result-writer` (App ID `5100679`),
+installed only on `Young-Consultations/portfolio-tasks`. REAL #159 then proved
+the App result-writer prerequisite path but exposed DEF-0073 at the 3.0.0
+receiver; published 3.0.2 repaired that receiver compatibility boundary.
 
-The immutable `codex-adapter-v2.4.6` tag at `d1bc6175afaf339d6de9b4d6bf2cf4efc1684d72` is unused pre-release evidence. Organization issue #85 records that the required receiver-secret rename/meaning change is MAJOR under the approved SemVer policy, so no `ai-sdlc-v2.4.6` control-plane release may publish that interface. The corrected candidate is 3.0.0; the payload contract remains `ai-sdlc-contract/v2`.
+After #159 reconciliation preserved the original trusted 3.0.1 admission,
+DEF-0086 exposed the router's cross-release admission-reuse defect. The current
+pre-publication target candidate is `codex-adapter-v3.0.3`. It leaves the
+target adapter implementation unchanged and repins both the result credential
+preflight and result receiver to future `ai-sdlc-v3.0.3`. The candidate is
+implementation evidence only until its immutable target tag, matching
+control-plane 3.0.3 release, deployed preflights, source repin, and controlled
+REAL #159 terminal/redelivery acceptance complete.
+
+The GitHub App token and private key do not enter the Codex adapter environment.
+A compatible cross-release retry preserves exactly one trusted durable
+admission for the logical delivery; predecessor admission reuse is permitted
+only by immutable target-bound policy and must be accepted by the pinned
+receiver compatibility policy. Same-release exact-binding reuse remains
+unconditional. Ambiguous, malformed, conflicting, or unsupported admission
+state fails closed before target dispatch.
+
+The immutable `codex-adapter-v2.4.6` tag at
+`d1bc6175afaf339d6de9b4d6bf2cf4efc1684d72` remains unused historical
+pre-release evidence. The payload contract remains `ai-sdlc-contract/v2`.
 
 Published 2.4.4 remains immutable previous-generation evidence but is not an
 execution-safe rollback for cost-bearing implementation because REAL #151
@@ -269,11 +276,11 @@ production evidence.
   the executor environment, run from the repository root under
   `workspace-write`, and before invoking Codex verify both publication
   permission metadata and the actual authenticated Git push transport with a
-  non-mutating dry-run. For the 3.0.0 candidate, the workflow must first reuse
-  the adapter's admission gate so an unauthorized or malformed dispatch cannot
-  exercise source credentials; only then may the result-delivery boundary mint
-  and capability-check the dedicated `ai-sdlc-result-writer` installation
-  token before the OpenAI credential is exposed. Result-writer
+  non-mutating dry-run. The workflow must first reuse the adapter's admission
+  gate so an unauthorized or malformed dispatch cannot exercise source
+  credentials; only then may the result-delivery boundary mint and
+  capability-check the dedicated `ai-sdlc-result-writer` installation token
+  before the OpenAI credential is exposed. Result-writer
   credentials must not cross into the Codex adapter environment.
 - On GitHub-hosted Ubuntu runners, prepare the unprivileged-user-namespace and
   AppArmor prerequisites for Codex `workspace-write` before handing secrets to
@@ -353,11 +360,20 @@ must:
   state.
 - DEF-0064 remains open: portfolio issue #156 proved that correct target
   redelivery semantics are insufficient when the deployed result writer cannot
-  authenticate its own durable receiver evidence. The 3.0.0 candidate binds the
-  result path to GitHub App `ai-sdlc-result-writer` (App ID `5100679`) and
-  adds a pre-Codex identity/capability gate plus fresh post-execution token
-  generation. Do not treat this as resolved until the matching immutable
-  control-plane release and controlled REAL same-delivery test pass.
+  authenticate its own durable receiver evidence. The published 3.x path now
+  binds result delivery to GitHub App `ai-sdlc-result-writer` (App ID
+  `5100679`) with pre-Codex identity/capability checks and fresh
+  post-execution token generation. Do not treat DEF-0064 as resolved until the
+  controlled REAL same-delivery test proves `duplicate-reused` before Codex
+  with no second receiver/source effect.
+- DEF-0086 remains open: after #159 reconciliation, published 3.0.2 cannot reuse
+  the preserved 3.0.1 admission on an authorized retry. The resolved
+  architecture preserves the original durable admission, requires exact
+  contract/delivery/correlation/source/target identity, applies the
+  target-bound predecessor-release allowlist only to cross-release reuse, and
+  requires target compatibility to prove that allowlist is a subset of the
+  pinned receiver's immutable compatibility policy. The 3.0.3 candidate
+  implements this rule but is not current runtime until release gates complete.
 - Static wrapper comments are not idempotency evidence. The exact adapter and
   harness blobs are bound by the pin and exercised by the shared oracle.
   Preflight must observe both branch existence and all pull-request state before
