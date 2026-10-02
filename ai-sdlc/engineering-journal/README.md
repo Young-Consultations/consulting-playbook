@@ -12,4 +12,4 @@ Create an entry when a discovery:
 
 Do not require an entry for every minor defect. A discovery can warrant a journal entry without being a defect, including when an investigation finds no discrepancy but produces a useful lesson.
 
-Copy [the template](TEMPLATE.md) to `YYYY-MM-DD-short-topic.md`. Link evidence rather than copying confidential or sensitive material. Clearly label unresolved discoveries and their decision owner; never present them as authoritative architectural truth. Once resolved, link the authoritative decision and preserve the earlier uncertainty as history.
+Copy [the template](TEMPLATE.md) to `YYYY-MM-DD-short-topic.md`. Link evidence rather than copying confidential or sensitive material. When a tracked defect prompts an entry, link the canonical [Defect Ledger](../defects/README.md) record and primary evidence instead of duplicating the defect record. Clearly label unresolved discoveries and their decision owner; never present them as authoritative architectural truth. Once resolved, link the authoritative decision and preserve the earlier uncertainty as history.
