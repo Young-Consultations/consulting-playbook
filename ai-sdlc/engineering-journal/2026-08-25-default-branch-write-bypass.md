@@ -1,7 +1,7 @@
 # 2026-08-25 — Default-branch write bypassed review change control
 
 - **Date:** 2026-08-25
-- **Decision status:** unresolved — incident reverted; prevention control still open
+- **Decision status:** resolved — live fail-closed prevention verified 2026-10-03
 - **SDLC phase:** implementation
 - **Decision owner:** Young-Consultations repository owner / maintainer
 - **Tracking:** [Young-Consultations/.github #80](https://github.com/Young-Consultations/.github/issues/80)
@@ -51,10 +51,15 @@ content.
 
 ## Requirement or architecture implications
 
-The Young-Consultations repository owner / maintainer is the accountable decision owner for [tracking issue #80](https://github.com/Young-Consultations/.github/issues/80) and must decide the durable prevention
-boundary: repository ruleset/branch protection, connector/tool guard, mandatory
-pre-write branch validation, or a combination. Until that decision is made,
-this journal does not promote a proposed mechanism to authoritative policy.
+The prevention decision is now resolved by ADR-018 in Young-Consultations/.github.
+The authoritative mutation boundary is an active GitHub branch ruleset on every
+core AI-SDLC repository targeting the default branch, with no bypass actors,
+a required-pull-request rule, review-thread resolution, deletion protection,
+and non-fast-forward protection. Repository-local prompts and tool conventions
+remain defense-in-depth only; they are not the authoritative fail-closed control.
+
+The implementation and verifier landed in .github PR #110 at merge commit
+`45320ce266968234335bb2fe35dd58e86ae142d5`.
 
 ## Lessons learned
 
@@ -64,14 +69,34 @@ defaulting a missing branch is unsafe for governed implementation work.
 
 ## `AI_CONTEXT.md` impact
 
-Unresolved. Do not add a speculative control to AI context until the
-requirement/architecture decision is approved and implemented.
+No additional AI_CONTEXT change is required for this resolution. The current
+control-plane AI_CONTEXT already states that automation must not push directly
+to a protected default branch. ADR-018 and the default-branch governance
+document own the durable mechanism; live GitHub settings remain mutable
+external configuration and should not be duplicated as a snapshot in AI context.
 
-## Follow-up
+## Resolution evidence
 
-Keep DEF-0056 open and track the decision/implementation in [Young-Consultations/.github #80](https://github.com/Young-Consultations/.github/issues/80). Select and implement the authoritative fail-closed control,
-add executable evidence that omitted/default-branch implementation writes are
-blocked, and then determine whether repository AI context requires an update.
+The prevention control is complete.
+
+- .github PR #110 implemented ADR-018, the machine-readable policy, fail-closed
+  audit, regression tests, and manual evidence workflow.
+- Default Branch Governance Audit run
+  [37134811435](https://github.com/Young-Consultations/.github/actions/runs/37134811435)
+  checked merged commit `45320ce266968234335bb2fe35dd58e86ae142d5`.
+- The audit passed 12/12 governance regression tests and returned
+  `compliant: true` with no errors for `.github`, `portfolio-tasks`,
+  `consulting-playbook`, and `slugger`.
+- Independent GitHub API verification on 2026-10-03 confirmed all four
+  repositories have an active `Default branch change control` ruleset with
+  `~DEFAULT_BRANCH`, no exclusions, no bypass actors, deletion protection,
+  non-fast-forward protection, and a required-pull-request rule requiring
+  review-thread resolution.
+
+DEF-0056 may therefore be closed as resolved. The historical direct-main
+commits remain durable incident evidence, but the same omitted/default-branch
+implementation write now fails at GitHub's mutation boundary instead of relying
+on agent behavior.
 
 ## Potential consulting or content value
 
