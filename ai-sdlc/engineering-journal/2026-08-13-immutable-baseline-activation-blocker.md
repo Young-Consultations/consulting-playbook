@@ -1,8 +1,14 @@
 # 2026-08-13 — Immutable baseline blocked target activation
 
 - **Date:** 2026-08-13
-- **Decision status:** resolved; recovery implementation remains open
+- **Decision status:** resolved; recovery implementation completed
 - **SDLC phase:** acceptance-review
+
+## 2026-10-02 resolution reconciliation
+
+The recovery described by this journal is complete. Portfolio issue #116 records corrected immutable conformance evidence for all four targets, and issue #117 records the reviewed activation step after .github PR #53 merged at `44d94e675bef8a46531b53ac6bc8f4bbd267978c`. Organization compatibility runs 32783947225 and 32849978514 passed, including live verification of the registered target workflows and the exact two-input `workflow_dispatch` plus receiver-compatible consulting target path.
+
+Accordingly, DEF-0012 through DEF-0015 are resolved. The descriptions below remain intentionally historical because they capture why the rejected `c6090e5` baseline was unsafe and how the recovery decisions were reached. They must not be read as current instructions to keep every target disabled or to keep #117 blocked.
 
 ## Context
 
@@ -10,8 +16,8 @@ Issue [portfolio-tasks #117](https://github.com/Young-Consultations/portfolio-ta
 was ready to change mutable target activation only after issue #116 had proved
 each target's conformance to
 `Young-Consultations/.github@c6090e5bbadcc2102a1cb91875466e9decdada1e`.
-A [P0 recovery epic](https://github.com/Young-Consultations/portfolio-tasks/issues/135)
-now owns remediation before issue #117 may resume.
+At the time of this discovery, a [P0 recovery epic](https://github.com/Young-Consultations/portfolio-tasks/issues/135)
+owned remediation before issue #117 could resume. That recovery later completed; the original blocked state below is retained as historical discovery context.
 A readiness review compared that exact control-plane baseline with repository
 snapshots and current GitHub issue, pull-request, tag, workflow, and Actions
 evidence for `.github`, `portfolio-tasks`, `consulting-playbook`, and `slugger`.
@@ -49,8 +55,7 @@ several independent blockers:
    before any job starts; its caller permission declaration lacks the reusable
    router's requested `actions: read` permission.
 
-The closure of issue #116 is therefore historical workflow state, not sufficient
-activation evidence. Issue #117 must remain blocked with all targets disabled.
+At the time of discovery, the closure of issue #116 was historical workflow state rather than sufficient activation evidence, so issue #117 had to remain blocked with all targets disabled until corrected evidence existed. That condition was later satisfied by the recovery evidence summarized in the 2026-10-02 reconciliation below.
 
 ## Why it matters
 
@@ -141,11 +146,7 @@ does not replace organization-owned architecture or release artifacts.
 
 ## `AI_CONTEXT.md` impact
 
-`AI_CONTEXT.md` and the root README need a focused correction now: the checked-in
-adapter and green repository-local report are not activation evidence, the
-target must remain disabled, and `c6090e5` is awaiting an organization-owned
-replacement. The normative compatibility documents should not be repinned until
-the corrected `.github` release exists and its exact commit is reviewed.
+At the time of discovery, `AI_CONTEXT.md` and the root README required a focused correction: the checked-in adapter and green repository-local report were not activation evidence, the target had to remain disabled, and `c6090e5` awaited an organization-owned replacement. Those recovery updates were subsequently completed; current AI context and release authority must be read from the active repository state rather than this historical incident section.
 
 The other three repositories' `AI_CONTEXT.md` files also require review during
 their recovery changes. This repository does not author those external context
@@ -153,16 +154,14 @@ files.
 
 ## Follow-up
 
-1. Complete [P0 recovery epic #135](https://github.com/Young-Consultations/portfolio-tasks/issues/135),
-   which is linked to issues #114 through #117.
-2. Correct control-plane architecture, receiver trust ownership, dispatch
-   contract, validation, and negative tests.
+The original follow-up sequence below is complete and retained as historical recovery context:
+
+1. Complete P0 recovery epic #135 linked to issues #114 through #117.
+2. Correct control-plane architecture, receiver trust ownership, dispatch contract, validation, and negative tests.
 3. Correct each target and the portfolio source permission boundary.
-4. Execute the complete shared oracle through each real adapter with explicit
-   no-real-effects traps.
+4. Execute the complete shared oracle through each real adapter with explicit no-real-effects traps.
 5. Publish immutable adapter tags and a corrected compatibility baseline.
-6. Migrate consumers to the exact new commit, then activate one proven target at
-   a time through issue #117.
+6. Migrate consumers to the exact new commit, then activate one proven target at a time through issue #117.
 
 ## Potential consulting or content value
 
