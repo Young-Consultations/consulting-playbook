@@ -1,5 +1,9 @@
 # Consulting Proposal Template
 
+For a separately scoped larger engagement. For the active commercial-validation
+offer use the [pilot proposal/SOW](pilot-proposal-sow.md), which defines its fixed-fee
+and payment hypotheses, turnaround, revision limit, and exclusions.
+
 ## Client Problem
 Describe the delivery or AI-SDLC problem and measurable business impact.
 

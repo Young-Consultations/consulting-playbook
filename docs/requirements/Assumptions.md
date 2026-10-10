@@ -9,7 +9,7 @@ the reviewed issue #135 cross-repository compatibility artifacts.
 | --- | --- |
 | CA-01 | Consulting-playbook owns reusable consulting knowledge and recommendation-to-action patterns, not portfolio governance or Slugger. |
 | CA-02 | Human judgment and designated authority remain final for recommendations, approvals, architecture, review, merge, and production. |
-| CA-03 | Current implemented scope is primarily a bounded organization-routed target executor; intended consulting content is not yet implemented. |
+| CA-03 | Current implementation includes the bounded organization-routed target executor and reusable consulting assets across consulting/01-service-offer through consulting/11-knowledge-base; availability does not validate demand or repeatability. |
 | CA-04 | The exact shared oracle passes through the real adapter seam with zero prohibited effects; this is reviewable target evidence, not tag, receiver, credential, release, or activation evidence. |
 | CA-05 | Cross-repository implementation claims are limited to the exact reviewed issue #135 artifacts and immutable identities cited by the target pin. |
 
@@ -26,11 +26,24 @@ the reviewed issue #135 cross-repository compatibility artifacts.
 | WA-07 | GitHub can be a suitable traceability surface for approved action. | Alternative systems/contracts are required. | Access, retention, lifecycle, reporting, and capability review; governance owner. |
 | WA-08 | Core content can remain usable offline and implementation-neutral. | A runtime product may become a separately required scope. | Offline scenario tests; maintainer/users. |
 
+## Selected current commercial experiment
+
+The [canonical Software Delivery Assessment pilot](../../consulting/01-service-offer/active-software-delivery-assessment-pilot.md)
+selects a $750 fixed-fee hypothesis, $375 booking / $375 delivery hypothesis,
+one delayed feature, integration handoff, or release decision, five-business-day
+turnaround, and five-hour delivery-effort cap. Buyer and secondary consultant
+channel are hypotheses. AI is contextual. The
+[scoreboard](../../consulting/01-service-offer/commercial-validation-scoreboard.md)
+contains experimental targets; absent business-plan numbers are explicitly flagged.
+Selection is not validated willingness-to-pay or repeatability. Existing broader
+assets remain reusable capability; ProjectRequirements.md and functional
+requirements continue to define long-term product scope.
+
 ## Unknowns
 
 | ID | Unknown | Requirement impact |
 | --- | --- | --- |
-| U-01 | Priority engagement types, representative clients, scale, cadence, and commercial model. | Information architecture, pilots, and performance assumptions. |
+| U-01 | Willingness-to-pay, buyer/channel fit, repeatable delivery within the effort cap, scale, and cadence remain unvalidated despite selection of a current pilot/commercial-model hypothesis. | Validate commercial and delivery assumptions without narrowing long-term product scope. |
 | U-02 | Required client evidence systems, jurisdictions, retention, deletion, accessibility, and records obligations. | FR-SEC and NFR-CMP baselines. |
 | U-03 | Preferred maturity vocabulary, rating policy, and specialist sign-off thresholds. | FR-ASMT-03 templates and verification. |
 | U-04 | Required export/presentation formats, localization, branding, and collaboration modes. | Portability, accessibility, and reporting acceptance. |

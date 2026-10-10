@@ -23,9 +23,9 @@ Young-Consultations/consulting-playbook is the organization’s reusable consult
 
 ### Current implemented scope
 
-At this repository snapshot, the implemented scope is primarily an organization-routed target executor and its supporting repository policy, publication behavior, contract tests, and validation. The executor accepts approved, non-sensitive, Codex-assigned work through a versioned organization contract; supports non-mutating verification and bounded implementation; and restricts publication to deterministic draft pull requests subject to human review. The current documentation explains that operational mechanism.
+The implemented scope includes reusable consulting assets and an organization-routed target executor and its supporting repository policy, publication behavior, contract tests, and validation. The executor accepts approved, non-sensitive, Codex-assigned work through a versioned organization contract; supports non-mutating verification and bounded implementation; and restricts publication to deterministic draft pull requests subject to human review. The current documentation explains that operational mechanism.
 
-No reusable consulting assessments, maturity models, engagement methods, reporting templates, recommendation frameworks, or consulting knowledge library were found in this repository snapshot. Their mention in this vision describes intended responsibilities, not existing capability. The next phase must develop requirements before those capabilities and content are implemented.
+Reusable consulting assets now exist across [consulting/01-service-offer through consulting/11-knowledge-base](../consulting/README.md): intake, discovery, assessments, evidence, findings, reports, roadmaps, proposals/SOW, case-study templates, and knowledge guidance. Asset availability does not establish market demand, willingness-to-pay, or repeatable delivery. The [active Software Delivery Assessment pilot](../consulting/01-service-offer/active-software-delivery-assessment-pilot.md) is an unvalidated $750 commercial experiment; the broader assessment remains available for separately scoped engagements. AI is contextual when relevant. Long-term product requirements remain unchanged.
 
 ## Consulting Problem Statement
 
@@ -95,7 +95,7 @@ The future content model is:
 → **handoff artifacts**
 → **lessons learned**
 
-Principles anchor professional conduct and reasoning; engagement types select fit-for-purpose paths; assessment domains organize subject matter; methods and evidence checklists support inquiry; templates support consistent capture and communication; reusable patterns accelerate analysis without predetermining it; roadmaps and handoff artifacts connect decisions to action; and lessons learned improve the knowledge base. This is a vision-level knowledge model, not a directory restructuring or assertion that these assets already exist.
+Principles anchor professional conduct and reasoning; engagement types select fit-for-purpose paths; assessment domains organize subject matter; methods and evidence checklists support inquiry; templates support consistent capture and communication; reusable patterns accelerate analysis without predetermining it; roadmaps and handoff artifacts connect decisions to action; and lessons learned improve the knowledge base. This vision-level model extends beyond the reusable assets already available; it does not assert that all intended capabilities are complete.
 
 ## Repository Responsibilities
 
@@ -219,7 +219,7 @@ request, safely propose the approved repository change, validate it, create or
 reuse exactly one draft pull request, and expose a correlated canonical result.
 Ordinary conformance CI uses fakes and never calls Codex or publishes. Merge,
 consulting-guidance publication, release, deployment, and production use remain
-human-controlled; the broader consulting capabilities remain deferred.
+human-controlled. Reusable consulting content is available independently of this executor MVP; full long-term product capabilities remain future scope.
 
 Evolution should be modular and evidence-led. First, validate the assumptions and capability boundaries below; then define requirements and an information architecture; next, implement a small coherent core method with governance and maintenance guidance; and finally, add assessment domains, engagement variants, and reusable patterns as use demonstrates value. Versioning and review should let methods evolve without silently changing the meaning of prior engagement records.
 

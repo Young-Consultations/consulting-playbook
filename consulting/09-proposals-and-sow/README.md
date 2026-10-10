@@ -10,3 +10,7 @@ Use these documents to frame paid engagements, manage scope changes, and close e
 * Replace example guidance with client-specific facts supported by evidence.
 * Keep assumptions visible and distinguish them from verified observations.
 * Review outputs with the accountable consultant before sharing externally.
+
+## Active pilot path
+
+Start with the [pilot asset](pilot-proposal-sow.md). Other templates remain available for separately scoped larger engagements.
