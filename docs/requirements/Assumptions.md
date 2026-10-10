@@ -34,7 +34,14 @@ one delayed feature, integration handoff, or release decision, five-business-day
 turnaround, and five-hour delivery-effort cap. Buyer and secondary consultant
 channel are hypotheses. AI is contextual. The
 [scoreboard](../../consulting/01-service-offer/commercial-validation-scoreboard.md)
-contains experimental targets; absent business-plan numbers are explicitly flagged.
+records the current experimental weekly targets authorized by
+[consulting issue #86](https://github.com/Young-Consultations/consulting-playbook/issues/86),
+the original discovery record referenced by portfolio task #166 and the accepted
+source for this experiment: 25 qualified people shortlisted, up to 20 personalized
+initial messages, up to 8 follow-ups, 4 useful conversations held/booked,
+2 qualified paid proposals, 1 paid pilot stretch goal, and maximum 2 public posts.
+These are experimental targets, not forecasts, validated conversion rates, or
+evidence of market demand.
 Selection is not validated willingness-to-pay or repeatability. Existing broader
 assets remain reusable capability; ProjectRequirements.md and functional
 requirements continue to define long-term product scope.

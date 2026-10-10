@@ -12,7 +12,7 @@ commercial hypotheses until separately agreed with the buyer.
 | Decision and objective | Exactly one delayed feature, integration handoff, or release decision; desired action within 30 days. |
 | Inputs | Agree no more than five suitable sanitized artifacts, permissions, and input receipt date. No system access. |
 | Schedule | Five-business-day turnaround after agreed inputs and confirmed scope; record start/delivery dates and agree reset for missing inputs. |
-| Meetings | Proposed 30-minute kickoff and 45-minute readout, included in delivery effort. |
+| Meetings | 45-minute kickoff and 30-minute readout as specified by consulting issue #86, included in delivery effort. |
 | Deliverables | Concise delivery map, no more than three evidence-backed findings, prioritized two-week actions with owners and verification steps. |
 | Fee hypothesis | $750 fixed fee. |
 | Payment hypothesis | $375 booking / $375 delivery; record invoice/payment dates when agreed. |
