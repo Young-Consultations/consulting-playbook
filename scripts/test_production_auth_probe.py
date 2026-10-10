@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import io
 import errno
+import fcntl
 import os
 import subprocess
 import sys
@@ -128,17 +129,24 @@ def test_stalled_prompt_pipe_obeys_deadline() -> None:
         [sys.executable, "-c", "import time; time.sleep(5)"],
         stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
-    deadline = time.monotonic() + 0.3
     try:
+        assert proc.stdin is not None
+        pipe_capacity = fcntl.fcntl(proc.stdin.fileno(), fcntl.F_GETPIPE_SZ)
+        # Exceed this pipe's capacity in UTF-8 bytes, even on large-pipe runners.
+        character = "界"
+        prompt = character * (pipe_capacity // len(character.encode("utf-8")) + 1)
+        assert len(prompt.encode("utf-8")) > pipe_capacity
+        deadline = time.monotonic() + 0.3
         try:
-            handoff.submit_stdin_prompt(proc, "界" * 50000, lambda: max(0, deadline - time.monotonic()))
+            handoff.submit_stdin_prompt(proc, prompt, lambda: max(0, deadline - time.monotonic()))
         except subprocess.TimeoutExpired:
             assert time.monotonic() - deadline < 1
         else:
             raise AssertionError("stalled child accepted a full oversized prompt")
     finally:
         proc.kill()
-        proc.stdin.close()
+        if proc.stdin is not None:
+            proc.stdin.close()
         proc.wait()
 
 
