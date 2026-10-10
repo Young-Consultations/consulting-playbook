@@ -15,6 +15,7 @@ ALLOWED_ROOTS = {
     "ai-sdlc",
     "config",
     "conformance",
+    "consulting",
     "contracts",
     "docs",
     "playbooks",
