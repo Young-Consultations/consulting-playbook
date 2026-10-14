@@ -5,6 +5,23 @@
 Use the [canonical pilot](../01-service-offer/active-software-delivery-assessment-pilot.md).
 Generic interest in delivery or AI is insufficient. Record a yes/no and sanitized
 basis for each gate in the authorized engagement workspace, outside this repository.
+Governance metadata for this reusable asset is maintained in the
+[active pilot asset catalog](../active-pilot-asset-catalog.md). Record the governing
+pilot version/baseline in each client-specific qualification record.
+
+## Qualification record handling
+
+Before recording buyer/client-specific information, record the qualification
+record's classification, permitted use/purpose, transfer-review status (reviewer,
+decision, and date), permitted destination(s), authorized access, named
+retention/disposal responsibility and timing, required redaction/attribution,
+and unresolved restrictions. Supporting evidence referenced during qualification
+must carry equivalent handling metadata in an authorized evidence register.
+
+Unknown classification is restricted pending review. Do not transfer or share the
+qualification record or supporting evidence until classification and handling
+have been reviewed and transfer is authorized for the intended purpose and
+destination. Do not request raw sensitive evidence by default.
 
 | Gate | Yes/No | Evidence / condition |
 | --- | --- | --- |

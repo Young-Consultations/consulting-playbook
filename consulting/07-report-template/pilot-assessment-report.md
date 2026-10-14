@@ -5,6 +5,9 @@ and [assessment checklist](../04-assessment-checklist/pilot-assessment-checklist
 Complete this in an authorized engagement workspace, not in the public repository.
 Keep private/client information and evidence registers in that workspace; do not
 store them in this repository or request raw sensitive evidence by default.
+Governance metadata for this reusable asset is maintained in the
+[active pilot asset catalog](../active-pilot-asset-catalog.md); record the governing
+pilot version/baseline in the completed report.
 
 ## Report handling
 

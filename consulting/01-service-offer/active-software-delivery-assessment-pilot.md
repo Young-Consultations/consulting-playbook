@@ -8,6 +8,11 @@ All commercial values, buyer/channel choices, delivery effort, and outreach
 inputs are unvalidated hypotheses. Repository assets prove availability of
 methods, not market demand, benchmark pricing, willingness-to-pay, or repeatability.
 
+Governance metadata, ownership, lifecycle status, version/baseline, applicability,
+and review dates are maintained in the [active pilot asset catalog](../active-pilot-asset-catalog.md).
+Client-specific records created from this pilot must record the governing catalog
+version and baseline identifier.
+
 ## Pilot definition
 
 | Item | Selected experiment input |

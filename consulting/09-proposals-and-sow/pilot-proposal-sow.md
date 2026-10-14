@@ -5,6 +5,24 @@ obtain appropriate legal/procurement review before client use.
 The [canonical pilot](../01-service-offer/active-software-delivery-assessment-pilot.md)
 controls the experiment boundaries. The fee and payment terms are unvalidated
 commercial hypotheses until separately agreed with the buyer.
+Governance metadata for this reusable asset is maintained in the
+[active pilot asset catalog](../active-pilot-asset-catalog.md). Record that catalog's
+version and baseline identifier in each completed proposal/SOW.
+
+## Proposal/SOW record handling
+
+Before adding buyer/client-specific information, record this proposal/SOW's
+classification, permitted use/purpose, transfer-review status (reviewer, decision,
+and date), permitted destination(s), authorized access, named retention/disposal
+responsibility and timing, required redaction/attribution, and unresolved
+restrictions. Supporting evidence or attachments must carry equivalent handling
+metadata in an authorized evidence register.
+
+Unknown classification is restricted pending review. Do not transfer, send for
+signature, or otherwise share the client-specific proposal/SOW or attachments
+until classification and handling have been reviewed and transfer is authorized
+for the intended purpose and destination. Do not request raw sensitive evidence
+by default.
 
 | Section | Proposed pilot terms / fields to complete |
 | --- | --- |

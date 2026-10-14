@@ -4,6 +4,8 @@ Use the [canonical pilot](active-software-delivery-assessment-pilot.md).
 All targets below are experimental inputs, not forecasts, proven benchmarks, or
 market evidence. The selected commercial and delivery targets below come from
 portfolio task #166 and the canonical pilot. No actual results are asserted here.
+Governance metadata and review dates for this reusable asset are maintained in
+the [active pilot asset catalog](../active-pilot-asset-catalog.md).
 
 | Measure | Selected experimental target | Actual | Learning / next experiment |
 | --- | --- | --- | --- |

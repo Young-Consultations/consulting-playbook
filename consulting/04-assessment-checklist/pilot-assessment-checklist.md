@@ -3,6 +3,9 @@
 Apply the limits in the [canonical pilot](../01-service-offer/active-software-delivery-assessment-pilot.md).
 Use the [qualification gates](../02-client-intake/client-qualification-checklist.md)
 before booking. Keep engagement records in an authorized workspace; this is a generic template.
+Governance metadata for this reusable asset is maintained in the
+[active pilot asset catalog](../active-pilot-asset-catalog.md); record the governing
+pilot version/baseline in the engagement record.
 
 - [ ] Confirm one decision/problem, desired action within 30 days, sponsor, and boundary at kickoff.
 - [ ] Agree no more than five sanitized artifacts, limited to the evidence necessary for the selected decision; do not request raw sensitive evidence by default.
