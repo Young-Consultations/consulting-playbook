@@ -4,9 +4,18 @@
 
 This directory contains reusable assets for assessing and improving software delivery organizations. It supports consulting engagements that connect customer value, delivery execution, SDLC maturity, technical risk, and AI-SDLC readiness into evidence-based recommendations and measurable implementation roadmaps.
 
-## Primary Consulting Offer
+## Active Commercial-Validation Offer
 
-The initial offer is the **Software Delivery and AI-SDLC Alignment Assessment**. It evaluates how effectively a delivery organization turns customer and business needs into reliable software outcomes.
+The [Software Delivery Assessment pilot](01-service-offer/active-software-delivery-assessment-pilot.md)
+is the canonical active offer: an unvalidated $750 fixed-fee hypothesis for one
+delayed feature, integration handoff, or release decision. Follow its bounded
+qualification, assessment, report, and proposal/SOW path. AI is contextual when
+relevant. Track experiments in the
+[scoreboard](01-service-offer/commercial-validation-scoreboard.md).
+
+## Broader Reusable Consulting Capability
+
+For separately scoped larger or future engagements, the reusable capability includes the **Software Delivery and AI-SDLC Alignment Assessment**. It evaluates how effectively a delivery organization turns customer and business needs into reliable software outcomes.
 
 The assessment evaluates:
 
@@ -31,7 +40,11 @@ The assessment evaluates:
 * Product leaders
 * AI-SDLC implementation teams
 
-## Standard Engagement Workflow
+Existing assets demonstrate reusable capability, not validated market demand,
+willingness-to-pay, or repeatable delivery economics. Long-term requirements
+remain distinct from the active commercial experiment.
+
+## Broader Engagement Workflow
 
 Lead → Qualification → Discovery → Engagement Scope → Evidence Collection → Interviews → Assessment → Findings → Recommendations → 30/60/90 Roadmap → Leadership Readout → Implementation Proposal → Closeout
 

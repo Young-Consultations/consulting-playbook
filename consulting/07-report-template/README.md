@@ -10,3 +10,7 @@ Use these report templates to communicate decisions, impacts, recommendations, a
 * Replace example guidance with client-specific facts supported by evidence.
 * Keep assumptions visible and distinguish them from verified observations.
 * Review outputs with the accountable consultant before sharing externally.
+
+## Active pilot path
+
+Start with the [pilot asset](pilot-assessment-report.md). Other templates remain available for separately scoped larger engagements.

@@ -1,5 +1,10 @@
 # Service Scope Template
 
+This is a generic larger-engagement template, not the active sales offer. Use the
+[canonical active pilot](active-software-delivery-assessment-pilot.md) for commercial
+validation. Broader scope, timelines, and outputs require separate agreement;
+asset availability is not evidence of market demand.
+
 | Scope Area | Included Items | Owner | Notes |
 | --- | --- | --- | --- |
 | In-scope teams | Teams assessed, locations, time zones |  |  |

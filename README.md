@@ -6,7 +6,7 @@ contribution is one bounded organization-routed target adapter.
 
 ## Repository direction
 
-The [Consulting Playbook Vision](docs/VISION.md) defines the intended direction for this repository as Young Consultations' reusable consulting operating system. The target-executor workflow described below is an enabling delivery mechanism for approved implementation work; it is not the full consulting-playbook product vision, and the envisioned consulting methods and assets still require requirements development and implementation.
+The [Consulting Playbook Vision](docs/VISION.md) defines the intended direction for this repository as Young Consultations' reusable consulting operating system. The target-executor workflow described below is an enabling delivery mechanism for approved implementation work; it is not the full consulting-playbook product vision, and broader consulting-playbook product capabilities still require requirements development and implementation. Reusable consulting assets already exist in [consulting/](consulting/README.md), including intake, discovery, assessment, evidence, findings, report, roadmap, proposal/SOW, case-study, and knowledge templates. Their existence does not establish market demand, willingness-to-pay, or repeatable delivery.
 
 ## Consulting knowledge
 
