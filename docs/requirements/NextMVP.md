@@ -196,9 +196,13 @@ published v3.0.3 release):** A compatible new immutable control-plane preflight
 shall receive the *exact admitted execution input* and query the authenticated,
 trusted-author source journal before any cost-bearing execution. A trusted
 terminal result that is not a managed-draft effect shall prevent further Codex
-execution under the same delivery identity. Unreadable, malformed, conflicting,
-or unforwarded trusted result evidence shall fail closed. A prior managed-draft
-receipt permits only a verified owned-draft reconciliation; if its matching
+execution under the same delivery identity. Unreadable, malformed, or
+conflicting trusted result evidence shall fail closed. A trusted single
+managed-draft receipt without a forwarding marker may proceed **only** into
+verified owned-draft reconciliation, enabling receiver forwarding recovery
+without rerunning Codex; an unforwarded non-managed terminal receipt remains
+blocked. A prior managed-draft receipt permits only verified owned-draft
+reconciliation; if its matching
 branch and open draft are missing or inconsistent, reject before Codex. The
 target shall consume an explicit safe preflight classification and reject an
 absent, unsupported, or legacy `not-checked` classification before remote
