@@ -857,7 +857,8 @@ def test_idempotency_and_create_race() -> None:
 
 def test_exact_shared_blobs_and_evidence() -> None:
     pin = json.loads((ROOT / "config/mvp-conformance-pin.json").read_text(encoding="utf-8"))
-    require(validate_pin(pin) == [], "conformance pin is invalid")
+    pin_errors = validate_pin(pin)
+    require(not pin_errors, "conformance pin is invalid: " + "; ".join(pin_errors))
     for relative, expected in EXPECTED_COMPATIBILITY_BLOBS.items():
         require(git_blob_sha1((ROOT / relative).read_bytes()) == expected, f"shared file differs: {relative}")
     report = json.loads((ROOT / ".ai-sdlc/conformance/tc-mvp-ci-001.json").read_text(encoding="utf-8"))
