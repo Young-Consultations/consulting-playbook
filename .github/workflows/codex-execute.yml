@@ -90,10 +90,12 @@ jobs:
           set -euo pipefail
           [[ "$APP_SLUG" == "ai-sdlc-result-writer" ]]
       - name: Prove result-delivery prerequisites before Codex
-        uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v3.0.3
+        id: result-preflight
+        uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v3.1.0
         with:
           result-token: ${{ steps.result-writer-token.outputs.token }}
           source-issue: ${{ steps.result-source.outputs.source_issue }}
+          execution-input-json: ${{ inputs.execution_input_json }}
       - name: Prepare Codex workspace sandbox
         shell: bash
         run: |
@@ -117,6 +119,7 @@ jobs:
           CONCURRENCY_GROUP: ${{ inputs.concurrency_group }}
           CALLER_LOGIN: ${{ github.actor }}
           TRUSTED_CALLERS: ${{ secrets.CODEX_TARGET_TRUSTED_CALLERS }}
+          PRIOR_RESULT_EFFECT: ${{ steps.result-preflight.outputs.prior-effect-class }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TARGET_PUBLICATION_TOKEN: ${{ secrets.TARGET_PUBLICATION_TOKEN }}
         # Replace the runner shell so the adapter can re-exec with a
@@ -140,7 +143,7 @@ jobs:
     permissions:
       contents: read
     # 3.0.3 candidate: release publication and control-plane binding are separate gates.
-    uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.3
+    uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0
     with:
       execution_result: ${{ needs.execute.outputs.execution_result }}
       source_issue: ${{ needs.execute.outputs.source_issue }}
