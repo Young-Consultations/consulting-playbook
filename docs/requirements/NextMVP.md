@@ -191,6 +191,21 @@ dedicated no-op repository-dispatch capability. Any failure stops the delivery
 before cost-bearing execution. The installation token shall not be supplied to
 the Codex adapter.
 
+**Proposed terminal-receipt safety gate for issue #111 (not active under the
+published v3.0.3 release):** A compatible new immutable control-plane preflight
+shall receive the *exact admitted execution input* and query the authenticated,
+trusted-author source journal before any cost-bearing execution. A trusted
+terminal result that is not a managed-draft effect shall prevent further Codex
+execution under the same delivery identity. Unreadable, malformed, conflicting,
+or unforwarded trusted result evidence shall fail closed. A prior managed-draft
+receipt permits only a verified owned-draft reconciliation; if its matching
+branch and open draft are missing or inconsistent, reject before Codex. The
+target shall consume an explicit safe preflight classification and reject an
+absent, unsupported, or legacy `not-checked` classification before remote
+effects. Old releases shall **not** be repinned or activated until tested
+cross-repository compatibility, a new immutable release and human approval.
+The preflight's App installation token remains outside the Codex adapter.
+
 Before any executor or publisher effect, the adapter shall authenticate and
 authorize the admitted caller; format-check and validate `execution_input_json`
 against the exact immutable schema; require target
