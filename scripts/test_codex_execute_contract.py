@@ -117,6 +117,7 @@ def execute(value: dict[str, Any], effects: FakeEffects | None = None) -> dict[s
         "router-app",
         {"router-app"},
         effects or FakeEffects(),
+        prior_result_effect="none",
     ).result
 
 
@@ -129,6 +130,63 @@ def managed(value: dict[str, Any], *, digest: str | None = None) -> dict[str, An
     }
 
 
+
+def test_delivery_receipt_guard_denies_unsafe_state_before_all_effects() -> None:
+    value = payload()
+    for effect_class in ("not-checked", "", "failed", "verified", "blocked", "invalid"):
+        effects = FakeEffects()
+        outcome = run_adapter(json.dumps(value), value["concurrency_group"],
+                              "router-app", {"router-app"}, effects,
+                              prior_result_effect=effect_class)
+        require(outcome.result["execution_status"] == "ambiguous-rejected",
+                "unproven preflight must reject execution")
+        require(outcome.result["failure_category"] == "authorization",
+                "unproven preflight used unexpected category")
+        require(effects.discoveries == effects.codex_calls == effects.publish_calls == 0,
+                "unproven preflight reached a target GitHub or provider effect")
+
+
+def test_previously_received_draft_reuses_only_verified_owned_draft() -> None:
+    value = payload()
+    found = FakeEffects(found=[managed(value)])
+    outcome = run_adapter(json.dumps(value), value["concurrency_group"],
+                          "router-app", {"router-app"}, found,
+                          prior_result_effect="managed-draft")
+    require(outcome.result["execution_status"] == "duplicate-reused",
+            "owned prior draft is not reusable")
+    require(found.codex_calls == found.publish_calls == 0, "replay consumed Codex or published")
+
+    missing = FakeEffects()
+    absent = run_adapter(json.dumps(value), value["concurrency_group"],
+                         "router-app", {"router-app"}, missing,
+                         prior_result_effect="managed-draft")
+    require(absent.result["execution_status"] == "ambiguous-rejected",
+            "prior receipt without an owned draft must be quarantined")
+    require(missing.codex_calls == missing.publish_calls == 0,
+            "missing prior draft reached a cost-bearing provider")
+
+    wrong = FakeEffects(found=[managed(value, digest="c" * 64)])
+    conflict = run_adapter(json.dumps(value), value["concurrency_group"],
+                           "router-app", {"router-app"}, wrong,
+                           prior_result_effect="managed-draft")
+    require(conflict.result["execution_status"] == "ambiguous-rejected",
+            "mismatched previously received draft must fail closed")
+    require(wrong.codex_calls == wrong.publish_calls == 0,
+            "conflicting previously received draft reached Codex")
+
+
+def test_workflow_binds_terminal_preflight_without_leaking_result_writer_key() -> None:
+    require("id: result-preflight" in WORKFLOW, "bound result-preflight step is missing")
+    require("execution-input-json: ${{ inputs.execution_input_json }}" in WORKFLOW,
+            "canonical input is not passed to the trusted preflight")
+    require("PRIOR_RESULT_EFFECT: ${{ steps.result-preflight.outputs.prior-effect-class }}" in WORKFLOW,
+            "preflight result is not required by adapter before Codex")
+    execution = WORKFLOW.split("- id: execute", 1)[1].split(
+        "- name: Enforce canonical execution outcome", 1)[0]
+    require("result-writer-token" not in execution and "AI_SDLC_RESULT_WRITER_PRIVATE_KEY" not in execution,
+            "trusted result-writer credential leaked into adapter")
+
+
 def test_exact_dispatch_and_receiver_boundary() -> None:
     trigger = WORKFLOW.split("on:", 1)[1].split("permissions:", 1)[0]
     inputs = trigger.split("inputs:", 1)[1]
@@ -136,7 +194,7 @@ def test_exact_dispatch_and_receiver_boundary() -> None:
     require(inputs.count("execution_input_json:") == 1 and inputs.count("concurrency_group:") == 1, "target inputs differ")
     workflow_lines = {line.strip() for line in WORKFLOW.splitlines()}
     require(
-        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.3"
+        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0"
         in workflow_lines,
         "receiver is not exactly and immutably pinned",
     )
@@ -194,7 +252,7 @@ def test_security_and_publication_guards() -> None:
         "result writer token permissions do not match the receiver boundary",
     )
     require(
-        "uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v3.0.3"
+        "uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v3.1.0"
         in WORKFLOW,
         "result delivery preflight is not pinned to the matching control-plane candidate",
     )
@@ -799,7 +857,8 @@ def test_idempotency_and_create_race() -> None:
 
 def test_exact_shared_blobs_and_evidence() -> None:
     pin = json.loads((ROOT / "config/mvp-conformance-pin.json").read_text(encoding="utf-8"))
-    require(validate_pin(pin) == [], "conformance pin is invalid")
+    pin_errors = validate_pin(pin)
+    require(not pin_errors, "conformance pin is invalid: " + "; ".join(pin_errors))
     for relative, expected in EXPECTED_COMPATIBILITY_BLOBS.items():
         require(git_blob_sha1((ROOT / relative).read_bytes()) == expected, f"shared file differs: {relative}")
     report = json.loads((ROOT / ".ai-sdlc/conformance/tc-mvp-ci-001.json").read_text(encoding="utf-8"))

@@ -236,6 +236,7 @@ def _adapter(
         caller,
         {"router-app"},
         effects,
+        prior_result_effect="none",
     ).result
 
 

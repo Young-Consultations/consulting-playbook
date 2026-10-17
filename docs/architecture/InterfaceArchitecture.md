@@ -44,19 +44,24 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
 - **Compatibility and activation:** the non-recursive target pin binds exact
   schema/fixture blobs at recovery candidate `e27b8a5` plus this workflow,
   adapter, and harness. The current published source/control-plane release is
-  `ai-sdlc-v3.0.2`, and its enabled consulting target registry entry selects
-  published `codex-adapter-v3.0.2` at
-  `3bde0dc760088b9af21454a0f70ed498dae043a7`. Published
+  `ai-sdlc-v3.0.3`, and its enabled consulting target registry entry selects
+  immutable published `codex-adapter-v3.0.3` at
+  `f11852c7f563df16ea4afa9ab75bf766242e7327`. The 3.0.2 release
+  remains historical immutable evidence. Published
   `codex-adapter-v2.4.5` remains earlier initial-live-path evidence: REAL #154
   proved that path, while REAL #156 later exposed the result-journal identity
   defect that drove the 3.0.0 repair. REAL #159 exposed DEF-0073 at the 3.0.0
   receiver; 3.0.2 repaired that receiver compatibility boundary and passed
   deployed Runtime Preflight plus immutable REAL preflight before source
   adoption. After #159 reconciliation preserved its original 3.0.1 admission,
-  DEF-0086 exposed the router's cross-release admission-reuse defect. The next
-  corrective target candidate is `codex-adapter-v3.0.3`, which pins the
-  future `ai-sdlc-v3.0.3` receiver at
-  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.3`.
+  DEF-0086 exposed the router's cross-release admission-reuse defect,
+  repaired by published 3.0.3. The new issue #111 terminal-receipt candidate
+  is `codex-adapter-v3.1.0`, which self-pins the future, **unpublished**
+  `ai-sdlc-v3.1.0` receiver at
+  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0`.
+  This is inactive target-first staging evidence, not an operational cutover;
+  the production registry continues to select immutable 3.0.3 until reviewed
+  target/control-plane tags, exact-SHA evidence and attestation exist.
   Before Codex, the candidate mints a short-lived installation token from the
   dedicated GitHub App `ai-sdlc-result-writer` (App ID `5100679`), installed
   only on `portfolio-tasks`, and invokes the matching organization-owned
@@ -78,6 +83,12 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   capability, no-op repository-dispatch capability, publication permission
   metadata, and a non-mutating authenticated Git push transport probe before
   cost-bearing Codex execution.
+- **Proposed terminal-delivery gate (#111):** The trusted receiver journal
+  is a pre-execution safety boundary, separate from target branch ownership.
+  A prior terminal failure blocks reexecution for the same delivery, while a
+  prior managed-draft receipt permits only proof-backed reuse of that draft.
+  Missing/invalid journal classification stops the adapter before provider
+  effects. This design is not active under the published v3.0.3 pins.
 - **Retries/idempotency:** router retries retain logical delivery identity;
   concurrency is optimization only. Preflight observes branch and pull-request
   state independently before Codex; disagreement is ambiguous and fail-closed.

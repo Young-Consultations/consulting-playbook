@@ -204,7 +204,7 @@ def reconcile_ownership(snapshot: Ownership, digest: str) -> dict[str, Any] | No
 
 
 def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: set[str],
-                effects: Effects) -> Outcome:
+                effects: Effects, *, prior_result_effect: str = "not-checked") -> Outcome:
     started, parsed, phase = _now(), {}, "admission"
     source_issue = None
     validation_status, test_status = "not-run", "not-run"
@@ -220,6 +220,14 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
         # ``parsed`` remains useful for constructing a schema-safe rejection result,
         # but its fields are otherwise untrusted transport data.
         source_issue = payload["source_issue"]
+        # The bound, authenticated result preflight must have run before any
+        # target remote operation. An old pinned action emits no proof and is
+        # deliberately unsafe to use after this target change.
+        if prior_result_effect not in {"none", "managed-draft"}:
+            raise AdapterError(
+                "authorization", "Bound terminal-result preflight proof is absent or invalid",
+                "ambiguous-rejected",
+            )
         deadline = time.monotonic() + payload["timeout_minutes"] * 60
         def remaining() -> float:
             budget = deadline - time.monotonic()
@@ -233,6 +241,11 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
         ownership = effects.discover(branch, payload["delivery_id"], remaining())
         remaining()
         reusable = reconcile_ownership(ownership, digest)
+        if prior_result_effect == "managed-draft" and reusable is None:
+            raise AdapterError(
+                "authorization", "Prior managed draft cannot be verified as an owned open draft",
+                "ambiguous-rejected",
+            )
         if reusable is not None:
             pr = reusable["url"]
             return Outcome(_result(payload, started, "duplicate-reused", "none", None,
@@ -603,7 +616,8 @@ def main() -> int:
         if value.strip()
     }
     outcome = run_adapter(raw, os.environ.get("CONCURRENCY_GROUP", ""), os.environ.get("CALLER_LOGIN", ""),
-                          trusted_callers, GitHubEffects())
+                          trusted_callers, GitHubEffects(),
+                          prior_result_effect=os.environ.get("PRIOR_RESULT_EFFECT", "not-checked"))
     output = json.dumps(outcome.result, sort_keys=True, separators=(",", ":"))
     path = os.environ.get("GITHUB_OUTPUT")
     if path:
