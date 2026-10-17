@@ -129,7 +129,7 @@ could not reuse the predecessor admission on an unchanged authorized retry.
 Published 3.0.3 subsequently repaired that boundary.
 
 The **proposed, inactive** `codex-adapter-v3.1.0` target candidate for
-issue #111 shall invoke
+issue #111 uses only the versioned organization receiver. It shall invoke
 `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0`
 with inputs `execution_result` and `source_issue` and the
 `RESULT_WRITER_PRIVATE_KEY` secret, supplied from target secret
