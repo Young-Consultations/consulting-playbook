@@ -78,6 +78,12 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   capability, no-op repository-dispatch capability, publication permission
   metadata, and a non-mutating authenticated Git push transport probe before
   cost-bearing Codex execution.
+- **Proposed terminal-delivery gate (#111):** The trusted receiver journal
+  is a pre-execution safety boundary, separate from target branch ownership.
+  A prior terminal failure blocks reexecution for the same delivery, while a
+  prior managed-draft receipt permits only proof-backed reuse of that draft.
+  Missing/invalid journal classification stops the adapter before provider
+  effects. This design is not active under the published v3.0.3 pins.
 - **Retries/idempotency:** router retries retain logical delivery identity;
   concurrency is optimization only. Preflight observes branch and pull-request
   state independently before Codex; disagreement is ambiguous and fail-closed.
