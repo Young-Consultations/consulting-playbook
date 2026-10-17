@@ -206,8 +206,17 @@ reconciliation; if its matching
 branch and open draft are missing or inconsistent, reject before Codex. The
 target shall consume an explicit safe preflight classification and reject an
 absent, unsupported, or legacy `not-checked` classification before remote
-effects. Old releases shall **not** be repinned or activated until tested
-cross-repository compatibility, a new immutable release and human approval.
+effects. The repository may stage this **inactive** adapter candidate
+with explicit `ai-sdlc-v3.1.0` self-pins before that control-plane tag exists
+**only** to complete target-first prepublication evidence under the organization
+release procedure. A staging merge requires fresh exact-head CI, the complete
+no-real-effect conformance oracle, a completed Copilot review, resolved comments,
+and no conflicts. Staging shall not change the live registry's immutable
+`codex-adapter-v3.0.3` binding, authorize dispatch from `main`, repin any
+published release, or activate execution. Later target adapter tag publication
+and control-plane publication/cutover require their separate exact-SHA,
+report-digest, compatibility, attestation, and approval gates. No new REAL
+Codex invocation is authorized merely because the staging PR is merged.
 The preflight's App installation token remains outside the Codex adapter.
 
 Before any executor or publisher effect, the adapter shall authenticate and
