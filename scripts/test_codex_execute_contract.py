@@ -117,6 +117,7 @@ def execute(value: dict[str, Any], effects: FakeEffects | None = None) -> dict[s
         "router-app",
         {"router-app"},
         effects or FakeEffects(),
+        prior_result_effect="none",
     ).result
 
 
@@ -127,6 +128,63 @@ def managed(value: dict[str, Any], *, digest: str | None = None) -> dict[str, An
         "draft": True,
         "digest": digest or canonical_digest(value),
     }
+
+
+
+def test_delivery_receipt_guard_denies_unsafe_state_before_all_effects() -> None:
+    value = payload()
+    for effect_class in ("not-checked", "", "failed", "verified", "blocked", "invalid"):
+        effects = FakeEffects()
+        outcome = run_adapter(json.dumps(value), value["concurrency_group"],
+                              "router-app", {"router-app"}, effects,
+                              prior_result_effect=effect_class)
+        require(outcome.result["execution_status"] == "ambiguous-rejected",
+                "unproven preflight must reject execution")
+        require(outcome.result["failure_category"] == "authorization",
+                "unproven preflight used unexpected category")
+        require(effects.discoveries == effects.codex_calls == effects.publish_calls == 0,
+                "unproven preflight reached a target GitHub or provider effect")
+
+
+def test_previously_received_draft_reuses_only_verified_owned_draft() -> None:
+    value = payload()
+    found = FakeEffects(found=[managed(value)])
+    outcome = run_adapter(json.dumps(value), value["concurrency_group"],
+                          "router-app", {"router-app"}, found,
+                          prior_result_effect="managed-draft")
+    require(outcome.result["execution_status"] == "duplicate-reused",
+            "owned prior draft is not reusable")
+    require(found.codex_calls == found.publish_calls == 0, "replay consumed Codex or published")
+
+    missing = FakeEffects()
+    absent = run_adapter(json.dumps(value), value["concurrency_group"],
+                         "router-app", {"router-app"}, missing,
+                         prior_result_effect="managed-draft")
+    require(absent.result["execution_status"] == "ambiguous-rejected",
+            "prior receipt without an owned draft must be quarantined")
+    require(missing.codex_calls == missing.publish_calls == 0,
+            "missing prior draft reached a cost-bearing provider")
+
+    wrong = FakeEffects(found=[managed(value, digest="c" * 64)])
+    conflict = run_adapter(json.dumps(value), value["concurrency_group"],
+                           "router-app", {"router-app"}, wrong,
+                           prior_result_effect="managed-draft")
+    require(conflict.result["execution_status"] == "ambiguous-rejected",
+            "mismatched previously received draft must fail closed")
+    require(wrong.codex_calls == wrong.publish_calls == 0,
+            "conflicting previously received draft reached Codex")
+
+
+def test_workflow_binds_terminal_preflight_without_leaking_result_writer_key() -> None:
+    require("id: result-preflight" in WORKFLOW, "bound result-preflight step is missing")
+    require("execution-input-json: ${{ inputs.execution_input_json }}" in WORKFLOW,
+            "canonical input is not passed to the trusted preflight")
+    require("PRIOR_RESULT_EFFECT: ${{ steps.result-preflight.outputs.prior-effect-class }}" in WORKFLOW,
+            "preflight result is not required by adapter before Codex")
+    execution = WORKFLOW.split("- id: execute", 1)[1].split(
+        "- name: Enforce canonical execution outcome", 1)[0]
+    require("result-writer-token" not in execution and "AI_SDLC_RESULT_WRITER_PRIVATE_KEY" not in execution,
+            "trusted result-writer credential leaked into adapter")
 
 
 def test_exact_dispatch_and_receiver_boundary() -> None:
