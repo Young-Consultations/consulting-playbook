@@ -124,7 +124,7 @@ attempt, preserving the original trusted 3.0.1 admission. That state exposed
 DEF-0086: the 3.0.2 router cannot reuse the preserved predecessor admission on
 an authorized unchanged retry. The next corrective target candidate is
 `codex-adapter-v3.0.3`. It shall invoke
-`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.3`
+`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0`
 with inputs `execution_result` and `source_issue` and secret
 `RESULT_WRITER_PRIVATE_KEY`, supplied from the target's
 `AI_SDLC_RESULT_WRITER_PRIVATE_KEY` secret. The matching receiver shall mint
@@ -185,7 +185,7 @@ GitHub App `ai-sdlc-result-writer` (App ID `5100679`) scoped only to
 `portfolio-tasks` with Issues write and Contents write; require the token's
 reported app slug to equal `ai-sdlc-result-writer`; and invoke the
 organization-owned
-`codex-result-credential-preflight@ai-sdlc-v3.0.3`. That preflight shall prove
+`codex-result-credential-preflight@ai-sdlc-v3.1.0`. That preflight shall prove
 the trusted result-author identity, issue-comment create/delete access, and the
 dedicated no-op repository-dispatch capability. Any failure stops the delivery
 before cost-bearing execution. The installation token shall not be supplied to
