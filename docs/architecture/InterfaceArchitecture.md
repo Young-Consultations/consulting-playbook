@@ -56,7 +56,7 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   DEF-0086 exposed the router's cross-release admission-reuse defect. The next
   corrective target candidate is `codex-adapter-v3.0.3`, which pins the
   future `ai-sdlc-v3.0.3` receiver at
-  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.0.3`.
+  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0`.
   Before Codex, the candidate mints a short-lived installation token from the
   dedicated GitHub App `ai-sdlc-result-writer` (App ID `5100679`), installed
   only on `portfolio-tasks`, and invokes the matching organization-owned
