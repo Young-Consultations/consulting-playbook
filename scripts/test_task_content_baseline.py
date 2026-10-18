@@ -85,15 +85,34 @@ class ExactContentBaseTests(unittest.TestCase):
                 self.assertEqual(decision.disposition, disposition)
                 self.assertFalse(decision.may_continue)
                 self.assertEqual((decision.base_sha, decision.observed_sha), (SHA, NEXT))
+                self.assertTrue(decision.observation_verified)
                 ready = verify_publication_head(base, SHA, phase)
+                self.assertTrue(ready.observation_verified)
                 self.assertTrue(ready.may_continue)
 
-    def test_unverifiable_head_or_unknown_phase_cannot_grant_push(self):
+    def test_unverifiable_head_preserves_the_phase_and_remote_effect_action(self):
         base = make_base()
-        for head in ("", "main", "AB" * 20, None):
-            with self.subTest(head=head):
-                with self.assertRaises(BaselineError):
-                    verify_publication_head(base, head, PublicationPhase.BEFORE_PUSH)
+        expected = [
+            (PublicationPhase.BEFORE_PUSH, PublicationDisposition.REJECT_NO_REMOTE_EFFECT),
+            (PublicationPhase.AFTER_PUSH_BEFORE_PR, PublicationDisposition.QUARANTINE_OWNED_TOPIC),
+            (PublicationPhase.AFTER_PR, PublicationDisposition.BLOCK_DRAFT_REVIEW),
+        ]
+        # None models an inaccessible API response; non-SHA values model
+        # malformed or mutable responses. None of these can authorize work,
+        # including after a topic push or a created draft already exists.
+        for phase, disposition in expected:
+            for head in ("", "main", "AB" * 20, None, {}, SHA + "0"):
+                with self.subTest(phase=phase, head=head):
+                    decision = verify_publication_head(base, head, phase)
+                    self.assertEqual(decision.phase, phase)
+                    self.assertEqual(decision.disposition, disposition)
+                    self.assertIsNone(decision.observed_sha)
+                    self.assertFalse(decision.observation_verified)
+                    self.assertFalse(decision.may_continue)
+                    self.assertEqual(decision.base_sha, SHA)
+
+    def test_unknown_phase_fails_closed(self):
+        base = make_base()
         with self.assertRaises(BaselineError):
             verify_publication_head(base, SHA, "before-push")  # type: ignore[arg-type]
 
