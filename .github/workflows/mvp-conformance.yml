@@ -26,6 +26,7 @@ jobs:
           python scripts/validate_repository.py
           python scripts/test_validate_repository.py
           python scripts/test_task_content_baseline.py
+          python scripts/test_task_content_checkout.py
           python scripts/test_codex_auth_preflight.py
           python scripts/test_production_auth_probe.py
           python scripts/test_codex_execute_contract.py
