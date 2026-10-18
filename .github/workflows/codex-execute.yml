@@ -122,6 +122,8 @@ jobs:
           PRIOR_RESULT_EFFECT: ${{ steps.result-preflight.outputs.prior-effect-class }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TARGET_PUBLICATION_TOKEN: ${{ secrets.TARGET_PUBLICATION_TOKEN }}
+          # Workflow permissions are contents:read only; this token is NOT a publisher.
+          CONTENT_READ_TOKEN: ${{ github.token }}
         # Replace the runner shell so the adapter can re-exec with a
         # secret-free environment and leave no secret-bearing ancestor.
         run: exec python3 scripts/codex_target_adapter.py
