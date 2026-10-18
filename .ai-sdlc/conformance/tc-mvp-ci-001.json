@@ -1,7 +1,7 @@
 {
   "report_version": "1.0",
   "repository": "Young-Consultations/consulting-playbook",
-  "adapter_revision": "sha256:8ce4a34dae62a516fba4e546a871c692f5d296b14a022e9afff2c4d25107bbfe",
+  "adapter_revision": "sha256:6aaaed24836dd54da69de952a8ab41c0eb8186a14d261c34061e8222c9778564",
   "compatibility_sha": "e27b8a541afbd27b4be5606a19ffa43637ad312a",
   "fixture_set": "TC-MVP-CI-001",
   "fixture_version": "2.3.0",
