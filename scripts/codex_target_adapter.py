@@ -22,13 +22,15 @@ from typing import Any, Protocol
 
 from jsonschema import Draft202012Validator, FormatChecker
 from codex_auth_handoff import handoff_startup_auth, isolated_codex_home, submit_stdin_prompt
+from task_content_baseline import BaselineError, PublicationDisposition, PublicationPhase, verify_publication_head
+from task_content_checkout import TrustedContentCheckout, attest_default_branch, checkout_attested_base
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "Young-Consultations/consulting-playbook"
 MARKER = "ai-sdlc-delivery-id"
 ALLOWED_TYPES = {"automation", "documentation", "feature", "testing"}
 SAFE_ENV = {"PATH", "HOME", "LANG", "LC_ALL", "CI", "GITHUB_ACTIONS"}
-SECRET_NAMES = ("OPENAI_API_KEY", "TARGET_PUBLICATION_TOKEN", "TRUSTED_CALLERS")
+SECRET_NAMES = ("OPENAI_API_KEY", "TARGET_PUBLICATION_TOKEN", "CONTENT_READ_TOKEN", "TRUSTED_CALLERS")
 SECRET_FD_ENV = "CODEX_ADAPTER_SECRETS_FD"
 _RUNTIME_SECRETS: dict[str, str] = {}
 
@@ -80,6 +82,7 @@ class AdapterError(Exception):
 
 class Effects(Protocol):
     def discover(self, branch: str, delivery_id: str, timeout_seconds: float) -> "Ownership": ...
+    def prepare_content(self, delivery_id: str, timeout_seconds: float) -> None: ...
     def codex(self, instructions: str, timeout_seconds: float) -> None: ...
     def has_candidate_changes(self, timeout_seconds: float) -> bool: ...
     def validate_candidate(self, timeout_seconds: float) -> tuple[bool, str]: ...
@@ -262,6 +265,9 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
             validation_status = test_status = "passed"
             return Outcome(_result(payload, started, "verified", "none", None,
                                    validation=validation_status, tests=test_status), source_issue)
+        phase = "content-baseline"
+        effects.prepare_content(payload["delivery_id"], remaining())
+        remaining()
         phase = "codex"
         effects.codex(payload["instructions"], remaining())
         remaining()
@@ -309,6 +315,8 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
             category, message = "authentication", "Required execution credentials are unavailable"
         elif isinstance(exc, FileNotFoundError):
             category, message = "dependency", "Required execution dependency is unavailable"
+        elif phase == "content-baseline":
+            category, message = "dependency", "Exact content workbase could not be established"
         elif phase == "codex":
             category, message = "codex-runtime", "Codex execution failed"
         elif phase == "validation" or phase == "tests":
@@ -328,6 +336,46 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
 class GitHubEffects:
     def __init__(self) -> None:
         self._publication_token: str | None = None
+        self._content_read_token: str | None = None
+        self._content_checkout: TrustedContentCheckout | None = None
+
+    def prepare_content(self, delivery_id: str, timeout_seconds: float) -> None:
+        """Attest a clean exact-SHA workbase before any cost-bearing model call."""
+        if self._content_checkout is not None:
+            raise AdapterError("authorization", "Task content baseline was already prepared", "ambiguous-rejected")
+        try:
+            token = _take_secret("CONTENT_READ_TOKEN")
+            self._content_read_token = token
+            # The workflow job's contents:read token is distinct from the
+            # publisher credential, and is never forwarded to the model.
+            executor = subprocess.check_output(
+                ["git", "rev-parse", "--verify", "HEAD"], cwd=ROOT, text=True,
+                timeout=timeout_seconds, env={k: v for k, v in os.environ.items() if k in SAFE_ENV},
+            ).strip()
+            base = attest_default_branch(
+                TARGET, delivery_id, executor_sha=executor, token=token,
+                timeout_seconds=timeout_seconds,
+            )
+            self._content_checkout = checkout_attested_base(
+                base, token=token, timeout_seconds=timeout_seconds,
+            )
+        except (KeyError, BaselineError, subprocess.CalledProcessError,
+                subprocess.TimeoutExpired, OSError, ValueError) as exc:
+            self.close()
+            raise AdapterError(
+                "dependency", "Authenticated current task-content base is unavailable", "failed"
+            ) from exc
+
+    def close(self) -> None:
+        if self._content_checkout is not None:
+            self._content_checkout.close()
+            self._content_checkout = None
+        self._content_read_token = None
+
+    def _working_content_root(self) -> Path:
+        if self._content_checkout is None:
+            raise AdapterError("authorization", "Exact content workbase proof is missing", "ambiguous-rejected")
+        return self._content_checkout.root
 
     def _publication_credential(self) -> str:
         if self._publication_token is None:
