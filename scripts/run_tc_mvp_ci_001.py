@@ -89,13 +89,17 @@ class TrappedTargetEffects:
         self.race_branch_exists = (
             bool(race) if race_branch_exists is None else race_branch_exists
         )
-        self.calls = {"discover": 0, "codex": 0, "validate": 0, "publish": 0}
+        self.calls = {"discover": 0, "prepare": 0, "codex": 0, "validate": 0, "publish": 0}
 
     def discover(self, branch: str, delivery_id: str, timeout_seconds: float) -> Ownership:
         self.calls["discover"] += 1
         if self.calls["discover"] > 1 and self.race is not None:
             return Ownership(self.race_branch_exists, self.race)
         return Ownership(self.branch_exists, self.found)
+
+    def prepare_content(self, delivery_id: str, timeout_seconds: float) -> None:
+        # Only in-memory evidence: never checkout or reach a real network.
+        self.calls["prepare"] += 1
 
     def codex(self, instructions: str, timeout_seconds: float) -> None:
         # This is a deterministic fake executor. The real Codex trap remains zero.
