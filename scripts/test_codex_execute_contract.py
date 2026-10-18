@@ -78,6 +78,7 @@ class FakeEffects:
         )
         self.discoveries = 0
         self.codex_calls = 0
+        self.prepared = 0
         self.publish_calls = 0
         self.validation_calls = 0
 
@@ -86,6 +87,9 @@ class FakeEffects:
         if self.discoveries > 1 and self.race is not None:
             return Ownership(self.race_branch_exists, self.race)
         return Ownership(self.branch_exists, self.found)
+
+    def prepare_content(self, *_: Any) -> None:
+        self.prepared += 1
 
     def codex(self, *_: Any) -> None:
         self.codex_calls += 1
@@ -452,6 +456,9 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             return self.returncode
 
     effects = GitHubEffects()
+    # These direct unit tests bypass run_adapter; supply a verified test-only
+    # workspace to isolate the production Codex credential boundary.
+    effects._content_checkout = type("Prepared", (), {"root": ROOT})()
     def fake_submit_prompt(proc: FakeCodexProcess, prompt: str, remaining: Any) -> None:
         proc.stdin.write(prompt)
         proc.stdin.close()
@@ -615,6 +622,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         require(not unavailable_run.called, "Codex ran after publication readiness failed")
 
     probe_effects = GitHubEffects()
+    probe_effects._content_checkout = type("Prepared", (), {"root": ROOT})()
     with (
         patch.dict(
             os.environ,
