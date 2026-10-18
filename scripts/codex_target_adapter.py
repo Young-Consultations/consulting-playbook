@@ -435,6 +435,7 @@ esac
         return Ownership(branch_exists=branch_exists, pull_requests=found)
 
     def codex(self, instructions: str, timeout_seconds: float) -> None:
+        workspace = self._working_content_root()
         deadline = time.monotonic() + timeout_seconds
 
         def budget() -> float:
@@ -477,7 +478,7 @@ esac
         try:
             probe = subprocess.run(
                 ["git", "push", "--dry-run", remote, f"HEAD:{probe_ref}"],
-                cwd=ROOT,
+                cwd=workspace,
                 env=push_env,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -509,7 +510,7 @@ esac
                 ["codex", "login", "--with-api-key"],
                 input=api_key,
                 text=True,
-                cwd=ROOT,
+                cwd=workspace,
                 env=env,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -539,13 +540,13 @@ esac
 
             command = [
                 "codex", "exec", "--model", "gpt-5.3-codex",
-                "--sandbox", "workspace-write", "-C", str(ROOT), "-",
+                "--sandbox", "workspace-write", "-C", str(workspace), "-",
             ]
             proc = subprocess.Popen(
                 command,
                 stdin=subprocess.PIPE,
                 text=True,
-                cwd=ROOT,
+                cwd=workspace,
                 env=env,
             )
             try:
@@ -579,22 +580,26 @@ esac
         env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
         return bool(subprocess.check_output(
             ["git", "status", "--porcelain=v1", "-z", "--untracked-files=normal"],
-            cwd=ROOT, env=env, timeout=timeout_seconds,
+            cwd=self._working_content_root(), env=env, timeout=timeout_seconds,
         ))
 
     def validate_candidate(self, timeout_seconds: float) -> tuple[bool, str]:
+        # The trusted validator and contract tests are *code from the pinned
+        # executor*, never from files changed by Codex in task content.
         env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
         deadline = time.monotonic() + timeout_seconds
+        candidate = self._content_checkout.root if self._content_checkout else ROOT
         commands = [
-            (["python", "scripts/validate_repository.py"], "validation"),
-            (["python", "scripts/test_codex_execute_contract.py"], "tests"),
-            (["git", "diff", "--check"], "validation"),
+            (["python", str(ROOT / "scripts/validate_repository.py"), "--worktree", str(candidate)],
+             "validation", ROOT),
+            (["python", str(ROOT / "scripts/test_codex_execute_contract.py")], "tests", ROOT),
+            (["git", "diff", "--check"], "validation", candidate),
         ]
-        for command, phase in commands:
+        for command, phase, cwd in commands:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise subprocess.TimeoutExpired(command, timeout_seconds)
-            if subprocess.run(command, cwd=ROOT, env=env, timeout=remaining).returncode:
+            if subprocess.run(command, cwd=cwd, env=env, timeout=remaining).returncode:
                 return False, phase
         return True, "passed"
 
