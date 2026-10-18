@@ -75,8 +75,10 @@ def _take_optional_secret(name: str) -> str:
 
 
 class AdapterError(Exception):
-    def __init__(self, category: str, message: str, status: str = "rejected"):
+    def __init__(self, category: str, message: str, status: str = "rejected",
+                 *, branch: str | None = None, pr: str | None = None):
         self.category, self.safe_message, self.status = category, message[:500], status
+        self.branch, self.pr = branch, pr
         super().__init__(self.safe_message)
 
 
@@ -304,6 +306,7 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
                                branch=branch, pr=pr, validation="passed", tests="passed"), payload["source_issue"])
     except AdapterError as exc:
         return Outcome(_result(parsed, started, exc.status, exc.category, exc.safe_message,
+                               branch=exc.branch, pr=exc.pr,
                                validation=validation_status, tests=test_status), source_issue)
     except subprocess.TimeoutExpired:
         return Outcome(_result(parsed, started, "failed", "timeout", "Admitted execution timeout expired",
@@ -603,8 +606,40 @@ esac
                 return False, phase
         return True, "passed"
 
+    def _check_content_base_head(self, phase: PublicationPhase, branch: str,
+                                 timeout_seconds: float, pr: str | None = None) -> None:
+        if self._content_checkout is None or not self._content_read_token:
+            raise AdapterError("authorization", "Task-content base evidence is missing",
+                               "ambiguous-rejected", branch=branch, pr=pr)
+        try:
+            observed = attest_default_branch(
+                TARGET, self._content_checkout.base.delivery_id,
+                self._content_checkout.base.executor_sha,
+                token=self._content_read_token, timeout_seconds=timeout_seconds,
+            ).content_sha
+        except (BaselineError, KeyError, OSError, ValueError,
+                subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            observed = None
+        decision = verify_publication_head(
+            self._content_checkout.base, observed, phase,
+        )
+        if not decision.may_continue:
+            detail = {
+                PublicationDisposition.REJECT_NO_REMOTE_EFFECT:
+                    "Stale or unverifiable default branch before publication; no topic push",
+                PublicationDisposition.QUARANTINE_OWNED_TOPIC:
+                    "Stale or unverifiable default branch after topic push; owned branch quarantined",
+                PublicationDisposition.BLOCK_DRAFT_REVIEW:
+                    "Stale or unverifiable default branch after draft creation; human review required",
+            }[decision.disposition]
+            raise AdapterError("publication", detail, "ambiguous-rejected",
+                               branch=branch, pr=pr)
+
     def publish(self, branch: str, delivery_id: str, digest: str, timeout_seconds: float) -> str:
+        workspace = self._working_content_root()
         env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
+        env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+                   GIT_TERMINAL_PROMPT="0")
         deadline = time.monotonic() + timeout_seconds
         def budget() -> float:
             remaining = deadline - time.monotonic()
@@ -612,20 +647,29 @@ esac
                 raise subprocess.TimeoutExpired("publication", timeout_seconds)
             return remaining
 
-        subprocess.run(["git", "checkout", "-b", branch], check=True, cwd=ROOT, env=env, timeout=budget())
-        subprocess.run(["git", "add", "-A"], check=True, cwd=ROOT, env=env, timeout=budget())
-        if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT, env=env,
+        subprocess.run(["git", "-c", "core.hooksPath=/dev/null", "checkout", "-b", branch], check=True, cwd=workspace, env=env, timeout=budget())
+        subprocess.run(["git", "add", "-A"], check=True, cwd=workspace, env=env, timeout=budget())
+        if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=workspace, env=env,
                           timeout=budget()).returncode == 0:
             raise AdapterError("codex-runtime", "Codex produced no candidate changes", "failed")
-        subprocess.run(["git", "-c", "user.name=ai-sdlc-target", "-c", "user.email=ai-sdlc@users.noreply.github.com",
-                        "commit", "-m", f"AI-SDLC delivery {delivery_id}"], check=True, cwd=ROOT, env=env,
+        subprocess.run(["git", "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false",
+                        "-c", "user.name=ai-sdlc-target", "-c",
+                        "user.email=ai-sdlc@users.noreply.github.com", "commit", "-m", f"AI-SDLC delivery {delivery_id}"], check=True, cwd=workspace, env=env,
                        timeout=budget())
+        parent = subprocess.check_output(
+            ["git", "rev-parse", "HEAD^"], cwd=workspace, env=env,
+            text=True, timeout=budget(),
+        ).strip()
+        if parent != self._content_checkout.base.content_sha:
+            raise AdapterError("publication", "Candidate parent does not match attested content",
+                               "ambiguous-rejected", branch=branch)
+        self._check_content_base_head(PublicationPhase.BEFORE_PUSH, branch, budget())
         remote = f"https://github.com/{TARGET}.git"
         push_env, askpass_path = self._publication_git_environment()
         try:
             pushed = subprocess.run(
                 ["git", "push", remote, f"HEAD:refs/heads/{branch}"],
-                cwd=ROOT,
+                cwd=workspace,
                 env=push_env,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
@@ -645,15 +689,20 @@ esac
                 "Draft branch publication failed",
                 "failed",
             )
-        body = f"<!-- {MARKER}: {delivery_id}; payload-sha256: {digest} -->\n\nAutomated draft; human review and merge are required."
+        self._check_content_base_head(PublicationPhase.AFTER_PUSH_BEFORE_PR,
+                                      branch, budget())
+        body = f"<!-- {MARKER}: {delivery_id}; payload-sha256: {digest} -->\n\nAutomated draft; human review and merge are required. Reverify default-branch HEAD before marking ready."
         # The commit is already durable on the remote branch. Retry only PR
         # creation so a transient GitHub CLI/API failure cannot strand that
         # branch and make every later delivery attempt fail its non-force push.
         for attempt in range(3):
             try:
-                return self._gh("pr", "create", "--repo", TARGET, "--draft", "--head", branch, "--title",
-                                f"AI-SDLC delivery {delivery_id}", "--body", body,
-                                timeout_seconds=budget()).strip()
+                pr = self._gh("pr", "create", "--repo", TARGET, "--draft", "--head", branch, "--title",
+                              f"AI-SDLC delivery {delivery_id}", "--body", body,
+                              timeout_seconds=budget()).strip()
+                self._check_content_base_head(PublicationPhase.AFTER_PR,
+                                              branch, budget(), pr=pr)
+                return pr
             except subprocess.CalledProcessError:
                 if attempt == 2:
                     raise AdapterError("publication", "create-race")
