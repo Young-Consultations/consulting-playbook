@@ -727,6 +727,11 @@ def test_publication_transport_auth_and_failure_classification() -> None:
     def exercise(stderr: bytes) -> tuple[AdapterError, dict[str, Any]]:
         effects = GitHubEffects()
         effects._publication_token = "sentinel-publication-token"
+        # Synthetic already-attested checkout for direct publication tests.
+        effects._content_checkout = type(
+            "Prepared", (), {"root": ROOT, "base": type(
+                "Base", (), {"content_sha": "f" * 40})()}
+        )()
         observed: dict[str, Any] = {}
 
         def fake_publish_run(
@@ -743,7 +748,11 @@ def test_publication_transport_auth_and_failure_classification() -> None:
                 return subprocess.CompletedProcess(command, 1, stderr=stderr)
             return subprocess.CompletedProcess(command, 0)
 
-        with patch("codex_target_adapter.subprocess.run", side_effect=fake_publish_run):
+        with (
+            patch("codex_target_adapter.subprocess.run", side_effect=fake_publish_run),
+            patch("codex_target_adapter.subprocess.check_output", return_value="f" * 40 + "\\n"),
+            patch.object(effects, "_check_content_base_head"),
+        ):
             try:
                 effects.publish("codex/delivery-42", "delivery-42", "a" * 64, 30)
             except AdapterError as exc:
