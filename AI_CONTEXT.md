@@ -197,29 +197,41 @@ the organization release, while current activation is separate mutable
 organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
-The published 2.4.2 and 2.4.5 compatibility units remain historical
-evidence. The current published source/control-plane runtime is
-`ai-sdlc-v3.0.2`, and the enabled consulting target is immutable
-`codex-adapter-v3.0.2` at
-`3bde0dc760088b9af21454a0f70ed498dae043a7`. Deployed Runtime Preflight
-36640642872 and immutable REAL preflight 36640734704 passed before the
-portfolio source consumer adopted 3.0.2.
+The published 2.4.2, 2.4.5, 3.0.2 and 3.0.3 compatibility units
+remain historical evidence. The current published and attested control plane is
+`ai-sdlc-v3.1.0` at immutable
+`e9d11fc99fee73d247c93699f058ed64786bd4c0`, selecting
+`codex-adapter-v3.1.0` at immutable
+`4f15841efcba4883770b5e32c0582f733d73eb91`. The source consumer is
+migrated, and deployed Runtime Preflight 39086605325, deterministic no-cost
+SIM 39087269988 and immutable no-Codex REAL-readiness preflight
+39087311313 passed. Those establish release/configuration readiness, **not**
+current task-content workbase provenance or accepted cost-bearing REAL.
 
-Fresh REAL #154 remains the initial 2.4.5 live-path proof. REAL #156 later
-exposed DEF-0064 at the result-writer identity/redelivery boundary, leading to
-the organization-owned GitHub App `ai-sdlc-result-writer` (App ID `5100679`),
-installed only on `Young-Consultations/portfolio-tasks`. REAL #159 then proved
-the App result-writer prerequisite path but exposed DEF-0073 at the 3.0.0
-receiver; published 3.0.2 repaired that receiver compatibility boundary.
+Fresh REAL #154 remains historical initial 2.4.5 live-path proof; REAL #156
+led to the result-writer GitHub App repair, and REAL #159 exposed the
+receiver boundary later repaired by 3.0.2/3.0.3. Immutable historical tags
+must never be rewritten. The 3.1.0 trusted terminal receipt preflight
+prevents retry of a terminal failure, preserving exact authorized managed
+draft reuse and blocking unsupported evidence before Codex.
 
-After #159 reconciliation preserved the original trusted 3.0.1 admission,
-DEF-0086 exposed the router's cross-release admission-reuse defect. The current
-pre-publication target candidate is `codex-adapter-v3.0.3`. It leaves the
-target adapter implementation unchanged and repins both the result credential
-preflight and result receiver to future `ai-sdlc-v3.0.3`. The candidate is
-implementation evidence only until its immutable target tag, matching
-control-plane 3.0.3 release, deployed preflights, source repin, and controlled
-REAL #159 terminal/redelivery acceptance complete.
+**Approved ADR-013 / issue #93, not yet implemented in production:**
+Trusted executor/policy must remain at the exact immutable adapter release
+SHA, while task content comes from an independently verified current
+target default-branch commit in a separate clean worktree. Bind repository,
+delivery/scope, trusted code SHA and content base SHA before a cost-bearing
+model invocation. No unreviewed content scripts, Git hooks or imports may run
+as trusted policy with privileged credentials. The publisher must recheck
+default HEAD before push, after push/pre-PR and after draft creation. Reject
+earlier stale identities with zero new remote effects; quarantine owned
+post-push topic effects or mark stale drafts blocked for human review.
+GitHub moving refs cannot be made globally atomic by a single HEAD read.
+No force-push, automatic merge, automatic Codex retry or replay of terminal
+portfolio source #167. New immutable adapter and control-plane compatibility
+publication, independent security checks and fresh governed REAL acceptance
+remain required. The current implementation still couples work content to
+the pinned executor checkout; **do not treat approval, new tests, or CI alone
+as defect resolution**.
 
 The GitHub App token and private key do not enter the Codex adapter environment.
 A compatible cross-release retry preserves exactly one trusted durable
