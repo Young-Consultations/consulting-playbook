@@ -83,11 +83,18 @@ class PublicationDecision:
     disposition: PublicationDisposition
     phase: PublicationPhase
     base_sha: str
-    observed_sha: str
+    observed_sha: str | None
+
+    @property
+    def observation_verified(self) -> bool:
+        return self.observed_sha is not None
 
     @property
     def may_continue(self) -> bool:
-        return self.disposition == PublicationDisposition.READY
+        return (
+            self.disposition == PublicationDisposition.READY
+            and self.observation_verified
+        )
 
 
 def verify_publication_head(
@@ -98,21 +105,33 @@ def verify_publication_head(
     """Pure guard; caller must enforce the returned disposition.
 
     A read in any phase cannot atomically lock a different GitHub ref.
+    An unreadable or malformed HEAD is non-ready and produces the same
+    phase-specific disposition as a changed HEAD, with observed_sha=None.
     After-push branches and after-PR drafts may exist, must be recorded
     against the original delivery, and must never be auto-reused for Codex.
     """
     if not isinstance(phase, PublicationPhase):
         raise BaselineError("unknown publication phase")
-    if not isinstance(observed_head_sha, str) or _SHA.fullmatch(observed_head_sha) is None:
-        raise BaselineError("current default HEAD is not independently verifiable")
-    if observed_head_sha == base.content_sha:
-        return PublicationDecision(PublicationDisposition.READY, phase, base.content_sha, observed_head_sha)
+
+    # An unreadable/default-HEAD API result is *not* an ordinary exception
+    # after a topic push or draft creation: partial remote effects may exist.
+    # Preserve the phase-specific action and never treat invalid evidence as
+    # current. The raw malformed value is not included in audit output.
+    verified = (
+        isinstance(observed_head_sha, str)
+        and _SHA.fullmatch(observed_head_sha) is not None
+    )
+    safe_observation = observed_head_sha if verified else None
+    if verified and observed_head_sha == base.content_sha:
+        return PublicationDecision(
+            PublicationDisposition.READY, phase, base.content_sha, observed_head_sha,
+        )
     disposition = {
         PublicationPhase.BEFORE_PUSH: PublicationDisposition.REJECT_NO_REMOTE_EFFECT,
         PublicationPhase.AFTER_PUSH_BEFORE_PR: PublicationDisposition.QUARANTINE_OWNED_TOPIC,
         PublicationPhase.AFTER_PR: PublicationDisposition.BLOCK_DRAFT_REVIEW,
     }[phase]
-    return PublicationDecision(disposition, phase, base.content_sha, observed_head_sha)
+    return PublicationDecision(disposition, phase, base.content_sha, safe_observation)
 
 
 def require_exact_content_checkout(base: TaskBase, checkout_head_sha: str, dirty: bool) -> None:
