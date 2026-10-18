@@ -1,7 +1,7 @@
 # 2026-10-17: Immutable executor identity is not task-content freshness
 
 - **Date:** 2026-10-17 (Arizona local date; GitHub runs occurred 2026-10-18 UTC)
-- **Decision status:** unresolved; proposal only
+- **Decision status:** approved design on 2026-10-17; implementation pending
 - **SDLC phase:** release-production discovery and architecture-design rework
 
 ## Context
@@ -67,15 +67,15 @@ the draft, but detected the stale candidate **after** a paid model call.
 
 ## Requirement or architecture implications
 
-**Not yet approved.** The proposed design in
+**Approved design.** The architecture in
 [`docs/architecture/proposals/issue-93-dual-baseline-executor.md`](../../docs/architecture/proposals/issue-93-dual-baseline-executor.md)
 separates immutable trusted executable root from a read-verified exact-SHA
 content checkout, validates draft provenance and denies publication if the
-default branch moved. The owner must decide worktree validation sandbox,
-identity/approval requirements when branch moves, token scope, conformance
-evidence and compatible release version. Only after approval should
-`NextMVP.md`, `InterfaceArchitecture.md`, normative ADRs, tests,
-runtime implementation and registry be updated in that order.
+default branch moved. The owner has approved a separate trusted executor and content workbase.
+A Codex P1 review corrected the initial impossible claim of atomic
+default-branch freeze: stale branches are quarantined as partial effects,
+and a moving HEAD cannot guarantee zero transient refs. Normative requirements,
+interface and ADR-013 are updated in this PR; runtime acceptance is pending.
 
 ## Lessons learned
 
@@ -87,15 +87,13 @@ can create false confidence.
 
 ## `AI_CONTEXT.md` impact
 
-Not updated. The current architecture decision is unresolved, and issue #93
-remains `status:proposed`. Once reviewed requirements and architecture settle
-the trust/worktree contract, evaluate each repository's standing AI context
-for necessary evidence-backed updates. Do not preemptively declare a split
-architecture accepted.
+Not updated in this decision PR. The owner-approved normative requirements
+and ADR-013 are being reviewed; update AI_CONTEXT only once that authority
+merges, and distinguish approved design from unimplemented runtime behavior.
 
 ## Follow-up
 
-Obtain human architecture/requirements authorization. Implement in a separate
+After reviewed owner-approved architecture merges, implement in a separate
 reviewed draft PR, with fake-Codex/fake-publisher tests for stale base and
 moved-head races. Require immutable target release, exact registry/report
 digest, compatible control-plane adoption and post-deployment verification.
