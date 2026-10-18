@@ -61,7 +61,7 @@ class ContentCheckoutTests(unittest.TestCase):
             return subprocess.CompletedProcess(command, 0, "", "")
         with checkout_attested_base(base, token="read-token", timeout_seconds=10, run=fake_git) as checkout:
             self.assertTrue(checkout.root.is_dir())
-            self.assertEqual(len(commands), 5)
+            self.assertEqual(len(commands), 6)
             self.assertEqual(commands[1][0][0:4], ["git", "-c", "core.hooksPath=/dev/null", "fetch"])
             self.assertEqual(commands[1][1]["env"]["GIT_PASSWORD"], "read-token")
             self.assertFalse(any("GIT_PASSWORD" in kw["env"] for i,(_,kw) in enumerate(commands) if i!=1))
