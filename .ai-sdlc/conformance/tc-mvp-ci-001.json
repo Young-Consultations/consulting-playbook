@@ -1,7 +1,7 @@
 {
   "report_version": "1.0",
   "repository": "Young-Consultations/consulting-playbook",
-  "adapter_revision": "sha256:afaa46666bcf8a94188215419aaae54f16faebede3ef6eb92e7833ca997bd0c4",
+  "adapter_revision": "sha256:e11b1458c67f222c2975ac730a007fb1f84192ea58fa1ffebf0deaa44f6daae6",
   "compatibility_sha": "e27b8a541afbd27b4be5606a19ffa43637ad312a",
   "fixture_set": "TC-MVP-CI-001",
   "fixture_version": "2.3.0",
@@ -10,7 +10,7 @@
   "activation_evidence_sufficient": true,
   "activation_evidence_reason": "complete shared oracle executed through the repository adapter with deterministic effect traps",
   "adapter_tag_published": false,
-  "receiver_live_verification": "pending-ai-sdlc-v3.1.0-live-verification",
+  "receiver_live_verification": "pending-new-adapter-release-and-deployed-reverification",
   "effect_traps": {
     "codex_calls": 0,
     "real_branches_created": 0,
