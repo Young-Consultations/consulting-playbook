@@ -2,6 +2,7 @@
 """Repository-specific path and secret validation for generated changes."""
 from __future__ import annotations
 
+import argparse
 import re
 import subprocess
 from pathlib import Path
@@ -27,12 +28,20 @@ FORBIDDEN_NAMES = re.compile(r"(^|/)(\.env($|\.)|credentials|secrets?($|\.)|.*\.
 SECRET_VALUE = re.compile(r"(sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9_]{20,})")
 
 
-def run(*args: str) -> str:
-    return subprocess.run(args, check=True, text=True, capture_output=True).stdout
+def run(*args: str, worktree: Path | None = None) -> str:
+    return subprocess.run(args, cwd=worktree, check=True, text=True, capture_output=True).stdout
 
 
 def main() -> None:
-    entries = run("git", "status", "--porcelain=v1", "-z").split("\0")
+    parser = argparse.ArgumentParser(description="Trusted validator of untrusted task content")
+    parser.add_argument("--worktree", type=Path, default=Path.cwd())
+    args = parser.parse_args()
+    worktree = args.worktree.resolve(strict=True)
+    if not (worktree / ".git").exists():
+        raise SystemExit("candidate validation requires a Git checkout")
+    def git(*parts: str) -> str:
+        return run("git", *parts, worktree=worktree)
+    entries = git("status", "--porcelain=v1", "-z").split("\0")
     files: list[str] = []
     for entry in entries:
         if not entry:
@@ -55,11 +64,11 @@ def main() -> None:
             if line.startswith("+") and not line.startswith("+++")
         )
 
-    content = added_content(run("git", "diff", "--no-ext-diff"))
-    content += "\n" + added_content(run("git", "diff", "--cached", "--no-ext-diff"))
+    content = added_content(git("diff", "--no-ext-diff"))
+    content += "\n" + added_content(git("diff", "--cached", "--no-ext-diff"))
     for name in files:
-        path = Path(name)
-        if path.is_file() and name in run("git", "ls-files", "--others", "--exclude-standard").splitlines():
+        path = worktree / name
+        if path.is_file() and name in git("ls-files", "--others", "--exclude-standard").splitlines():
             content += path.read_text(encoding="utf-8", errors="replace")
     if SECRET_VALUE.search(content):
         raise SystemExit("a credential-like value was detected in generated content")
