@@ -1,6 +1,6 @@
-# Proposed ADR: Separate immutable executor from current task-content baseline
+# Approved design: Separate immutable executor from current task-content baseline
 
-**Status:** PROPOSED, NOT APPROVED. Issue [#93](https://github.com/Young-Consultations/consulting-playbook/issues/93) remains `status:proposed`.
+**Status:** APPROVED DESIGN (2026-10-17, Arizona local time). Issue [#93](https://github.com/Young-Consultations/consulting-playbook/issues/93) is `status:approved`. The approved design does not authorize an existing-tag mutation or cost-bearing execution.
 **Owner for decision:** consulting-playbook repository owner and organization AI-SDLC control-plane owner, with portfolio approval owner consulted for any change to dispatch authority.
 **Scope:** repository-local `workflow_dispatch` target, adapter, and draft publication only. No contract/v2 or activation change is approved here.
 
@@ -25,9 +25,9 @@ and separate from the terminal replay guard addressed by 3.1.0 under
 Passing [SIM 39087269988](https://github.com/Young-Consultations/.github/actions/runs/39087269988)
 and [REAL-readiness preflight 39087311313](https://github.com/Young-Consultations/.github/actions/runs/39087311313)
 do **not** test content-baseline freshness. No new cost-bearing REAL call
-is authorized by this proposal.
+is authorized by the design approval.
 
-## Proposed decision
+## Approved decision
 
 **Two independently attested checkout identities** rather than treating a
 versioned executor checkout as a current source tree:
@@ -67,15 +67,27 @@ versioned executor checkout as a current source tree:
    the mutable checkout. Require `git diff --check`, deterministic
    scenario tests, and repository-specific validators. Report test inputs
    and outcomes, not presumed success.
-6. **Race-free draft publication:** immediately before push, independently
-   reread target default-branch HEAD. If it differs from the attested task
-   base SHA, **fail closed** with a safe stale-base result; do not force
-   push, auto-rebase, retry Codex or create a PR with stale content.
-   Commit on top of the verified task base SHA, record both candidate parent
-   and produced head SHA, create at most one owned **draft** PR, and verify
-   remote branch/PR ownership. Only a new governed retry with fresh
-   approval/identity or an explicitly reviewed deterministic reconciliation
-   may resolve changes of scope.
+6. **Bounded draft publication with explicit moving-HEAD reconciliation:**
+   independently read the default-branch HEAD immediately before push and
+   reject any mismatch with the attested base **without pushing**. Commit
+   on that exact parent, record the parent and produced head SHA, and push
+   only an identity-bound topic branch without force. Re-read the default
+   branch **after push and before PR creation**. If it has moved, do not
+   create a draft; quarantine the pushed topic branch with exact ownership,
+   SHA, and a safe stale-base outcome for human cleanup/reconciliation. Do
+   not auto-delete a branch whose ownership or current SHA cannot be proved.
+   If unchanged, create at most one **draft** PR and recheck the main HEAD
+   **after PR creation**. If moved, mark the draft stale/blocked for
+   independent review, never automatic merge or Codex retry. The human
+   merge gate must independently revalidate current parent/mergeability.
+   No API sequence can make GitHub's independently moving default-branch
+   ref and a different topic ref atomic, so this flow **does not claim
+   zero transient branch effects or permanent atomic HEAD stability**.
+   It guarantees no deliberate PR publication after an already observed
+   stale base and no automatic acceptance of a draft that becomes stale.
+   Any remaining branch/draft side effect is recorded durably against the
+   original delivery identity and must be reconciled before new execution.
+   A fresh scope-changing attempt requires an authorized new logical task.
 7. **Existing-draft reuse remains separate:** prior trusted managed-draft
    receipts allow only exact ownership-verified reconciliation, never a
    second model call; prior non-managed terminal receipts block execution.
@@ -95,7 +107,7 @@ preflight**, followed by separately approved fresh REAL acceptance.
 | Continue editing immutable executor checkout | **Reject:** proven stale content, incorrect ledger IDs |
 | Move all execution to the latest `main` checkout | **Reject:** runs unreviewed mutable executor and policy; loses immutable trust |
 | Automatically `git pull` / `git rebase` inside executor | **Reject:** code trust drift and ambiguous publication after races |
-| Split trusted executor root and exact-SHA task-content worktree | **Proposed:** preserves policy identity, current work base and explicit merge/retry governance |
+| Split trusted executor root and exact-SHA task-content worktree | **Approved:** preserves policy identity, current work base and explicit merge/retry governance |
 | Halt cost-bearing implementation indefinitely | **Safe immediate fallback** while the split design lacks reviewed implementation and evidence |
 
 ## Required acceptance tests, all NO_COST until separately approved
@@ -103,9 +115,12 @@ preflight**, followed by separately approved fresh REAL acceptance.
 - Pinned old trusted executor + newer independently verified default-branch
   content: candidate parent equals the **new** base; existing ledger IDs,
   content IDs, links and newer files are preserved.
-- A default-branch SHA that moves between first read and publication is
-  detected *before push* and returns a deterministic safe failure with zero
-  PR/branch effects; no second Codex invocation.
+- A default-branch SHA moved **before the pre-push read** yields zero remote
+  write effects and no second Codex call; a change *after push but before
+  draft creation* yields no PR but a quarantined owned topic ref; a change
+  *after draft creation* marks the draft stale and blocked. All observed
+  races retain exact ownership/provenance and produce no automatic merge or
+  second Codex. Tests assert the distinctions, not impossible atomicity.
 - Missing or conflicting base API evidence, invalid/mutable ref, wrong
   repository, inaccessible or dirty checkout, or unsupported policy cannot
   cross into Codex; effect counters stay at zero.
@@ -124,32 +139,48 @@ preflight**, followed by separately approved fresh REAL acceptance.
 - Release and source activation remain unmodified until the separately
   governed immutable publication and deployment process completes.
 
-## Explicit open decisions for owner review
+## Approved controls and implementation sign-off gates
 
-1. **Repository write sandbox:** which existing trusted validator commands
-   are safe against untrusted task content, and what isolation policy
-   prevents content-controlled scripts from running as the runner identity?
-2. **Default branch movement:** fail closed until a *new approved task
-   identity* versus a version-bound deterministic no-Codex reconciliation
-   operation. Proposed default is fail closed.
-3. **Task base provenance:** identify the authenticated read token and exact
-   GitHub API response that establishes the default branch and commit SHA;
-   it must not grant unrestricted task writes.
-4. **Contract visibility:** determine whether base/executor SHAs can be
-   captured solely in draft PR provenance or require an additive,
-   separately versioned organization-facing result field. Do not change
-   `execution-result/v2` without its owner’s approval.
-5. **Release order:** decide whether the incompatible trusted-worktree
-   behavior merits a SemVer MINOR or MAJOR target release and whether
-   3.1.0's still-enabled consulting target should be held administratively
-   inactive until correction. Do not alter active routing by this PR.
+1. **Untrusted-worktree execution:** Trusted interpreter/validator commands
+   must run from the pinned executable root, with trusted module paths and
+   explicit data-path operands. Deny worktree-controlled hooks, imports,
+   local executables and build hooks under the ordinary CI identity.
+   Where testing necessarily executes task-controlled material, require a
+   separate sandbox and credentials-free process. This isolation must be
+   independently tested and accepted before execution.
+2. **Moved-head policy:** Reject stale-base publication and never auto-rebase,
+   rerun Codex or merge; preserve/quarantine partial remote topic effects
+   with an exact delivery identity. Fresh scope requires a new approved
+   logical task. A verified same-draft reuse path is permitted only under
+   the existing 3.1.0 no-second-Codex evidence rules.
+3. **Task base provenance:** Authenticate a read-only GitHub API query of the
+   target default branch and commit SHA; verify repository identity and exact
+   40-hex object ID. Bind the executor SHA and content base SHA locally before
+   Codex. A missing/unauthorized/mismatched response denies execution.
+4. **Contract visibility:** Record content/executor SHAs and ownership in
+   the owned draft and local evidence; do not change `execution-result/v2`
+   or append unreviewed schema fields. Control-plane contract changes, if
+   subsequently necessary, require separate owner approval.
+5. **Release/activation policy:** No existing adapter tag may be modified.
+   A new compatible SemVer release classification is required before a
+   new immutable target tag, registry and associated control-plane
+   publication. Issue approval does **not** enable new REAL dispatch. The
+   owner must assess whether to deactivate the affected cost-bearing path
+   while implementation remains incomplete.
 
-## Approval / supersession rule
+The security sandbox implementation, independent conformance and publication
+proof are **acceptance gates**, not permissions to skip testing because the
+high-level design has been approved.
 
-This document is **a decision proposal**, not an authoritative change to
-`NextMVP.md`, `InterfaceArchitecture.md`, or `AI_CONTEXT.md`. Upon
-owner approval, revise the approved requirements, normative interfaces,
-architecture/ADR and acceptance traceability *before* implementation, then
-update AI_CONTEXT only with verified resolved decisions. Maintain the issue
-and Defect Ledger as open/investigating until tested publication and
-accepted production evidence establish resolution.
+## Decision provenance and supersession
+
+The repository owner approved the split trusted-executor/current-content
+design on 2026-10-17 (America/Phoenix). The review-detected P1 race caveat
+([PR #95 discussion](https://github.com/Young-Consultations/consulting-playbook/pull/95))
+clarifies that independent Git refs cannot be atomically frozen together.
+The revised fail-closed and partial-effect reconciliation controls above
+are necessary to implement the approved intent safely. Normative requirements
+and interface architecture are updated in the same reviewed change.
+`AI_CONTEXT.md` may be aligned only after this decision and those normative
+changes are merged and verified. DEF-0125 remains investigating until actual
+implementation, release, and operational acceptance prove resolution.
