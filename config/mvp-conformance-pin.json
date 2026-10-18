@@ -4,7 +4,7 @@
   "compatibility_sha": "e27b8a541afbd27b4be5606a19ffa43637ad312a",
   "fixture_set": "TC-MVP-CI-001",
   "fixture_version": "2.3.0",
-  "adapter_revision": "sha256:afaa46666bcf8a94188215419aaae54f16faebede3ef6eb92e7833ca997bd0c4",
+  "adapter_revision": "sha256:e11b1458c67f222c2975ac730a007fb1f84192ea58fa1ffebf0deaa44f6daae6",
   "compatibility_files": {
     "contracts/task-contract.schema.json": "d95673363eb7f825eb64b73ddb0468c787078ce4",
     "contracts/execution-input.schema.json": "b2b16cfda619c82d73a5e78ae34566feb6b83224",
@@ -14,11 +14,16 @@
     "tests/fixtures/mvp-v2/expected-results.json": "b45c6921f029220b2f3138d5cd2d9443499a3171"
   },
   "target_files": {
-    ".github/workflows/codex-execute.yml": "8ec99542656548601623c564564d9d3a8f264754",
-    "scripts/codex_target_adapter.py": "ecb7560732928298f5c9af50e25a82bc6ed7e253",
-    "scripts/run_tc_mvp_ci_001.py": "f65e6e39941b863f1a2a4aa82ad6c8f8f8315a47",
+    ".github/workflows/codex-execute.yml": "30e528846da6c7048ca2c73369b403e94c48baaf",
+    "scripts/codex_target_adapter.py": "0ffc5c2fc884e009f892e8d4cd29bce24afb6ef4",
+    "scripts/run_tc_mvp_ci_001.py": "3b0494343b2ae5cf8dec74af221b5092db6a8178",
     "scripts/codex_auth_handoff.py": "c66ecf1c01a8cd04178ebe0b865069fc64d2d30c",
     "scripts/run_tc_mvp_ci_001_receiver_303.py": "f0a3441e7432215ec229485e80b912df665d0167",
-    "scripts/run_tc_mvp_ci_001_receiver_310.py": "430bb8ed8d8fabe54b9482d00a2e6f4654763cb8"
+    "scripts/run_tc_mvp_ci_001_receiver_310.py": "430bb8ed8d8fabe54b9482d00a2e6f4654763cb8",
+    "scripts/task_content_baseline.py": "f854b5769b4921aca4dfc8055e03af7dad2ee8e2",
+    "scripts/task_content_checkout.py": "50330a15d45a1069e5c89b8bffdbd65379ebf1b7",
+    "scripts/validate_repository.py": "99b8f739284277f91f2597dba78abc4a225fbca0",
+    "scripts/test_task_content_baseline.py": "37ad56ce5ed44fe6f0190fbe26f69f6a00192e69",
+    "scripts/test_codex_execute_contract.py": "a905dbc1abe4a93acdf1b6cbc291f12c9a6799bd"
   }
 }
