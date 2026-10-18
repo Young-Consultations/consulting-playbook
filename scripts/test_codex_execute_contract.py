@@ -872,6 +872,33 @@ def test_idempotency_and_create_race() -> None:
     require(race["execution_status"] == "ambiguous-rejected", "ambiguous create race did not fail closed")
 
 
+def test_failed_workbase_provenance_denies_codex_and_publication() -> None:
+    class FailedProvenance(FakeEffects):
+        def prepare_content(self, delivery_id: str, timeout_seconds: float) -> None:
+            self.prepared += 1
+            raise AdapterError("dependency", "Authenticated current task-content base is unavailable", "failed")
+
+    effects = FailedProvenance()
+    value = payload()
+    result = execute(value, effects)
+    require(
+        result["execution_status"] == "failed"
+        and result["failure_category"] == "dependency",
+        "missing content SHA proof was not rejected",
+    )
+    require(
+        effects.discoveries == 1 and effects.prepared == 1
+        and effects.codex_calls == effects.publish_calls == 0,
+        "invalid content provenance reached cost-bearing model or remote effects",
+    )
+    reused = FakeEffects(found=[managed(value)])
+    require(
+        execute(value, reused)["execution_status"] == "duplicate-reused"
+        and reused.prepared == 0,
+        "prior owned draft reuse must not fetch a new baseline or incur Codex",
+    )
+
+
 def test_exact_shared_blobs_and_evidence() -> None:
     pin = json.loads((ROOT / "config/mvp-conformance-pin.json").read_text(encoding="utf-8"))
     pin_errors = validate_pin(pin)
