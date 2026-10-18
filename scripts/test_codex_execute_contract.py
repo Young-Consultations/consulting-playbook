@@ -308,8 +308,9 @@ def test_security_and_publication_guards() -> None:
         "production execution does not use the proven login flow",
     )
     require(
-        '"--sandbox", "workspace-write", "-C", str(ROOT)' in adapter,
-        "Codex does not use the bounded writable target workspace",
+        '"--sandbox", "workspace-write", "-C", str(workspace)' in adapter
+        and "workspace = self._working_content_root()" in adapter,
+        "Codex must use the independently attested content checkout, not executor ROOT",
     )
     require(
         "run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]==4.26.0'"
