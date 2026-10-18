@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import subprocess
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
-from task_content_baseline import BaselineError
+from codex_target_adapter import AdapterError, GitHubEffects
+from task_content_baseline import BaselineError, PublicationPhase
 from task_content_checkout import attest_default_branch, checkout_attested_base
 
 SHA = "a" * 40
@@ -68,6 +70,34 @@ class ContentCheckoutTests(unittest.TestCase):
             self.assertFalse((checkout.root.parent/"read-askpass.sh").exists())
             self.assertTrue(all(kw["env"].get("GIT_CONFIG_NOSYSTEM")=="1" for _,kw in commands))
         self.assertFalse(checkout.root.exists())
+
+    def test_publisher_head_attestation_preserves_partial_branch_and_pr(self):
+        base = attest_default_branch(
+            TARGET, "delivery-42", EXECUTOR, token="read-token",
+            timeout_seconds=10, read=read,
+        )
+        effects = GitHubEffects()
+        effects._content_checkout = type("Prepared", (), {"base": base})()
+        effects._content_read_token = "read-token"
+        for phase, expected in (
+            (PublicationPhase.BEFORE_PUSH, "no topic push"),
+            (PublicationPhase.AFTER_PUSH_BEFORE_PR, "quarantined"),
+            (PublicationPhase.AFTER_PR, "human review required"),
+        ):
+            with self.subTest(phase=phase):
+                with patch("codex_target_adapter.attest_default_branch", side_effect=BaselineError("unavailable")):
+                    with self.assertRaises(AdapterError) as ctx:
+                        effects._check_content_base_head(
+                            phase, "codex/delivery-42", 10,
+                            pr="https://github.com/Young-Consultations/consulting-playbook/pull/7"
+                            if phase == PublicationPhase.AFTER_PR else None,
+                        )
+                self.assertIn(expected, ctx.exception.safe_message)
+                self.assertEqual(ctx.exception.branch, "codex/delivery-42")
+                self.assertEqual(ctx.exception.status, "ambiguous-rejected")
+                if phase == PublicationPhase.AFTER_PR:
+                    self.assertIn("/pull/7", ctx.exception.pr)
+
 
     def test_branch_moving_during_fetch_fails_closed_and_cleans_up(self):
         base = attest_default_branch(
