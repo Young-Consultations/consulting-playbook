@@ -54,13 +54,18 @@ Trace flows **Vision goal → business rules/objective → requirements → arch
 ### Next-MVP architecture slice
 
 The [repository release profile](../requirements/NextMVP.md) selects AC-08–11,
-ADR-005–008/010–011, Target Policy, bounded Executor, Repository Validator,
+ADR-005–008/010–011/013, Target Policy, bounded Executor, Repository Validator,
 Publication Coordinator, and the control-plane/portfolio/Git ports. It excludes
 AC-01–07 consulting runtime implementation. FR-EXE-01–02 and the profile's listed
 NFRs trace through UC-10 and Sequences 6–7 to deterministic fake-executor,
 fake-publication, duplicate/result-replay, failure, and shared-manifest alignment
 evidence. The terminal boundary is one validated draft or reuse/no-change and one
 canonical correlated result; no merge or downstream lifecycle is included.
+ADR-013 and approved issue #93 additionally require a separately attested
+current content SHA, immutable trusted policy, bounded worktree isolation,
+three moving-default-HEAD publication checks, quarantined partial remote
+effects and fresh human merge-time validation; all remain to be verified
+in a new released target adapter.
 
 | Use cases | Primary components | Interfaces |
 |---|---|---|
