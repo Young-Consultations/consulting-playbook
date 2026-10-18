@@ -272,6 +272,48 @@ reuses only a draft PR before emitting the canonical result. Normal CI substitut
 a fake executor and fake publisher. A draft repository change never becomes
 automatically published consulting guidance.
 
+
+## Approved issue #93: immutable trusted executor and current content baseline
+
+**Architecture approved 2026-10-17. Implementation and REAL acceptance pending.**
+The adapter SHALL preserve immutable, independently verified trusted executor
+code, policy, schema and validation at the release-bound target SHA, distinct
+from a clean task-content worktree pinned to the target's authenticated current
+default-branch commit SHA. Before any cost-bearing Codex invocation, bind
+the target repository, approved delivery/scope, trusted executor SHA and exact
+content base SHA to one provenance record. Missing, malformed, mutable,
+inconsistent, inaccessible or unauthorized base evidence fails closed without
+a model call. The trusted terminal-journal and managed-draft reuse rules
+remain binding and may never be bypassed by fetching a new base.
+
+Codex edits only task-content files in the bounded worktree. Never execute
+mutable checkout hooks, package scripts, imports or policy with privileged
+credentials. Validators and policy come from the trusted executor and treat
+candidate files as untrusted data; any necessary execution of candidate code
+requires an independently reviewed credential-free sandbox. Preserve existing
+Defect Ledger IDs, content IDs and links and validate `git diff --check`,
+path/secret policy and deterministic tests.
+
+The publisher SHALL verify that the candidate parent is exactly the attested
+content base and re-read default HEAD just before a non-force topic push.
+If moved by then, reject with zero remote writes. After the topic push but
+before creating a draft, re-read default HEAD; if moved, do not open a PR,
+quarantine any exactly owned topic branch and report a safe partial effect.
+After creating a draft, re-read HEAD and mark a stale draft blocked for human
+reconciliation. GitHub does not atomically lock unrelated refs: do not claim
+zero transient branch effects or guarantee permanent HEAD stability.
+Human review SHALL independently revalidate the latest parent and mergeability.
+No auto-rebase, force push, automated merge, or second paid Codex invocation
+is permitted to repair a moved base.
+
+Fake-effect regression tests SHALL simulate movement before push, after push,
+after PR, missing base, conflicting identity, untrusted worktree execution,
+owned branch/PR reconciliation and ledger/content conservation. Preserve
+all 29 shared contract scenarios with zero real side effects. The executor
+change SHALL be published only through a newly reviewed immutable target
+release and separately approved organization compatibility/registry gates.
+Design approval alone does not authorize REAL execution.
+
 ## Required no-Codex conformance coverage
 
 Local tests shall consume the organization-owned executable `TC-MVP-CI-001`
@@ -303,10 +345,10 @@ pull-request state.
 
 ## Implementation readiness and operational activation
 
-The current published source/control-plane runtime is
-`ai-sdlc-v3.0.3`, and its enabled consulting target is immutable
-`codex-adapter-v3.0.3` at
-`f11852c7f563df16ea4afa9ab75bf766242e7327`. Historical published
+The current published control plane is `ai-sdlc-v3.1.0` at immutable
+`e9d11fc99fee73d247c93699f058ed64786bd4c0`, selecting the released
+target adapter `codex-adapter-v3.1.0` at
+`4f15841efcba4883770b5e32c0582f733d73eb91`. Historical published
 2.4.5 remains initial-live-path evidence; published 2.4.4 is not a
 cost-bearing-execution-safe rollback, as REAL #151 identified possible
 loss of successful Codex work. A rollback that could invoke Codex
@@ -318,13 +360,11 @@ Preflight and immutable REAL preflight, but #159 exposed DEF-0086 at the
 cross-release admission-reuse boundary; published 3.0.3 subsequently repaired
 that defect. Issue #111 identifies a separate **3.0.3 production defect**:
 a terminal failed delivery could reach a second cost-bearing Codex call.
-The unpublished 3.1.0 target candidate changes both its preflight and
-receiver self-pins to 3.1.0 and requires trusted terminal receipt proof
-before any model invocation. The candidate can be staged only as inactive
-repository content while the organization registry continues selecting
-3.0.3. No 3.1.0 target tag, control-plane release, production cutover,
-deployed preflights, or newly authorized REAL acceptance is established
-by this candidate report.
+The 3.1.0 target and control-plane tags, publication attestation,
+source migration, deployed Runtime Preflight 39086605325, no-cost SIM
+39087269988 and REAL-readiness preflight 39087311313 passed. They do not
+establish separate task-content baseline correctness or new REAL acceptance;
+issue #93 remains a cost-bearing implementation release blocker.
 Operational activation remains mutable
 organization control-plane state and is neither pinned nor administered here.
 This repository must not create a second activation switch; routing remains
