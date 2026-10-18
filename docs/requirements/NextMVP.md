@@ -6,12 +6,13 @@ This profile is the normative repository-owned implementation baseline. It uses
 payload contract `ai-sdlc-contract/v2` and fixture-set manifest
 `TC-MVP-CI-001` from the reviewed issue #135 recovery candidate at immutable
 `Young-Consultations/.github@e27b8a541afbd27b4be5606a19ffa43637ad312a`.
-The current published source/control-plane release is
-`ai-sdlc-v3.0.3`. Its enabled consulting target registry entry selects
-published immutable `codex-adapter-v3.0.3` at
-`f11852c7f563df16ea4afa9ab75bf766242e7327`. The proposed
-`codex-adapter-v3.1.0` is a separate **inactive prepublication candidate**
-self-pinning future `ai-sdlc-v3.1.0`; it does not change that registry entry. The earlier published 2.4.5
+The current published and attested control-plane release is
+`ai-sdlc-v3.1.0` at commit
+`e9d11fc99fee73d247c93699f058ed64786bd4c0`; the enabled
+consulting adapter is the reviewed immutable `codex-adapter-v3.1.0` at
+`4f15841efcba4883770b5e32c0582f733d73eb91`.
+The deployed source migration and 3.1.0 no-cost readiness gates passed,
+but issue #93's separate content-base safety defect remains open. The earlier published 2.4.5
 composition remains initial-live-path evidence: REAL issue #154 produced one
 managed draft PR with validation/tests and receiver/source projection
 successful. REAL redelivery issue #156 later exposed the result-writer identity
@@ -23,9 +24,10 @@ repaired cross-release admission reuse. The current published 3.x path uses the
 dedicated GitHub App `ai-sdlc-result-writer` (App ID `5100679`), installed
 only on `portfolio-tasks`, to mint a repository-bounded short-lived
 installation token and run the organization-owned result credential capability
-preflight before Codex. The new 3.1.0 candidate conformance report is
-pre-publication evidence only and must not be mistaken for a published release
-or post-publication REAL acceptance. Published 2.4.4
+preflight before Codex. The 3.1.0 adapter conformance report remains immutable
+prepublication *compatibility* evidence; the release and runtime preflights
+are published, but no newly authorized 3.1.0 REAL content-base
+acceptance has occurred. Published 2.4.4
 remains immutable previous-generation evidence, but REAL #151 proved it is not
 an execution-safe rollback for cost-bearing implementation because its
 publication transport can lose successful Codex work. Any rollback that may
@@ -116,9 +118,12 @@ The target workflow is `.github/workflows/codex-execute.yml`, exposes only
 The obsolete `execution_input` name is not an interface. The target sends its
 result separately; it does not return execution success directly to the router.
 
-The currently published source/control-plane release is `ai-sdlc-v3.0.3`,
-and the active registry selects immutable `codex-adapter-v3.0.3` at
-`f11852c7f563df16ea4afa9ab75bf766242e7327`.
+The currently published control-plane release is `ai-sdlc-v3.1.0`,
+and its enabled target registry selects immutable
+`codex-adapter-v3.1.0` at
+`4f15841efcba4883770b5e32c0582f733d73eb91`.
+The historical 3.0.3 release and its adapter are immutable predecessor
+evidence, not the active selection.
 The earlier 3.0.2 deployed Runtime Preflight 36640642872 and immutable
 REAL preflight 36640734704 passed before its source-consumer adoption.
 Those historical checks do not establish compatibility with 3.1.0.
@@ -128,20 +133,20 @@ original trusted 3.0.1 admission. That exposed DEF-0086: the 3.0.2 router
 could not reuse the predecessor admission on an unchanged authorized retry.
 Published 3.0.3 subsequently repaired that boundary.
 
-The **proposed, inactive** `codex-adapter-v3.1.0` target candidate for
-issue #111 uses only the versioned organization receiver. It shall invoke
+The released `codex-adapter-v3.1.0` target for issue #111
+uses only the versioned organization receiver. It invokes
 `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0`
 with inputs `execution_result` and `source_issue` and the
 `RESULT_WRITER_PRIVATE_KEY` secret, supplied from target secret
 `AI_SDLC_RESULT_WRITER_PRIVATE_KEY`. The matching receiver shall mint a
 fresh short-lived installation token from GitHub App
 `ai-sdlc-result-writer`, not consume a long-lived `CODEX_RESULT_TOKEN`.
-The candidate additionally binds the admitted execution input to the
-3.1.0 terminal-receipt preflight and fails closed without its safety proof.
-These 3.1.0 self-pins are only prepublication evidence; the live registry
-retains immutable 3.0.3 until the reviewed adapter tag, control-plane
-release, verified compatibility evidence, source repin, deployed preflights,
-and separately governed REAL acceptance are complete. Ordinary conformance checks
+The released target additionally binds the admitted execution input
+to the 3.1.0 terminal-receipt preflight and rejects an absent safety
+classification. Immutable release-tag publication, compatible registry
+selection, source migration, deployed Runtime Preflight, deterministic
+SIM and no-cost REAL-readiness have completed; **a new cost-bearing REAL
+task and issue #93 current content-base acceptance have not**. Ordinary conformance checks
 remain zero-effect compatibility evidence and do not replace live acceptance
 evidence. Published 2.4.4 remains immutable previous-generation
 evidence but is not an execution-safe rollback for cost-bearing implementation
@@ -200,8 +205,8 @@ dedicated no-op repository-dispatch capability. Any failure stops the delivery
 before cost-bearing execution. The installation token shall not be supplied to
 the Codex adapter.
 
-**Proposed terminal-receipt safety gate for issue #111 (not active under the
-published v3.0.3 release):** A compatible new immutable control-plane preflight
+**Published terminal-receipt safety gate for issue #111 in 3.1.0:**
+The immutable control-plane preflight
 shall receive the *exact admitted execution input* and query the authenticated,
 trusted-author source journal before any cost-bearing execution. A trusted
 terminal result that is not a managed-draft effect shall prevent further Codex
@@ -215,17 +220,11 @@ reconciliation; if its matching
 branch and open draft are missing or inconsistent, reject before Codex. The
 target shall consume an explicit safe preflight classification and reject an
 absent, unsupported, or legacy `not-checked` classification before remote
-effects. The repository may stage this **inactive** adapter candidate
-with explicit `ai-sdlc-v3.1.0` self-pins before that control-plane tag exists
-**only** to complete target-first prepublication evidence under the organization
-release procedure. A staging merge requires fresh exact-head CI, the complete
-no-real-effect conformance oracle, a completed Copilot review, resolved comments,
-and no conflicts. Staging shall not change the live registry's immutable
-`codex-adapter-v3.0.3` binding, authorize dispatch from `main`, repin any
-published release, or activate execution. Later target adapter tag publication
-and control-plane publication/cutover require their separate exact-SHA,
-report-digest, compatibility, attestation, and approval gates. No new REAL
-Codex invocation is authorized merely because the staging PR is merged.
+effects. The released adapter/receiver and source consumer are version
+pinned. Publication is not proof of a current task-content base; new REAL
+work remains subject to approved issue #93 security, test and versioned
+rollout gates. No second model call is permitted for a terminally failed
+delivery.
 The preflight's App installation token remains outside the Codex adapter.
 
 Before any executor or publisher effect, the adapter shall authenticate and
