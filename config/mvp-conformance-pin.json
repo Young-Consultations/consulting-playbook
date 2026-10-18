@@ -4,7 +4,7 @@
   "compatibility_sha": "e27b8a541afbd27b4be5606a19ffa43637ad312a",
   "fixture_set": "TC-MVP-CI-001",
   "fixture_version": "2.3.0",
-  "adapter_revision": "sha256:6e6cef9fbe1111f03ff91be0a6ec92ff1c6c935e5db1dac66122154489262602",
+  "adapter_revision": "sha256:8ce4a34dae62a516fba4e546a871c692f5d296b14a022e9afff2c4d25107bbfe",
   "compatibility_files": {
     "contracts/task-contract.schema.json": "d95673363eb7f825eb64b73ddb0468c787078ce4",
     "contracts/execution-input.schema.json": "b2b16cfda619c82d73a5e78ae34566feb6b83224",
@@ -24,8 +24,8 @@
     "scripts/task_content_checkout.py": "50330a15d45a1069e5c89b8bffdbd65379ebf1b7",
     "scripts/validate_repository.py": "99b8f739284277f91f2597dba78abc4a225fbca0",
     "scripts/test_task_content_baseline.py": "37ad56ce5ed44fe6f0190fbe26f69f6a00192e69",
-    "scripts/test_codex_execute_contract.py": "aed8a54b15e62384a99bff770edc0a162d8150a5",
-    "scripts/test_task_content_checkout.py": "66bf1305d9773af3a9fe3d65a385aef052eac4dc",
+    "scripts/test_codex_execute_contract.py": "88bf9e3921272aae2f5c74fb9e5252572ba40b4f",
+    "scripts/test_task_content_checkout.py": "4f69dbb78797c800dafc28a0134ea82d24521a4d",
     ".github/workflows/mvp-conformance.yml": "043a1ade5277303df07e207987f26445eaee53ed"
   }
 }
