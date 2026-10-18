@@ -143,6 +143,40 @@ reproducible and paid execution is protected from orphaned state.
 The evidence is reviewable but cannot activate the target, create its adapter
 tag, prove live receiver/credentials, or publish the organization release.
 
+
+## ADR-013 — Trusted executor and current-content worktree separation
+
+**Status:** Approved by repository owner 2026-10-17; implementation and
+release evidence pending. **Issue:** [#93](https://github.com/Young-Consultations/consulting-playbook/issues/93).
+
+**Context:** E2E #167 ran the immutable adapter as the mutable Codex content
+base and generated stale ledger/content identifiers. A single pre-push
+default HEAD read also cannot prevent a time-of-check/time-of-use race,
+because GitHub moves the default branch independently of topic refs.
+
+**Decision:** Keep trusted executor code/policy/validators on the immutable
+registry-pinned SHA. Independently authenticate the current target
+default-branch SHA and prepare a distinct clean content worktree. Bind
+repository, delivery, task scope, executor SHA and content SHA before
+Codex. Deny untrusted worktree script/policy execution with privileged
+runner identity. Before push and after topic push/pre-PR, recheck current
+HEAD; if moved, deny new publication and quarantine independently
+owned partial effects. After draft creation, block a newly observed stale
+draft and require fresh human merge-time validation. Never auto-rebase,
+force-push, auto-merge or retry a paid model against old identity.
+
+**Alternatives:** Frozen code and content together (reject: stale content);
+latest mutable code with content (reject: trusted policy drift);
+a single head check (reject: unavoidable Git race); indefinitely disable
+cost-bearing execution (safe fallback pending validation).
+
+**Consequences:** Additional authenticated Git reads, separate sandbox,
+independent security review, branch/PR reconciliation and race fixtures.
+GitHub cannot give an atomic lock across independent refs, so no claim
+of zero temporary branches in an after-push race. A new immutable target
+release and separately governed compatibility/registry/adoption gates
+are required before any fresh REAL acceptance. Contract/v2 unchanged.
+
 ## ADR governance
 
 Each accepted change records status, date, deciders and supersession links when

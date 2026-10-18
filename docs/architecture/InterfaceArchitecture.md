@@ -41,40 +41,37 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
 - **Outbound:** the canonical result only, covering every terminal outcome with
   identities, target, timestamps, validation evidence, safe failure/reconciliation
   detail, and branch/draft metadata when applicable.
-- **Compatibility and activation:** the non-recursive target pin binds exact
-  schema/fixture blobs at recovery candidate `e27b8a5` plus this workflow,
-  adapter, and harness. The current published source/control-plane release is
-  `ai-sdlc-v3.0.3`, and its enabled consulting target registry entry selects
-  immutable published `codex-adapter-v3.0.3` at
-  `f11852c7f563df16ea4afa9ab75bf766242e7327`. The 3.0.2 release
-  remains historical immutable evidence. Published
-  `codex-adapter-v2.4.5` remains earlier initial-live-path evidence: REAL #154
-  proved that path, while REAL #156 later exposed the result-journal identity
-  defect that drove the 3.0.0 repair. REAL #159 exposed DEF-0073 at the 3.0.0
-  receiver; 3.0.2 repaired that receiver compatibility boundary and passed
-  deployed Runtime Preflight plus immutable REAL preflight before source
-  adoption. After #159 reconciliation preserved its original 3.0.1 admission,
-  DEF-0086 exposed the router's cross-release admission-reuse defect,
-  repaired by published 3.0.3. The new issue #111 terminal-receipt candidate
-  is `codex-adapter-v3.1.0`, which self-pins the future, **unpublished**
-  `ai-sdlc-v3.1.0` receiver at
-  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0`.
-  This is inactive target-first staging evidence, not an operational cutover;
-  the production registry continues to select immutable 3.0.3 until reviewed
-  target/control-plane tags, exact-SHA evidence and attestation exist.
-  Before Codex, the candidate mints a short-lived installation token from the
-  dedicated GitHub App `ai-sdlc-result-writer` (App ID `5100679`), installed
-  only on `portfolio-tasks`, and invokes the matching organization-owned
-  credential preflight. The result receiver later mints a fresh token from the
-  same App private key so a long-running Codex job cannot outlive the result
-  credential. Published 2.4.4 remains immutable previous-generation evidence
-  but is not an execution-safe rollback for cost-bearing implementation because
-  REAL #151 exposed its publication-transport defect. Current activation is
-  separate mutable router state; the target neither consumes historical
-  activation nor administers it. The immutable candidate report remains
-  pre-publication compatibility evidence and is not rewritten by later live
-  acceptance. No package or observed import is a contract.
-  The earlier immutable `codex-adapter-v2.4.6` candidate is retained as unused evidence after release-policy review classified the required receiver-secret change as MAJOR; it is not a valid active registry binding.
+- **Compatibility and activation:** The current published and attested
+  `ai-sdlc-v3.1.0` control-plane tag resolves to
+  `e9d11fc99fee73d247c93699f058ed64786bd4c0` and selects immutable
+  `codex-adapter-v3.1.0` at
+  `4f15841efcba4883770b5e32c0582f733d73eb91`. Historical 3.0.3
+  and earlier tags remain immutable predecessor evidence. The source
+  consumer is migrated and deployed preflight/SIM/no-Codex readiness passed,
+  but issue #93's current-content implementation remains unaccepted.
+  The target does not control organization activation or modify the
+  versioned contract or receiver; no old tag is an approved unsafe rollback.
+- **Approved dual-baseline content interface (issue #93 / ADR-013):** Before
+  a paid model call, the executor SHALL independently attest release-pinned
+  code and exact target default-branch content SHA, bind identity/scope/base
+  to the delivery, and use a separated untrusted content worktree for Codex.
+  Trusted policy and validators never load executable modules/hooks from the
+  mutable worktree outside a reviewed credential-free sandbox. Reject
+  unavailable, malformed, dirty or inconsistent base evidence before Codex.
+  Recheck default HEAD before branch push, after push/before PR creation and
+  after draft creation. Reject early movement, quarantine an owned branch
+  on post-push movement, and mark later stale drafts blocked for human review.
+  GitHub unrelated refs cannot be atomically frozen; retain exact partial
+  effect provenance, do not claim zero transient writes, and never auto-merge
+  or spend more model calls to reconcile drift.
+- **Exact published receiver self-pin:** The 3.1.0 target workflow invokes
+  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0`
+  as its immutable versioned result-consumer interface; this approved design
+  does not change its signature, authentication, or ownership.
+- **Terminal receipt boundary:** The 3.1.0 trusted source journal blocks
+  a replayed terminal failure and permits prior managed drafts only through
+  independently verified ownership. The separate content-base guard cannot
+  override this fail-closed authorization.
 - **Validation:** authenticate the dispatch caller and validate the exact
   immutable input schema, target, task type, executor/mode, branch policy, and
   transport concurrency before minting or exercising the result-writer
@@ -83,12 +80,12 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   capability, no-op repository-dispatch capability, publication permission
   metadata, and a non-mutating authenticated Git push transport probe before
   cost-bearing Codex execution.
-- **Proposed terminal-delivery gate (#111):** The trusted receiver journal
-  is a pre-execution safety boundary, separate from target branch ownership.
-  A prior terminal failure blocks reexecution for the same delivery, while a
-  prior managed-draft receipt permits only proof-backed reuse of that draft.
-  Missing/invalid journal classification stops the adapter before provider
-  effects. This design is not active under the published v3.0.3 pins.
+- **Published terminal-delivery gate (#111):** The 3.1.0 trusted receiver
+  journal is a pre-execution safety boundary separate from target branch
+  ownership. A trusted terminal failure blocks duplicate Codex execution,
+  while a managed-draft receipt permits only independently verified owned
+  draft reuse. Missing or invalid journal classification fails closed.
+  This existing safeguard does not prove current task-content freshness.
 - **Retries/idempotency:** router retries retain logical delivery identity;
   concurrency is optimization only. Preflight observes branch and pull-request
   state independently before Codex; disagreement is ambiguous and fail-closed.
