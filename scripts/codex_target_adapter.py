@@ -717,9 +717,13 @@ def main() -> int:
         for value in _take_optional_secret("TRUSTED_CALLERS").split(",")
         if value.strip()
     }
-    outcome = run_adapter(raw, os.environ.get("CONCURRENCY_GROUP", ""), os.environ.get("CALLER_LOGIN", ""),
-                          trusted_callers, GitHubEffects(),
-                          prior_result_effect=os.environ.get("PRIOR_RESULT_EFFECT", "not-checked"))
+    effects = GitHubEffects()
+    try:
+        outcome = run_adapter(raw, os.environ.get("CONCURRENCY_GROUP", ""), os.environ.get("CALLER_LOGIN", ""),
+                              trusted_callers, effects,
+                              prior_result_effect=os.environ.get("PRIOR_RESULT_EFFECT", "not-checked"))
+    finally:
+        effects.close()
     output = json.dumps(outcome.result, sort_keys=True, separators=(",", ":"))
     path = os.environ.get("GITHUB_OUTPUT")
     if path:
