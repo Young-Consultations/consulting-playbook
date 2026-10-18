@@ -750,7 +750,7 @@ def test_publication_transport_auth_and_failure_classification() -> None:
 
         with (
             patch("codex_target_adapter.subprocess.run", side_effect=fake_publish_run),
-            patch("codex_target_adapter.subprocess.check_output", return_value="f" * 40 + "\\n"),
+            patch("codex_target_adapter.subprocess.check_output", return_value="f" * 40 + "\n"),
             patch.object(effects, "_check_content_base_head"),
         ):
             try:
