@@ -64,6 +64,10 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   GitHub unrelated refs cannot be atomically frozen; retain exact partial
   effect provenance, do not claim zero transient writes, and never auto-merge
   or spend more model calls to reconcile drift.
+- **Exact published receiver self-pin:** The 3.1.0 target workflow invokes
+  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0`
+  as its immutable versioned result-consumer interface; this approved design
+  does not change its signature, authentication, or ownership.
 - **Terminal receipt boundary:** The 3.1.0 trusted source journal blocks
   a replayed terminal failure and permits prior managed drafts only through
   independently verified ownership. The separate content-base guard cannot
