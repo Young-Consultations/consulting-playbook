@@ -246,3 +246,30 @@ view and PR edit. Each operation consumes decreasing remaining time. An exhauste
 deadline prevents further commands, returns ambiguous rejection with immutable
 partial-effect identity, and explicitly marks blocking as unconfirmed for human
 reconciliation instead of restarting an execution budget to attempt cleanup.
+
+Candidate-facing tests must exercise candidate content. The pinned orchestrator
+runs the candidate's fixed `scripts/test_codex_execute_contract.py` entrypoint in
+a disposable snapshot under bubblewrap. The sandbox clears environment, isolates
+PID/network/IPC/user namespaces, drops capabilities, and mounts only read-only
+OS/Python runtime directories and explicit dependency package directories, plus
+a writable snapshot, temporary home and private /proc and /dev. It does not expose
+host home, runner temporary files, original checkouts or parent-process /proc.
+Capture/discard test output rather than forwarding untrusted workflow commands.
+Copying and test execution share the remaining validation deadline. Sandbox or
+runtime dependency readiness is checked before model authentication. Candidate
+code/test changes still require review; a passing candidate suite is not proof
+of test completeness or permission to bypass other security gates.
+
+Production and conformance CI install bubblewrap. CI prepares the same userns
+prerequisites as production and requires real integration tests for broken and
+deleted candidate code/tests, blocked host credentials/network/process access,
+snapshot-only writes and timeout. Local namespace restrictions may skip those
+integration cases, but cannot stand in for mandatory CI evidence.
+
+A Git push timeout may occur after remote acceptance. Reserve 20% of the current
+publication budget for read-only exact-ref reconciliation. If time remains, read
+the topic ref and compare its commit SHA with the captured candidate. Exact,
+different and unverifiable results all retain partial-effect identities and
+return ambiguous rejection requiring human reconciliation. If the deadline is
+exhausted, issue no further remote command and preserve unverified evidence.
+Never retry the push, automatically create a PR, or invoke a second model call.

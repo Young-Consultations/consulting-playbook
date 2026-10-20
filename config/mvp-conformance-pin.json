@@ -4,7 +4,7 @@
   "compatibility_sha": "e27b8a541afbd27b4be5606a19ffa43637ad312a",
   "fixture_set": "TC-MVP-CI-001",
   "fixture_version": "2.3.0",
-  "adapter_revision": "sha256:0777724a26a6721ab262e9846117b12a0fd786b0bf7be91a123570942b109876",
+  "adapter_revision": "sha256:45226ee6d57c9a602ab555ba34ccf0ca6903539ec10c69fead4ca5d43a845b9d",
   "compatibility_files": {
     "contracts/task-contract.schema.json": "d95673363eb7f825eb64b73ddb0468c787078ce4",
     "contracts/execution-input.schema.json": "b2b16cfda619c82d73a5e78ae34566feb6b83224",
@@ -14,8 +14,8 @@
     "tests/fixtures/mvp-v2/expected-results.json": "b45c6921f029220b2f3138d5cd2d9443499a3171"
   },
   "target_files": {
-    ".github/workflows/codex-execute.yml": "ea10e223aac13617161c2375e8927b4ddf932d94",
-    "scripts/codex_target_adapter.py": "bddfda30b4a7b8289105cea0d67bc094e1afb51b",
+    ".github/workflows/codex-execute.yml": "ead48624ba3b9189a1c709bf62782f29903da0ce",
+    "scripts/codex_target_adapter.py": "f177df70da6d5f4a56bc64e8001c2da02651752c",
     "scripts/run_tc_mvp_ci_001.py": "41dd4eb16216a345f828df17c064b8b6017baf8f",
     "scripts/codex_auth_handoff.py": "c66ecf1c01a8cd04178ebe0b865069fc64d2d30c",
     "scripts/run_tc_mvp_ci_001_receiver_303.py": "f0a3441e7432215ec229485e80b912df665d0167",
@@ -24,8 +24,10 @@
     "scripts/task_content_checkout.py": "76da56abd05492f6ab8f02a01798d8f4c79d3a57",
     "scripts/validate_repository.py": "99b8f739284277f91f2597dba78abc4a225fbca0",
     "scripts/test_task_content_baseline.py": "37ad56ce5ed44fe6f0190fbe26f69f6a00192e69",
-    "scripts/test_codex_execute_contract.py": "04969c25918ce3adc3793352b856c541724a18e6",
-    "scripts/test_task_content_checkout.py": "bf14cba565eca5494175b2af63eef97db8813815",
-    ".github/workflows/mvp-conformance.yml": "043a1ade5277303df07e207987f26445eaee53ed"
+    "scripts/test_codex_execute_contract.py": "2e845694c953c84b71740c5e08863ffef68ec089",
+    "scripts/test_task_content_checkout.py": "6b5df8e5701ef5cab6ea415317c01148c2c0a0f4",
+    ".github/workflows/mvp-conformance.yml": "ee0c0b8380ec912b265cac07d18f399723840d7c",
+    "scripts/candidate_test_sandbox.py": "875815beee0b9e5a8dd4f57e33b57f73fe5c330f",
+    "scripts/test_candidate_test_sandbox.py": "28c7c6de9d0e9739fba40e75881da2025b5ff8aa"
   }
 }

@@ -463,3 +463,19 @@ Final HEAD attestation and PR view/edit blocking share one monotonic deadline;
 expiry stops further remote commands and reports blocking as unconfirmed with
 partial identity. Workflow log retention and the existing authenticated source
 receipt are the evidence stores; no new schema field or registry policy is added.
+
+PR #96 candidate testing (unreleased): policy validation stays pinned; candidate
+application tests run from a disposable candidate snapshot inside bubblewrap with
+separate PID/network namespaces, cleared environment and no host home/original
+checkout mounts. Only read-only OS/Python runtime directories and dependency
+packages are exposed; snapshot and temporary home are writable. Missing sandbox,
+missing test entrypoint, failed tests or deadline expiry cannot report passed.
+Sandbox plus Python dependency readiness is checked before model authentication.
+CI requires the real namespace isolation, candidate failure/deletion and timeout
+regressions; local hosts that prohibit namespaces cannot supply that evidence.
+
+A timed-out push is a possible remote effect. The push gets 80% of the remaining
+publication budget, reserving time for an exact remote topic-ref observation under
+the same deadline. Exact-candidate, different-object and unverified observations
+all return ambiguous rejection with branch/candidate/digest/baseline evidence;
+no automatic second push, PR creation or model call follows the timeout.

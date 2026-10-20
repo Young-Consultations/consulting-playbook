@@ -22,6 +22,7 @@ from typing import Any, Protocol
 
 from jsonschema import Draft202012Validator, FormatChecker
 from codex_auth_handoff import handoff_startup_auth, isolated_codex_home, submit_stdin_prompt
+from candidate_test_sandbox import sandbox_ready, run_candidate_tests
 from task_content_baseline import BaselineError, PublicationDisposition, PublicationPhase, verify_publication_head
 from task_content_checkout import TrustedContentCheckout, attest_default_branch, checkout_attested_base, remaining_time
 
@@ -513,6 +514,9 @@ esac
                 "failed",
             )
 
+        if not sandbox_ready(budget()):
+            raise AdapterError("dependency", "Candidate test sandbox is unavailable", "failed")
+
         # Consume the secret before any child process is created. In
         # particular, a model-launched command must not be able to recover it
         # from this adapter's live environment via /proc.
@@ -601,15 +605,14 @@ esac
         ))
 
     def validate_candidate(self, timeout_seconds: float) -> tuple[bool, str]:
-        # The trusted validator and contract tests are *code from the pinned
-        # executor*, never from files changed by Codex in task content.
+        # Policy validation remains pinned. Candidate-owned tests run only
+        # inside the credential-free namespace sandbox on a disposable snapshot.
         env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
         deadline = time.monotonic() + timeout_seconds
         candidate = self._content_checkout.root if self._content_checkout else ROOT
         commands = [
             (["python", str(ROOT / "scripts/validate_repository.py"), "--worktree", str(candidate)],
              "validation", ROOT),
-            (["python", str(ROOT / "scripts/test_codex_execute_contract.py")], "tests", ROOT),
             (["git", "diff", "--check"], "validation", candidate),
         ]
         for command, phase, cwd in commands:
@@ -618,6 +621,8 @@ esac
                 raise subprocess.TimeoutExpired(command, timeout_seconds)
             if subprocess.run(command, cwd=cwd, env=env, timeout=remaining).returncode:
                 return False, phase
+        if not run_candidate_tests(candidate, remaining_time(deadline)):
+            return False, "tests"
         return True, "passed"
 
     def _check_content_base_head(self, phase: PublicationPhase, branch: str,
@@ -711,6 +716,26 @@ esac
             "candidate_sha": self._candidate_sha,
         }}, sort_keys=True), flush=True)
 
+    def _reconcile_timed_out_push(self, branch: str, delivery_id: str, deadline: float) -> AdapterError:
+        observation = "unverified"
+        try:
+            raw = self._gh("api", f"repos/{TARGET}/git/ref/heads/{branch}",
+                           timeout_seconds=remaining_time(deadline))
+            remaining_time(deadline)
+            remote = json.loads(raw)
+            if (remote.get("ref") == "refs/heads/" + branch
+                    and remote.get("object", {}).get("type") == "commit"):
+                observation = "exact-candidate" if remote["object"].get("sha") == self._candidate_sha else "different-object"
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError,
+                ValueError, TypeError, KeyError, AttributeError):
+            pass
+        self._log_publication_evidence("push-timeout-" + observation, branch, delivery_id)
+        return AdapterError(
+            "publication", self._publication_failure_message(
+                "Push timed out; remote=" + observation + "; human reconciliation required"),
+            "ambiguous-rejected", branch=branch,
+        )
+
     def publish(self, branch: str, delivery_id: str, digest: str, timeout_seconds: float) -> str:
         self._publication_digest = digest
         workspace = self._working_content_root()
@@ -757,8 +782,10 @@ esac
                 env=push_env,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
-                timeout=budget(),
+                timeout=budget() * 0.8,
             )
+        except subprocess.TimeoutExpired as exc:
+            raise self._reconcile_timed_out_push(branch, delivery_id, deadline) from exc
         finally:
             try:
                 os.remove(askpass_path)

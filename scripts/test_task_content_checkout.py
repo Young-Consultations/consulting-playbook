@@ -452,6 +452,79 @@ class ContentCheckoutTests(unittest.TestCase):
             self.assertLessEqual(len(ctx.exception.safe_message), 500)
             if clock[0] == 10: self.assertIn("could not be confirmed", ctx.exception.safe_message)
 
+    def test_timed_out_push_reconciles_exact_object_and_preserves_partial_result(self):
+        from codex_target_adapter import Ownership, canonical_digest, run_adapter
+        from task_content_baseline import TaskBase
+        from test_codex_execute_contract import payload
+        actual_run = subprocess.run
+        for remote_state in ("exact", "different", "unavailable"):
+            with tempfile.TemporaryDirectory() as directory:
+                root, bare = Path(directory) / "content", Path(directory) / "remote.git"
+                root.mkdir()
+                def git(*args, cwd=root):
+                    return actual_run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+                git("init", "--quiet");git("config", "user.name", "test");git("config", "user.email", "test@example.com")
+                (root / "content.md").write_text("baseline")
+                git("add", "content.md");git("commit", "-qm", "baseline")
+                base_sha = git("rev-parse", "HEAD")
+                git("init", "--quiet", "--bare", str(bare))
+                base = TaskBase(TARGET, "main", base_sha, EXECUTOR, "delivery-42")
+                effects = GitHubEffects()
+                effects._content_checkout = type("Prepared", (), {"base": base, "root": root})()
+                effects._content_read_token = "read-token"
+                pushes, requests = [], []
+                def run(command, **kwargs):
+                    if command[:2] == ["git", "push"]:
+                        pushes.append(command[-1])
+                        actual_run([*command[:2], str(bare), command[-1]], **kwargs)
+                        if remote_state == "different":
+                            git("update-ref", "refs/heads/codex/delivery-42", base_sha, cwd=bare)
+                        raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+                    return actual_run(command, **kwargs)
+                def gh(*args, **kwargs):
+                    requests.append(args)
+                    self.assertEqual(args, ("api", f"repos/{TARGET}/git/ref/heads/codex/delivery-42"))
+                    self.assertGreater(kwargs["timeout_seconds"], 0)
+                    if remote_state == "unavailable": raise subprocess.TimeoutExpired("gh", kwargs["timeout_seconds"])
+                    return json.dumps({"ref": "refs/heads/codex/delivery-42", "object": {
+                        "type": "commit", "sha": git("rev-parse", "refs/heads/codex/delivery-42", cwd=bare)}})
+                def model(*args): (root / "content.md").write_text("candidate")
+                value = payload()
+                with (patch.object(effects, "discover", return_value=Ownership(False, [])),
+                      patch.object(effects, "prepare_content"), patch.object(effects, "codex", side_effect=model) as model_call,
+                      patch.object(effects, "has_candidate_changes", return_value=True),
+                      patch.object(effects, "validate_candidate", return_value=(True, "passed")),
+                      patch.object(effects, "_publication_git_environment", return_value=({}, "/nonexistent/helper")),
+                      patch.object(effects, "_gh", side_effect=gh),
+                      patch("codex_target_adapter.attest_default_branch", return_value=base),
+                      patch("codex_target_adapter.subprocess.run", side_effect=run), redirect_stdout(io.StringIO())):
+                    result = run_adapter(json.dumps(value), value["concurrency_group"], "trusted", {"trusted"},
+                                         effects, prior_result_effect="none").result
+                self.assertEqual(result["execution_status"], "ambiguous-rejected")
+                self.assertEqual(result["branch_name"], "codex/delivery-42")
+                self.assertIsNone(result["pull_request_url"])
+                evidence = json.loads(result["failure_message"].split("; evidence=", 1)[1])
+                self.assertEqual(evidence["candidate_sha"], pushes[0].split(":")[0])
+                self.assertEqual(evidence["payload_sha256"], canonical_digest(value))
+                expected = {"exact": "exact-candidate", "different": "different-object", "unavailable": "unverified"}[remote_state]
+                self.assertIn("remote=" + expected, result["failure_message"])
+                self.assertEqual((len(pushes), len(requests)), (1, 1))
+                model_call.assert_called_once()
+                self.assertLessEqual(len(result["failure_message"]), 500)
+
+    def test_expired_push_reconciliation_never_starts_another_api_call(self):
+        from task_content_baseline import TaskBase
+        effects = GitHubEffects()
+        effects._candidate_sha, effects._publication_digest = "d" * 40, "e" * 64
+        effects._content_checkout = type("Prepared", (), {"base": TaskBase(TARGET, "main", SHA, EXECUTOR, "delivery-42")})()
+        with (patch("time.monotonic", return_value=10), patch.object(effects, "_gh") as gh,
+              redirect_stdout(io.StringIO())):
+            result = effects._reconcile_timed_out_push("codex/delivery-42", "delivery-42", 10)
+        gh.assert_not_called()
+        self.assertIn("remote=unverified", result.safe_message)
+        self.assertIn("d" * 40, result.safe_message)
+        self.assertEqual(result.branch, "codex/delivery-42")
+
     def test_branch_moving_during_fetch_fails_closed_and_cleans_up(self):
         base = attest_default_branch(
             TARGET, "delivery-42", EXECUTOR, token="read-token",

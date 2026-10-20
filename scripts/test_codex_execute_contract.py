@@ -480,6 +480,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         ),
         patch.object(effects, "_gh", return_value="true\n") as github,
         patch("codex_target_adapter.subprocess.run", side_effect=fake_run),
+        patch("codex_target_adapter.sandbox_ready", return_value=True),
         patch("codex_target_adapter.subprocess.Popen", side_effect=FakeCodexProcess),
         patch("codex_target_adapter.submit_stdin_prompt", side_effect=fake_submit_prompt),
     ):
@@ -585,6 +586,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),
             patch.object(effects, "_gh", return_value="true\n"),
             patch("codex_target_adapter.subprocess.run", side_effect=fake_run),
+        patch("codex_target_adapter.sandbox_ready", return_value=True),
             patch("codex_target_adapter.subprocess.Popen", return_value=StoppedCodexProcess()),
             patch("codex_target_adapter.handoff_startup_auth", side_effect=failure),
         ):
@@ -687,6 +689,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             "codex_target_adapter.subprocess.run",
             side_effect=fail_login_after_transport_probe,
         ) as failed_login,
+        patch("codex_target_adapter.sandbox_ready", return_value=True),
     ):
         try:
             effects.codex("Do not execute.", 30)

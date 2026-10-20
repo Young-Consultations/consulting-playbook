@@ -78,3 +78,26 @@ consumes the deadline, and no edit when view consumes the remainder. Every outco
 preserves partial identity and immutable evidence; expiry reports blocking as
 unconfirmed. Architecture implementation guidance and AI_CONTEXT reflect these
 unreleased corrections; parent DEF-0125 and deployment/security gates stay open.
+
+## 2026-10-20 follow-up: DEF-0134 and DEF-0135
+
+Completed Codex review of 236a7a0 found that tests still exercised pinned executor
+content, and a locally timed-out push could lose partial identity despite remote
+acceptance. Both violate existing ADR-013 intent; implementation corrections and
+verification are required before advancing the draft.
+
+Candidate test execution now uses a disposable snapshot in a namespace sandbox,
+not untrusted code in the credential-bearing host process. A readiness probe
+checks namespace/runtime dependencies before model login. CI requires real
+candidate-content, deletion, host-state isolation and timeout integration tests.
+The local host prohibits network namespace setup, so local skips are explicitly
+insufficient for that evidence. Trusted policy checks remain pinned and other
+Git metadata/ownership security blockers are unchanged.
+
+Push timeout reserves budget for one read-only exact-ref reconciliation. Local
+bare-Git tests accept the push and then simulate lost response/timeout, covering
+exact remote candidate, a changed ref and unavailable read, with one push and one
+model invocation. All outcomes preserve canonical branch/candidate/digest evidence
+and require human reconciliation. An exhausted deadline makes no further API call.
+Defect Ledger, architecture guidance and AI_CONTEXT reflect the unreleased behavior;
+no tag, registry, credential binding, REAL task or source #167 replay is changed.
