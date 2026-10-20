@@ -4,7 +4,7 @@
   "compatibility_sha": "e27b8a541afbd27b4be5606a19ffa43637ad312a",
   "fixture_set": "TC-MVP-CI-001",
   "fixture_version": "2.3.0",
-  "adapter_revision": "sha256:ce65e40ceec5705b112b31de54a35dbaf615acd67d3de9b23b8387edc8da7302",
+  "adapter_revision": "sha256:196621d54eb5852b5bcdffbcf467042b54c2cda993da133614e5bafb6a7cd471",
   "compatibility_files": {
     "contracts/task-contract.schema.json": "d95673363eb7f825eb64b73ddb0468c787078ce4",
     "contracts/execution-input.schema.json": "b2b16cfda619c82d73a5e78ae34566feb6b83224",
@@ -15,17 +15,17 @@
   },
   "target_files": {
     ".github/workflows/codex-execute.yml": "ea10e223aac13617161c2375e8927b4ddf932d94",
-    "scripts/codex_target_adapter.py": "6ed440e6b5db2a08ef032a5f3217a3ef2e246a55",
-    "scripts/run_tc_mvp_ci_001.py": "3b0494343b2ae5cf8dec74af221b5092db6a8178",
+    "scripts/codex_target_adapter.py": "6aff680f0fd900c1dba6ce862dd08da09f50a89f",
+    "scripts/run_tc_mvp_ci_001.py": "41dd4eb16216a345f828df17c064b8b6017baf8f",
     "scripts/codex_auth_handoff.py": "c66ecf1c01a8cd04178ebe0b865069fc64d2d30c",
     "scripts/run_tc_mvp_ci_001_receiver_303.py": "f0a3441e7432215ec229485e80b912df665d0167",
     "scripts/run_tc_mvp_ci_001_receiver_310.py": "430bb8ed8d8fabe54b9482d00a2e6f4654763cb8",
     "scripts/task_content_baseline.py": "f854b5769b4921aca4dfc8055e03af7dad2ee8e2",
-    "scripts/task_content_checkout.py": "50330a15d45a1069e5c89b8bffdbd65379ebf1b7",
+    "scripts/task_content_checkout.py": "76da56abd05492f6ab8f02a01798d8f4c79d3a57",
     "scripts/validate_repository.py": "99b8f739284277f91f2597dba78abc4a225fbca0",
     "scripts/test_task_content_baseline.py": "37ad56ce5ed44fe6f0190fbe26f69f6a00192e69",
-    "scripts/test_codex_execute_contract.py": "1d02d41982e36644cdbd408153d2f451926ef773",
-    "scripts/test_task_content_checkout.py": "781644975a370063a01b936a0104b44dedff5351",
+    "scripts/test_codex_execute_contract.py": "2c3473630b272764b46481dc18e77bf0aa82c666",
+    "scripts/test_task_content_checkout.py": "14b28b1c375e0395cea4a92f3a2845d1c80ffb72",
     ".github/workflows/mvp-conformance.yml": "043a1ade5277303df07e207987f26445eaee53ed"
   }
 }

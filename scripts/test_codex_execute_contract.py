@@ -102,6 +102,9 @@ class FakeEffects:
     def has_candidate_changes(self, *_: Any) -> bool:
         return self.candidate_changes
 
+    def verify_recovered_publication(self, branch: str, pr: str, timeout_seconds: float) -> None:
+        pass  # No remote effects in this deterministic conformance double.
+
     def publish(self, *_: Any) -> str:
         self.publish_calls += 1
         if self.publish_failure:

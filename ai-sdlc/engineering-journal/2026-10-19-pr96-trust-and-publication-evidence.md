@@ -38,3 +38,20 @@ cases reject short refs, branch refs (including a branch with the tag's name),
 wrong tags, wrong repository and mismatched SHAs. Existing requirements and ADR-013
 already require the intended identity boundary; implementation guidance and
 AI_CONTEXT now clarify the two representations. No deployed release is changed.
+
+## Follow-up review: DEF-0130 and DEF-0131
+
+Codex review of f0976fe identified two integration gaps: lost PR-create responses
+could lead recovery to bypass final HEAD reconciliation; baseline suboperations
+could each restart the admitted timeout. Both are implementation defects under
+existing requirements, requiring no new architectural decision.
+
+The actual publisher/recovery regression creates a remote draft then loses all
+three CLI responses, verifies one model call and one topic push, and checks the
+final HEAD after discovery. Unchanged HEAD permits reuse; moved/unreadable HEAD
+persists blocking evidence and returns ambiguous rejection with partial identity.
+A clock-controlled integration test proves executor observation, two API reads
+and successive Git commands consume budgets 10, 8, 5, 2, 1 and stop at expiry,
+cleaning up the worktree. Another test stops before the second API read when the
+first consumes the deadline. Defect Ledger, architecture guidance and AI_CONTEXT
+record the unreleased implementation; independent review/acceptance remain open.

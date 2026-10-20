@@ -11,10 +11,18 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Callable
 
 from task_content_baseline import BaselineError, TaskBase, require_exact_content_checkout
+
+
+def remaining_time(deadline: float) -> float:
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise subprocess.TimeoutExpired("content-baseline", 0)
+    return remaining
 
 
 def _git_environment() -> dict[str, str]:
@@ -76,12 +84,14 @@ def attest_default_branch(
     repository: str, delivery_id: str, executor_sha: str, *,
     token: str, timeout_seconds: float,
     read: Callable[..., dict[str, Any]] = _read_github_json,
+    deadline: float | None = None,
 ) -> TaskBase:
     """Resolve an exact branch+commit identity without relying on mutable refs."""
     if not token or timeout_seconds <= 0:
         raise BaselineError("authenticated read-only content provenance is unavailable")
+    deadline = min(time.monotonic() + timeout_seconds, deadline) if deadline is not None else time.monotonic() + timeout_seconds
     repository_info = read(
-        f"repos/{repository}", token=token, timeout_seconds=timeout_seconds
+        f"repos/{repository}", token=token, timeout_seconds=remaining_time(deadline)
     )
     if repository_info.get("full_name") != repository:
         raise BaselineError("repository metadata does not bind to target")
@@ -90,8 +100,9 @@ def attest_default_branch(
         raise BaselineError("unsafe default-branch metadata")
     branch_info = read(
         f"repos/{repository}/branches/{branch_name}",
-        token=token, timeout_seconds=timeout_seconds,
+        token=token, timeout_seconds=remaining_time(deadline),
     )
+    remaining_time(deadline)
     return TaskBase.from_github(
         repository=repository, delivery_id=delivery_id,
         executor_sha=executor_sha, repo_response=repository_info,
@@ -102,6 +113,7 @@ def attest_default_branch(
 def checkout_attested_base(
     base: TaskBase, *, token: str, timeout_seconds: float,
     run: Callable[..., subprocess.CompletedProcess[Any]] = subprocess.run,
+    deadline: float | None = None,
 ) -> TrustedContentCheckout:
     """Fetch the authorized default branch and require exact SHA equality.
 
@@ -110,6 +122,7 @@ def checkout_attested_base(
     """
     if not token or timeout_seconds <= 0:
         raise BaselineError("content read token is unavailable")
+    deadline = min(time.monotonic() + timeout_seconds, deadline) if deadline is not None else time.monotonic() + timeout_seconds
     temp: tempfile.TemporaryDirectory[str] = tempfile.TemporaryDirectory(
         prefix="ai-sdlc-task-content-"
     )
@@ -125,8 +138,9 @@ def checkout_attested_base(
                 GIT_USERNAME="x-access-token", GIT_PASSWORD=token,
             )
         p = run(list(command), cwd=checkout.root, env=command_env,
-                text=True, capture_output=True, timeout=timeout_seconds,
+                text=True, capture_output=True, timeout=remaining_time(deadline),
                 check=False)
+        remaining_time(deadline)
         if p.returncode != 0:
             raise BaselineError("authenticated exact content checkout failed")
         return p.stdout.strip()

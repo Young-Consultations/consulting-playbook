@@ -24,7 +24,7 @@ TARGET = "Young-Consultations/consulting-playbook"
 
 def read(endpoint: str, **kwargs: object) -> dict:
     assert kwargs["token"] == "read-token"
-    assert kwargs["timeout_seconds"] == 10
+    assert 0 < kwargs["timeout_seconds"] <= 10
     if endpoint == f"repos/{TARGET}":
         return {"full_name": TARGET, "default_branch": "main"}
     if endpoint == f"repos/{TARGET}/branches/main":
@@ -235,6 +235,110 @@ class ContentCheckoutTests(unittest.TestCase):
                     effects._block_stale_draft("https://github.com/" + TARGET + "/pull/7", "codex/delivery-42", None, 1)
                 self.assertEqual(ctx.exception.branch, "codex/delivery-42")
                 self.assertTrue(ctx.exception.pr.endswith("/pull/7"))
+
+    def test_ambiguous_remote_create_is_rechecked_before_success(self):
+        from codex_target_adapter import Ownership, canonical_digest, run_adapter
+        from test_codex_execute_contract import payload
+        base = attest_default_branch(TARGET, "delivery-42", EXECUTOR, token="read-token",
+                                     timeout_seconds=10, read=read)
+        value = payload()
+        digest = canonical_digest(value)
+        for observation in (SHA, OTHER, None):
+            effects = GitHubEffects()
+            effects._content_checkout = type("Prepared", (), {"base": base, "root": Path("/unused")})()
+            effects._content_read_token = "read-token"
+            remote = {"body": "", "creates": 0, "pushes": 0, "edits": 0}
+            def gh(*args, **kwargs):
+                if args[:2] == ("pr", "create"):
+                    remote["body"] = args[args.index("--body") + 1]
+                    remote["creates"] += 1
+                    raise subprocess.CalledProcessError(1, "gh")  # Remote success, lost response.
+                if args[:2] == ("pr", "view"):
+                    return json.dumps({"body": remote["body"], "headRefName": "codex/delivery-42",
+                                       "isDraft": True, "state": "OPEN"})
+                if args[:2] == ("pr", "edit"):
+                    remote["body"] = args[args.index("--body") + 1]
+                    remote["edits"] += 1
+                    return ""
+                raise AssertionError(args)
+            def run(command, **kwargs):
+                if command[1:3] == ["diff", "--cached"]:
+                    return subprocess.CompletedProcess(command, 1)
+                if command[1] == "push": remote["pushes"] += 1
+                return subprocess.CompletedProcess(command, 0)
+            recovered = Ownership(True, [{"url": "https://github.com/" + TARGET + "/pull/7",
+                                          "state": "OPEN", "draft": True, "digest": digest}])
+            observations = [type("Observed", (), {"content_sha": SHA})(),
+                            type("Observed", (), {"content_sha": SHA})(),
+                            BaselineError("unavailable") if observation is None else
+                            type("Observed", (), {"content_sha": observation})()]
+            with (patch.object(effects, "discover", side_effect=[Ownership(False, []), recovered]),
+                  patch.object(effects, "prepare_content"), patch.object(effects, "codex") as model,
+                  patch.object(effects, "has_candidate_changes", return_value=True),
+                  patch.object(effects, "validate_candidate", return_value=(True, "passed")),
+                  patch.object(effects, "_gh", side_effect=gh),
+                  patch.object(effects, "_publication_git_environment", return_value=({}, "/nonexistent/askpass")),
+                  patch("codex_target_adapter.subprocess.run", side_effect=run),
+                  patch("codex_target_adapter.subprocess.check_output", return_value=SHA),
+                  patch("codex_target_adapter.attest_default_branch", side_effect=observations) as reads):
+                result = run_adapter(json.dumps(value), value["concurrency_group"], "trusted", {"trusted"},
+                                     effects, prior_result_effect="none").result
+            self.assertEqual(reads.call_count, 3)
+            model.assert_called_once()
+            self.assertEqual((remote["pushes"], remote["creates"]), (1, 3))
+            self.assertEqual(result["execution_status"], "duplicate-reused" if observation == SHA else "ambiguous-rejected")
+            self.assertEqual(remote["edits"], int(observation != SHA))
+            self.assertTrue(result["pull_request_url"].endswith("/pull/7"))
+            if observation != SHA: self.assertIn("ai-sdlc-publication-blocked:", remote["body"])
+
+    def test_baseline_shares_one_deadline_across_git_and_both_api_reads(self):
+        import task_content_checkout as checkout_module
+        clock = [0.0]
+        budgets = []
+        roots = []
+        def observed_git(*args, **kwargs):
+            budgets.append(kwargs["timeout"])
+            clock[0] += 2
+            return EXECUTOR
+        def api(endpoint, **kwargs):
+            budgets.append(kwargs["timeout_seconds"])
+            clock[0] += 3
+            return {"full_name": TARGET, "default_branch": "main"} if endpoint == f"repos/{TARGET}" else {"name": "main", "commit": {"sha": SHA}}
+        def git(command, **kwargs):
+            budgets.append(kwargs["timeout"])
+            roots.append(kwargs["cwd"])
+            clock[0] += 1
+            return subprocess.CompletedProcess(command, 0, "", "")
+        original_checkout = checkout_module.checkout_attested_base
+        original_attest = checkout_module.attest_default_branch
+        def attest(*args, **kwargs): return original_attest(*args, **kwargs, read=api)
+        def checkout(*args, **kwargs): return original_checkout(*args, **kwargs, run=git)
+        effects = GitHubEffects()
+        with (patch("time.monotonic", side_effect=lambda: clock[0]),
+              patch.dict(os.environ, {"AUTHORIZED_EXECUTOR_SHA": EXECUTOR}),
+              patch("codex_target_adapter._take_secret", return_value="read-token"),
+              patch("codex_target_adapter.subprocess.check_output", side_effect=observed_git),
+              patch("codex_target_adapter.attest_default_branch", side_effect=attest),
+              patch("codex_target_adapter.checkout_attested_base", side_effect=checkout)):
+            with self.assertRaises(AdapterError) as ctx: effects.prepare_content("delivery-42", 10)
+        self.assertEqual(ctx.exception.category, "timeout")
+        self.assertEqual(budgets, [10, 8, 5, 2, 1])
+        self.assertEqual(clock[0], 10)
+        self.assertIsNone(effects._content_checkout)
+        self.assertTrue(roots)
+        self.assertTrue(all(not path.exists() for path in roots))
+
+    def test_api_deadline_expiry_stops_before_second_read(self):
+        clock = [0.0]
+        calls = []
+        def stalled(endpoint, **kwargs):
+            calls.append(endpoint)
+            clock[0] += kwargs["timeout_seconds"]
+            return {"full_name": TARGET, "default_branch": "main"}
+        with patch("time.monotonic", side_effect=lambda: clock[0]):
+            with self.assertRaises(subprocess.TimeoutExpired):
+                attest_default_branch(TARGET, "delivery-42", EXECUTOR, token="read-token", timeout_seconds=10, read=stalled)
+        self.assertEqual(len(calls), 1)
 
     def test_branch_moving_during_fetch_fails_closed_and_cleans_up(self):
         base = attest_default_branch(

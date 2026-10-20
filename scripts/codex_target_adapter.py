@@ -23,7 +23,7 @@ from typing import Any, Protocol
 from jsonschema import Draft202012Validator, FormatChecker
 from codex_auth_handoff import handoff_startup_auth, isolated_codex_home, submit_stdin_prompt
 from task_content_baseline import BaselineError, PublicationDisposition, PublicationPhase, verify_publication_head
-from task_content_checkout import TrustedContentCheckout, attest_default_branch, checkout_attested_base
+from task_content_checkout import TrustedContentCheckout, attest_default_branch, checkout_attested_base, remaining_time
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "Young-Consultations/consulting-playbook"
@@ -88,6 +88,7 @@ class Effects(Protocol):
     def codex(self, instructions: str, timeout_seconds: float) -> None: ...
     def has_candidate_changes(self, timeout_seconds: float) -> bool: ...
     def validate_candidate(self, timeout_seconds: float) -> tuple[bool, str]: ...
+    def verify_recovered_publication(self, branch: str, pr: str, timeout_seconds: float) -> None: ...
     def publish(self, branch: str, delivery_id: str, digest: str, timeout_seconds: float) -> str: ...
 
 
@@ -294,6 +295,8 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
                 remaining()
                 reusable = reconcile_ownership(ownership, digest)
                 if reusable is not None:
+                    effects.verify_recovered_publication(branch, reusable["url"], remaining())
+                    remaining()
                     return Outcome(_result(payload, started, "duplicate-reused", "none", None,
                                            branch=branch, pr=reusable["url"], validation="passed", tests="passed"), payload["source_issue"])
                 raise AdapterError(
@@ -347,6 +350,7 @@ class GitHubEffects:
         """Attest a clean exact-SHA workbase before any cost-bearing model call."""
         if self._content_checkout is not None:
             raise AdapterError("authorization", "Task content baseline was already prepared", "ambiguous-rejected")
+        deadline = time.monotonic() + timeout_seconds
         try:
             token = _take_secret("CONTENT_READ_TOKEN")
             self._content_read_token = token
@@ -354,18 +358,22 @@ class GitHubEffects:
             # publisher credential, and is never forwarded to the model.
             executor = subprocess.check_output(
                 ["git", "rev-parse", "--verify", "HEAD"], cwd=ROOT, text=True,
-                timeout=timeout_seconds, env={k: v for k, v in os.environ.items() if k in SAFE_ENV},
+                timeout=remaining_time(deadline), env={k: v for k, v in os.environ.items() if k in SAFE_ENV},
             ).strip()
             authorized = os.environ.get("AUTHORIZED_EXECUTOR_SHA", "")
             if not re.fullmatch(r"[0-9a-f]{40}", authorized) or executor != authorized:
                 raise BaselineError("executor differs from independently authorized release")
             base = attest_default_branch(
                 TARGET, delivery_id, executor_sha=executor, token=token,
-                timeout_seconds=timeout_seconds,
+                timeout_seconds=remaining_time(deadline), deadline=deadline,
             )
             self._content_checkout = checkout_attested_base(
-                base, token=token, timeout_seconds=timeout_seconds,
+                base, token=token, timeout_seconds=remaining_time(deadline), deadline=deadline,
             )
+            remaining_time(deadline)
+        except subprocess.TimeoutExpired as exc:
+            self.close()
+            raise AdapterError("timeout", "Admitted execution timeout expired during content baseline", "failed") from exc
         except (KeyError, BaselineError, subprocess.CalledProcessError,
                 subprocess.TimeoutExpired, OSError, ValueError) as exc:
             self.close()
@@ -641,6 +649,10 @@ esac
             }[decision.disposition]
             raise AdapterError("publication", detail, "ambiguous-rejected",
                                branch=branch, pr=pr)
+
+    def verify_recovered_publication(self, branch: str, pr: str, timeout_seconds: float) -> None:
+        """A recovered create response is not proof that the draft base is current."""
+        self._check_content_base_head(PublicationPhase.AFTER_PR, branch, timeout_seconds, pr=pr)
 
     def _block_stale_draft(self, pr: str, branch: str, observed: str | None,
                            timeout_seconds: float) -> None:

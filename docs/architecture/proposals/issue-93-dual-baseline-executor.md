@@ -219,3 +219,13 @@ uses a short adapter tag, while `github.workflow_ref` is fully qualified. Compar
 the runner identity with the exact registered repository/workflow path followed
 by `@refs/tags/` and `conformance.adapter_ref`; do not accept a branch ref or strip
 arbitrary ref prefixes. Workflow and checkout SHA checks remain mandatory.
+
+Ambiguous-create recovery must apply the same after-PR HEAD reconciliation as a
+successful create response before returning duplicate reuse. A discovered owned
+draft is evidence of a remote effect, not proof of baseline currency. Preserve
+partial branch/PR identity and block stale or unreadable observations.
+
+The baseline setup uses one monotonic admitted deadline through executor HEAD
+observation, both provenance API reads and each Git checkout command. Each receives
+only decreasing remaining time; check expiry before subsequent operations and
+after returns, clean up temporary content, and report a canonical timeout.

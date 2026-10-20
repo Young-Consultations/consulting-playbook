@@ -445,3 +445,9 @@ unverifiable HEAD observation persists blocked evidence on the owned draft;
 blocked drafts are rejected during reuse. Failure to persist blocking preserves
 partial-effect identity and requires human reconciliation. This is unreleased
 implementation evidence, not production acceptance or resolution of DEF-0125.
+
+PR #96 recovery and timeout safeguards (unreleased): an ambiguously created draft
+must pass after-PR HEAD reconciliation before duplicate reuse can succeed. Stale
+or unreadable HEAD blocks that owned draft. Baseline setup shares one monotonic
+deadline across executor observation, both provenance reads and all checkout Git
+commands; expiry stops further operations, cleans up and reports `timeout`.

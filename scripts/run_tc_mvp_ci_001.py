@@ -115,6 +115,9 @@ class TrappedTargetEffects:
         self.calls["validate"] += 1
         return self.validation
 
+    def verify_recovered_publication(self, branch: str, pr: str, timeout_seconds: float) -> None:
+        pass  # No remote effects in this deterministic conformance double.
+
     def publish(self, branch: str, delivery_id: str, digest: str, timeout_seconds: float) -> str:
         # No branch, commit, push, or PR API is reachable from this seam.
         self.calls["publish"] += 1
