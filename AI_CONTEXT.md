@@ -451,3 +451,15 @@ must pass after-PR HEAD reconciliation before duplicate reuse can succeed. Stale
 or unreadable HEAD blocks that owned draft. Baseline setup shares one monotonic
 deadline across executor observation, both provenance reads and all checkout Git
 commands; expiry stops further operations, cleans up and reports `timeout`.
+
+PR #96 publication evidence (unreleased): the publisher captures and validates the
+candidate commit SHA before push, verifies its exact parent, and pushes that SHA
+rather than a moving HEAD reference. Structured workflow log records bind push
+intent/completion to delivery, payload digest, executor/content SHAs and candidate
+SHA. Canonical partial failure messages preserve the same immutable identities
+within the existing 500-character contract. A post-push stale base requires human
+quarantine review; the adapter does not claim that remote quarantine was applied.
+Final HEAD attestation and PR view/edit blocking share one monotonic deadline;
+expiry stops further remote commands and reports blocking as unconfirmed with
+partial identity. Workflow log retention and the existing authenticated source
+receipt are the evidence stores; no new schema field or registry policy is added.

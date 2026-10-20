@@ -55,3 +55,26 @@ and successive Git commands consume budgets 10, 8, 5, 2, 1 and stop at expiry,
 cleaning up the worktree. Another test stops before the second API read when the
 first consumes the deadline. Defect Ledger, architecture guidance and AI_CONTEXT
 record the unreleased implementation; independent review/acceptance remain open.
+
+## Follow-up review: DEF-0132 and DEF-0133
+
+The review of cecd739 found two remaining implementation discrepancies: post-push
+quarantine reporting preserved a mutable ref but omitted the pushed object SHA;
+final HEAD attestation and draft blocking could each restart the timeout budget.
+Existing ADR-013 provenance and timeout requirements govern both corrections.
+
+The publisher now captures the candidate SHA, verifies that exact object's parent,
+pushes the captured SHA, and emits structured intent/completion workflow records.
+Canonical partial failure messages bind candidate SHA and payload digest to the
+executor/content SHAs, alongside delivery and branch in existing result fields.
+No contract fields were added. A local bare-Git integration test deletes the topic
+ref immediately after push and proves the immutable object and digest remain in
+canonical evidence and workflow log records. Quarantine wording now describes the
+required human review rather than claiming a remote quarantine effect.
+
+A single monotonic deadline now covers final HEAD attestation and both PR blocking
+commands. Clock-controlled tests prove budgets 10/7/5, no blocking call when HEAD
+consumes the deadline, and no edit when view consumes the remainder. Every outcome
+preserves partial identity and immutable evidence; expiry reports blocking as
+unconfirmed. Architecture implementation guidance and AI_CONTEXT reflect these
+unreleased corrections; parent DEF-0125 and deployment/security gates stay open.

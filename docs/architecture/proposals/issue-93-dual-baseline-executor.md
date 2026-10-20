@@ -229,3 +229,20 @@ The baseline setup uses one monotonic admitted deadline through executor HEAD
 observation, both provenance API reads and each Git checkout command. Each receives
 only decreasing remaining time; check expiry before subsequent operations and
 after returns, clean up temporary content, and report a canonical timeout.
+
+Publication object identity: capture a validated exact candidate SHA before push,
+verify its parent against the attested content base, and push that exact object.
+Emit structured workflow log evidence before/after push binding delivery, payload
+digest, branch, executor/content SHAs and candidate SHA. Preserve immutable SHA
+and digest evidence in canonical partial failure messages (existing contract,
+maximum 500 characters) so a moved/deleted topic ref cannot erase which object
+was published. Existing authenticated result delivery persists that canonical
+failure on the source receipt; logs remain subject to normal workflow retention.
+A stale post-push topic requires human quarantine review; do not claim that a
+remote quarantine was executed when only a fail-closed disposition was returned.
+
+One deadline spans final HEAD attestation and stale-draft blocking, including PR
+view and PR edit. Each operation consumes decreasing remaining time. An exhausted
+deadline prevents further commands, returns ambiguous rejection with immutable
+partial-effect identity, and explicitly marks blocking as unconfirmed for human
+reconciliation instead of restarting an execution budget to attempt cleanup.

@@ -734,7 +734,7 @@ def test_publication_transport_auth_and_failure_classification() -> None:
         # Synthetic already-attested checkout for direct publication tests.
         effects._content_checkout = type(
             "Prepared", (), {"root": ROOT, "base": type(
-                "Base", (), {"content_sha": "f" * 40})()}
+                "Base", (), {"content_sha": "f" * 40, "executor_sha": "e" * 40})()}
         )()
         observed: dict[str, Any] = {}
 

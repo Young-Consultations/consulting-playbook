@@ -345,6 +345,7 @@ class GitHubEffects:
         self._content_read_token: str | None = None
         self._content_checkout: TrustedContentCheckout | None = None
         self._publication_digest: str | None = None
+        self._candidate_sha: str | None = None
 
     def prepare_content(self, delivery_id: str, timeout_seconds: float) -> None:
         """Attest a clean exact-SHA workbase before any cost-bearing model call."""
@@ -621,6 +622,7 @@ esac
 
     def _check_content_base_head(self, phase: PublicationPhase, branch: str,
                                  timeout_seconds: float, pr: str | None = None) -> None:
+        deadline = time.monotonic() + timeout_seconds
         if self._content_checkout is None or not self._content_read_token:
             raise AdapterError("authorization", "Task-content base evidence is missing",
                                "ambiguous-rejected", branch=branch, pr=pr)
@@ -628,8 +630,9 @@ esac
             observed = attest_default_branch(
                 TARGET, self._content_checkout.base.delivery_id,
                 self._content_checkout.base.executor_sha,
-                token=self._content_read_token, timeout_seconds=timeout_seconds,
+                token=self._content_read_token, timeout_seconds=remaining_time(deadline), deadline=deadline,
             ).content_sha
+            remaining_time(deadline)
         except (BaselineError, KeyError, OSError, ValueError,
                 subprocess.CalledProcessError, subprocess.TimeoutExpired):
             observed = None
@@ -638,16 +641,17 @@ esac
         )
         if not decision.may_continue:
             if phase == PublicationPhase.AFTER_PR and pr:
-                self._block_stale_draft(pr, branch, decision.observed_sha, timeout_seconds)
+                self._block_stale_draft(pr, branch, decision.observed_sha,
+                                        timeout_seconds, deadline=deadline)
             detail = {
                 PublicationDisposition.REJECT_NO_REMOTE_EFFECT:
                     "Stale or unverifiable default branch before publication; no topic push",
                 PublicationDisposition.QUARANTINE_OWNED_TOPIC:
-                    "Stale or unverifiable default branch after topic push; owned branch quarantined",
+                    "Stale or unverifiable default branch after topic push; quarantine review required",
                 PublicationDisposition.BLOCK_DRAFT_REVIEW:
                     "Stale or unverifiable default branch after draft creation; human review required",
             }[decision.disposition]
-            raise AdapterError("publication", detail, "ambiguous-rejected",
+            raise AdapterError("publication", self._publication_failure_message(detail), "ambiguous-rejected",
                                branch=branch, pr=pr)
 
     def verify_recovered_publication(self, branch: str, pr: str, timeout_seconds: float) -> None:
@@ -655,15 +659,17 @@ esac
         self._check_content_base_head(PublicationPhase.AFTER_PR, branch, timeout_seconds, pr=pr)
 
     def _block_stale_draft(self, pr: str, branch: str, observed: str | None,
-                           timeout_seconds: float) -> None:
+                           timeout_seconds: float, *, deadline: float | None = None) -> None:
         """Persist a blocked state on the exact owned draft; never report success."""
+        deadline = min(time.monotonic() + timeout_seconds, deadline) if deadline is not None else time.monotonic() + timeout_seconds
         base = self._content_checkout.base
         marker = f"<!-- {MARKER}: {base.delivery_id}; payload-sha256: {self._publication_digest} -->"
         try:
             snapshot = json.loads(self._gh(
                 "pr", "view", pr, "--repo", TARGET, "--json", "body,headRefName,isDraft,state",
-                timeout_seconds=timeout_seconds,
+                timeout_seconds=remaining_time(deadline),
             ))
+            remaining_time(deadline)
             body = snapshot["body"]
             if (snapshot["headRefName"] != branch or not snapshot["isDraft"]
                     or snapshot["state"] != "OPEN" or not self._publication_digest or marker not in body):
@@ -673,13 +679,37 @@ esac
                         f"Executor SHA: `{base.executor_sha}`; content base SHA: `{base.content_sha}`; "
                         f"observed HEAD: `{observed or 'unverifiable'}`. Human reconciliation required.\n\n")
             self._gh("pr", "edit", pr, "--repo", TARGET, "--body", evidence + body,
-                     timeout_seconds=timeout_seconds)
+                     timeout_seconds=remaining_time(deadline))
+            remaining_time(deadline)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError,
                 ValueError, KeyError, TypeError) as exc:
             raise AdapterError(
-                "publication", "Stale draft blocking could not be confirmed; human reconciliation required",
+                "publication", self._publication_failure_message(
+                    "Stale draft blocking could not be confirmed; human reconciliation required"),
                 "ambiguous-rejected", branch=branch, pr=pr,
             ) from exc
+
+    def _publication_failure_message(self, detail: str) -> str:
+        # These immutable identities survive ref changes in the canonical
+        # result, which is logged and forwarded to the durable source receipt.
+        if not self._candidate_sha or not self._publication_digest or self._content_checkout is None:
+            return detail
+        base = self._content_checkout.base
+        evidence = {"candidate_sha": self._candidate_sha,
+                    "payload_sha256": self._publication_digest,
+                    "executor_sha": base.executor_sha, "content_base_sha": base.content_sha}
+        return detail + "; evidence=" + json.dumps(evidence, separators=(",", ":"))
+
+    def _log_publication_evidence(self, stage: str, branch: str, delivery_id: str) -> None:
+        # Record push intent and completion independently of mutable branch refs.
+        # No credentials or task instructions enter the workflow log.
+        base = self._content_checkout.base
+        print(json.dumps({"publication_evidence": {
+            "stage": stage, "repository": TARGET, "branch": branch,
+            "delivery_id": delivery_id, "payload_sha256": self._publication_digest,
+            "executor_sha": base.executor_sha, "content_base_sha": base.content_sha,
+            "candidate_sha": self._candidate_sha,
+        }}, sort_keys=True), flush=True)
 
     def publish(self, branch: str, delivery_id: str, digest: str, timeout_seconds: float) -> str:
         self._publication_digest = digest
@@ -703,8 +733,14 @@ esac
                         "-c", "user.name=ai-sdlc-target", "-c",
                         "user.email=ai-sdlc@users.noreply.github.com", "commit", "-m", f"AI-SDLC delivery {delivery_id}"], check=True, cwd=workspace, env=env,
                        timeout=budget())
+        self._candidate_sha = subprocess.check_output(
+            ["git", "rev-parse", "--verify", "HEAD"], cwd=workspace, env=env,
+            text=True, timeout=budget(),
+        ).strip()
+        if not re.fullmatch(r"[0-9a-f]{40}", self._candidate_sha):
+            raise AdapterError("publication", "Candidate commit identity is invalid", "ambiguous-rejected", branch=branch)
         parent = subprocess.check_output(
-            ["git", "rev-parse", "HEAD^"], cwd=workspace, env=env,
+            ["git", "rev-parse", self._candidate_sha + "^"], cwd=workspace, env=env,
             text=True, timeout=budget(),
         ).strip()
         if parent != self._content_checkout.base.content_sha:
@@ -713,9 +749,10 @@ esac
         self._check_content_base_head(PublicationPhase.BEFORE_PUSH, branch, budget())
         remote = f"https://github.com/{TARGET}.git"
         push_env, askpass_path = self._publication_git_environment()
+        self._log_publication_evidence("push-intent", branch, delivery_id)
         try:
             pushed = subprocess.run(
-                ["git", "push", remote, f"HEAD:refs/heads/{branch}"],
+                ["git", "push", remote, f"{self._candidate_sha}:refs/heads/{branch}"],
                 cwd=workspace,
                 env=push_env,
                 stdout=subprocess.DEVNULL,
@@ -736,11 +773,12 @@ esac
                 "Draft branch publication failed",
                 "failed",
             )
+        self._log_publication_evidence("push-completed", branch, delivery_id)
         self._check_content_base_head(PublicationPhase.AFTER_PUSH_BEFORE_PR,
                                       branch, budget())
         base = self._content_checkout.base
         body = (f"<!-- {MARKER}: {delivery_id}; payload-sha256: {digest} -->\n"
-                f"<!-- ai-sdlc-provenance: executor-sha: {base.executor_sha}; content-base-sha: {base.content_sha} -->\n\n"
+                f"<!-- ai-sdlc-provenance: executor-sha: {base.executor_sha}; content-base-sha: {base.content_sha}; candidate-sha: {self._candidate_sha} -->\n\n"
                 f"Executor SHA: `{base.executor_sha}`\nContent base SHA: `{base.content_sha}`\n\n"
                 "Automated draft; human review and merge are required. Reverify default-branch HEAD before marking ready.")
         # The commit is already durable on the remote branch. Retry only PR

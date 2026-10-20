@@ -8,6 +8,8 @@ import os
 import tempfile
 import base64
 import textwrap
+import io
+from contextlib import redirect_stdout
 import unittest
 from unittest.mock import patch
 from pathlib import Path
@@ -86,7 +88,7 @@ class ContentCheckoutTests(unittest.TestCase):
         effects._content_read_token = "read-token"
         for phase, expected in (
             (PublicationPhase.BEFORE_PUSH, "no topic push"),
-            (PublicationPhase.AFTER_PUSH_BEFORE_PR, "quarantined"),
+            (PublicationPhase.AFTER_PUSH_BEFORE_PR, "quarantine review required"),
             (PublicationPhase.AFTER_PR, "human review required"),
         ):
             with self.subTest(phase=phase):
@@ -339,6 +341,116 @@ class ContentCheckoutTests(unittest.TestCase):
             with self.assertRaises(subprocess.TimeoutExpired):
                 attest_default_branch(TARGET, "delivery-42", EXECUTOR, token="read-token", timeout_seconds=10, read=stalled)
         self.assertEqual(len(calls), 1)
+
+    def test_pushed_object_survives_topic_ref_deletion_in_canonical_evidence(self):
+        from codex_target_adapter import Ownership, canonical_digest, run_adapter
+        from task_content_baseline import TaskBase
+        from test_codex_execute_contract import payload
+        actual_run = subprocess.run
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "content"
+            bare = Path(directory) / "remote.git"
+            root.mkdir()
+            def git(*args, cwd=root):
+                return actual_run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+            git("init", "--quiet")
+            git("config", "user.name", "test")
+            git("config", "user.email", "test@example.com")
+            (root / "content.md").write_text("baseline")
+            git("add", "content.md")
+            git("commit", "-qm", "baseline")
+            base_sha = git("rev-parse", "HEAD")
+            git("init", "--quiet", "--bare", str(bare))
+            base = TaskBase(TARGET, "main", base_sha, EXECUTOR, "delivery-42")
+            value = payload()
+            effects = GitHubEffects()
+            effects._content_checkout = type("Prepared", (), {"base": base, "root": root})()
+            effects._content_read_token = "read-token"
+            pushed = []
+            observations = [0]
+            def observed(*args, **kwargs):
+                observations[0] += 1
+                if observations[0] == 2:
+                    git("update-ref", "-d", "refs/heads/codex/delivery-42", cwd=bare)
+                    return type("Observed", (), {"content_sha": OTHER})()
+                return type("Observed", (), {"content_sha": base_sha})()
+            def run(command, **kwargs):
+                if command[:2] == ["git", "push"]:
+                    pushed.append(command[-1].split(":")[0])
+                    command = [*command[:2], str(bare), command[-1]]
+                return actual_run(command, **kwargs)
+            def model(*args): (root / "content.md").write_text("candidate")
+            log = io.StringIO()
+            with (patch.object(effects, "discover", return_value=Ownership(False, [])),
+                  patch.object(effects, "prepare_content"), patch.object(effects, "codex", side_effect=model),
+                  patch.object(effects, "has_candidate_changes", return_value=True),
+                  patch.object(effects, "validate_candidate", return_value=(True, "passed")),
+                  patch.object(effects, "_publication_git_environment", return_value=({}, "/nonexistent/askpass")),
+                  patch("codex_target_adapter.attest_default_branch", side_effect=observed),
+                  patch("codex_target_adapter.subprocess.run", side_effect=run), redirect_stdout(log)):
+                result = run_adapter(json.dumps(value), value["concurrency_group"], "trusted", {"trusted"},
+                                     effects, prior_result_effect="none").result
+            self.assertEqual(result["execution_status"], "ambiguous-rejected")
+            self.assertEqual(result["branch_name"], "codex/delivery-42")
+            self.assertNotIn("quarantined", result["failure_message"])
+            evidence = json.loads(result["failure_message"].split("; evidence=", 1)[1])
+            self.assertEqual(evidence["candidate_sha"], pushed[0])
+            self.assertNotEqual(pushed[0], "HEAD")
+            self.assertEqual(evidence["payload_sha256"], canonical_digest(value))
+            self.assertEqual(evidence["content_base_sha"], base_sha)
+            self.assertEqual(evidence["executor_sha"], EXECUTOR)
+            self.assertLessEqual(len(result["failure_message"]), 500)
+            self.assertEqual(git("cat-file", "-t", evidence["candidate_sha"], cwd=bare), "commit")
+            self.assertEqual(git("for-each-ref", "refs/heads/codex/delivery-42", cwd=bare), "")
+            records = [json.loads(line)["publication_evidence"] for line in log.getvalue().splitlines()]
+            self.assertEqual([r["stage"] for r in records], ["push-intent", "push-completed"])
+            self.assertTrue(all(r["candidate_sha"] == pushed[0] and r["delivery_id"] == value["delivery_id"]
+                                and r["payload_sha256"] == canonical_digest(value) for r in records))
+
+    def test_final_attestation_and_blocking_share_one_deadline(self):
+        from task_content_baseline import TaskBase
+        base = TaskBase(TARGET, "main", SHA, EXECUTOR, "delivery-42")
+        pr = "https://github.com/" + TARGET + "/pull/7"
+        for elapsed_read, elapsed_view, expected_calls, expected_budgets in (
+            (3, 2, ["view", "edit"], [7, 5]),
+            (10, 0, [], []),
+            (3, 7, ["view"], [7]),
+        ):
+            clock = [0.0]
+            calls, budgets = [], []
+            effects = GitHubEffects()
+            effects._content_checkout = type("Prepared", (), {"base": base})()
+            effects._content_read_token = "read-token"
+            effects._candidate_sha = "d" * 40
+            effects._publication_digest = "e" * 64
+            def observe(*args, **kwargs):
+                self.assertEqual(kwargs["deadline"], 10)
+                self.assertEqual(kwargs["timeout_seconds"], 10)
+                clock[0] += elapsed_read
+                if elapsed_read == 10: raise subprocess.TimeoutExpired("gh", 10)
+                return type("Observed", (), {"content_sha": OTHER})()
+            def gh(*args, **kwargs):
+                calls.append(args[1]); budgets.append(kwargs["timeout_seconds"])
+                if args[1] == "view":
+                    clock[0] += elapsed_view
+                    return json.dumps({"body": "<!-- ai-sdlc-delivery-id: delivery-42; payload-sha256: " + "e" * 64 + " -->",
+                                       "headRefName": "codex/delivery-42", "isDraft": True, "state": "OPEN"})
+                clock[0] += 1
+                return ""
+            with (patch("time.monotonic", side_effect=lambda: clock[0]),
+                  patch("codex_target_adapter.attest_default_branch", side_effect=observe),
+                  patch.object(effects, "_gh", side_effect=gh)):
+                with self.assertRaises(AdapterError) as ctx:
+                    effects._check_content_base_head(PublicationPhase.AFTER_PR, "codex/delivery-42", 10, pr=pr)
+            self.assertEqual(calls, expected_calls)
+            self.assertEqual(budgets, expected_budgets)
+            self.assertLessEqual(clock[0], 10)
+            self.assertEqual(ctx.exception.pr, pr)
+            self.assertEqual(ctx.exception.branch, "codex/delivery-42")
+            evidence = json.loads(ctx.exception.safe_message.split("; evidence=", 1)[1])
+            self.assertEqual(evidence["candidate_sha"], "d" * 40)
+            self.assertLessEqual(len(ctx.exception.safe_message), 500)
+            if clock[0] == 10: self.assertIn("could not be confirmed", ctx.exception.safe_message)
 
     def test_branch_moving_during_fetch_fails_closed_and_cleans_up(self):
         base = attest_default_branch(
