@@ -24,3 +24,17 @@ the resolved implementation and its deployment prerequisite. Protected environme
 ref restrictions, Git metadata isolation and complete partial-effect ownership
 proof remain independent deployment gates. None of these changes authorizes REAL,
 replays terminal source #167, modifies tags or closes parent DEF-0125.
+
+## Follow-up review: DEF-0129
+
+[Codex finding](https://github.com/Young-Consultations/consulting-playbook/pull/96#discussion_r4320471842)
+exposed a regression introduced by the executor-binding repair: GitHub runner
+workflow refs include `refs/tags/`, but both comparison and positive fixture used
+the registry short-tag representation. This would reject every authorized release.
+The corrected comparison constructs the exact fully qualified tag ref from the
+registered repository/workflow path and adapter tag. The updated positive case
+fails against the previous guard and passes against the correction; negative
+cases reject short refs, branch refs (including a branch with the tag's name),
+wrong tags, wrong repository and mismatched SHAs. Existing requirements and ADR-013
+already require the intended identity boundary; implementation guidance and
+AI_CONTEXT now clarify the two representations. No deployed release is changed.

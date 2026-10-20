@@ -430,7 +430,10 @@ do not maintain multiple active context policies or execution contracts here.
 ### Unreleased PR #96 review safeguards
 
 The candidate workflow checks workflow ref/SHA and executor checkout against the
-organization registry before importing local adapter code. It requires protected
+organization registry before importing local adapter code. The registry keeps its
+short tag reference; the runner workflow ref must exactly use `@refs/tags/<adapter_ref>`
+for that same repository and workflow path. Branch refs and short runner refs are
+rejected even when their commit matches. It requires protected
 environment variable `CODEX_AUTHORIZED_CONTROL_PLANE_SHA` naming an independently
 approved immutable control-plane commit; missing/mismatched evidence fails closed.
 The current 3.1.0 registry cannot authorize this new candidate. No variable or

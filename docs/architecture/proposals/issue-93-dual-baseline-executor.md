@@ -213,3 +213,9 @@ return ambiguous rejection with branch and PR URL for human reconciliation;
 there is no automatic model retry. Successful body updates are durable evidence,
 not an unconditional GitHub enforcement against a human marking the draft ready.
 Release/preflight/acceptance must establish the corresponding review protections.
+
+Runner/registry representation detail (DEF-0129): the registry workflow reference
+uses a short adapter tag, while `github.workflow_ref` is fully qualified. Compare
+the runner identity with the exact registered repository/workflow path followed
+by `@refs/tags/` and `conformance.adapter_ref`; do not accept a branch ref or strip
+arbitrary ref prefixes. Workflow and checkout SHA checks remain mandatory.

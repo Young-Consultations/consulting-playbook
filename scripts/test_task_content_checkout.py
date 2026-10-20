@@ -132,13 +132,17 @@ class ContentCheckoutTests(unittest.TestCase):
                  "adapter_ref": "codex-adapter-v9.0.0", "status": "pass"}}
         encoded = json.dumps({"content": base64.b64encode(json.dumps({"registry_format_version": 1,
                         "repositories": {TARGET: entry}}).encode()).decode()})
+        runner_reference = reference.replace("@codex-adapter-v", "@refs/tags/codex-adapter-v")
         for control, ref, workflow_sha, checkout_sha, good in (
-            ("", reference, EXECUTOR, EXECUTOR, False),
+            ("", runner_reference, EXECUTOR, EXECUTOR, False),
             (OTHER, TARGET + "/.github/workflows/codex-execute.yml@main", EXECUTOR, EXECUTOR, False),
-            (OTHER, reference + "-wrong", EXECUTOR, EXECUTOR, False),
-            (OTHER, reference, SHA, EXECUTOR, False),
-            (OTHER, reference, EXECUTOR, SHA, False),
-            (OTHER, reference, EXECUTOR, EXECUTOR, True),
+            (OTHER, runner_reference + "-wrong", EXECUTOR, EXECUTOR, False),
+            (OTHER, runner_reference, SHA, EXECUTOR, False),
+            (OTHER, runner_reference, EXECUTOR, SHA, False),
+            (OTHER, runner_reference, EXECUTOR, EXECUTOR, True),
+            (OTHER, reference, EXECUTOR, EXECUTOR, False),
+            (OTHER, runner_reference.replace("refs/tags/", "refs/heads/"), EXECUTOR, EXECUTOR, False),
+            (OTHER, "OtherOwner/foreign/.github/workflows/codex-execute.yml@refs/tags/codex-adapter-v9.0.0", EXECUTOR, EXECUTOR, False),
         ):
             with tempfile.NamedTemporaryFile() as output:
                 env = {"CONTROL_PLANE_SHA": control, "OBSERVED_WORKFLOW_REF": ref,
