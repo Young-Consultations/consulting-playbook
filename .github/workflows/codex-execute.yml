@@ -31,6 +31,50 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+      - id: executor-binding
+        name: Verify registry-bound executor before importing target code
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Protected environment policy, never a dispatch input or target file.
+          CONTROL_PLANE_SHA: ${{ vars.CODEX_AUTHORIZED_CONTROL_PLANE_SHA }}
+          OBSERVED_WORKFLOW_REF: ${{ github.workflow_ref }}
+          OBSERVED_WORKFLOW_SHA: ${{ github.workflow_sha }}
+        run: |
+          python3 - <<'PYTHON'
+          import base64
+          import json
+          import os
+          import re
+          import subprocess
+
+          def exact(value):
+              return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{40}", value) is not None
+
+          control = os.environ.get("CONTROL_PLANE_SHA", "")
+          if not exact(control):
+              raise SystemExit("Missing immutable authorized control-plane binding")
+          raw = subprocess.check_output([
+              "gh", "api", "repos/Young-Consultations/.github/contents/config/codex-repositories.json?ref=" + control,
+          ], text=True, timeout=30)
+          response = json.loads(raw)
+          registry = json.loads(base64.b64decode(response["content"], validate=False))
+          entry = registry["repositories"]["Young-Consultations/consulting-playbook"]
+          expected = entry["conformance"]["adapter_commit_sha"]
+          workflow = entry["workflow_ref"]
+          prefix = "Young-Consultations/consulting-playbook/.github/workflows/codex-execute.yml@"
+          if (registry.get("registry_format_version") != 1 or not exact(expected)
+                  or not workflow.startswith(prefix + "codex-adapter-v")
+                  or entry["conformance"].get("status") != "pass"
+                  or workflow != prefix + entry["conformance"]["adapter_ref"]
+                  or os.environ.get("OBSERVED_WORKFLOW_REF") != workflow
+                  or os.environ.get("OBSERVED_WORKFLOW_SHA") != expected):
+              raise SystemExit("Workflow is outside the authorized immutable adapter release")
+          observed = subprocess.check_output(["git", "rev-parse", "--verify", "HEAD"], text=True, timeout=10).strip()
+          if observed != expected:
+              raise SystemExit("Executor checkout differs from the registered adapter release")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
+              stream.write(f"executor_sha={expected}\n")
+          PYTHON
       - name: Install repository validation dependencies
         run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]==4.26.0'
       - id: result-source
@@ -124,6 +168,7 @@ jobs:
           TARGET_PUBLICATION_TOKEN: ${{ secrets.TARGET_PUBLICATION_TOKEN }}
           # Workflow permissions are contents:read only; this token is NOT a publisher.
           CONTENT_READ_TOKEN: ${{ github.token }}
+          AUTHORIZED_EXECUTOR_SHA: ${{ steps.executor-binding.outputs.executor_sha }}
         # Replace the runner shell so the adapter can re-exec with a
         # secret-free environment and leave no secret-bearing ancestor.
         run: exec python3 scripts/codex_target_adapter.py

@@ -184,3 +184,32 @@ and interface architecture are updated in the same reviewed change.
 `AI_CONTEXT.md` may be aligned only after this decision and those normative
 changes are merged and verified. DEF-0125 remains investigating until actual
 implementation, release, and operational acceptance prove resolution.
+
+## PR #96 implementation review safeguards (unreleased)
+
+The production workflow must compare its workflow ref, workflow SHA and executor
+checkout HEAD with `conformance.adapter_commit_sha` and `workflow_ref` in the
+organization registry **before importing target code or supplying model,
+publication or result-writer credentials**. `CODEX_AUTHORIZED_CONTROL_PLANE_SHA`
+is a protected `consulting-playbook-codex` environment variable selecting an
+independently approved 40-hex control-plane commit; it is never a dispatch input
+or a value inferred from target content. Missing, inaccessible or mismatched
+binding fails closed. The adapter separately requires that bound executor SHA
+before establishing task content. Existing workflow permissions remain read-only.
+
+This adds a deployment prerequisite: environment protection and an approved
+registry commit binding the new immutable adapter must be reviewed before use.
+The current 3.1.0 registry authorizes only the existing 3.1.0 adapter; it cannot
+authorize this unreleased branch. No environment variable is configured by this PR.
+A mutable workflow can change its own checks, so this gate does not replace
+protected-environment restrictions on which workflow refs may access credentials.
+
+New drafts retain the original delivery/digest marker and add durable executor
+and content-base SHA metadata. If the final HEAD observation is stale or
+unverifiable, the publisher verifies the exact branch, delivery, digest, open
+state and draft state before prepending explicit blocked evidence to the PR body.
+Blocked drafts cannot be reused as successful deliveries. Failed blocking writes
+return ambiguous rejection with branch and PR URL for human reconciliation;
+there is no automatic model retry. Successful body updates are durable evidence,
+not an unconditional GitHub enforcement against a human marking the draft ready.
+Release/preflight/acceptance must establish the corresponding review protections.

@@ -426,3 +426,19 @@ approval status changes, ownership boundaries change, or the single current
 interface policy changes. Keep this document concise and point to canonical
 sources. Preserve historical behavior in Git history, release records, or ADRs;
 do not maintain multiple active context policies or execution contracts here.
+
+### Unreleased PR #96 review safeguards
+
+The candidate workflow checks workflow ref/SHA and executor checkout against the
+organization registry before importing local adapter code. It requires protected
+environment variable `CODEX_AUTHORIZED_CONTROL_PLANE_SHA` naming an independently
+approved immutable control-plane commit; missing/mismatched evidence fails closed.
+The current 3.1.0 registry cannot authorize this new candidate. No variable or
+credential policy has been configured by the candidate. Protected environment
+workflow-ref restrictions remain a deployment prerequisite.
+
+Candidate drafts include executor/content SHA provenance. A final stale or
+unverifiable HEAD observation persists blocked evidence on the owned draft;
+blocked drafts are rejected during reuse. Failure to persist blocking preserves
+partial-effect identity and requires human reconciliation. This is unreleased
+implementation evidence, not production acceptance or resolution of DEF-0125.

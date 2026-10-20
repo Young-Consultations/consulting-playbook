@@ -198,7 +198,7 @@ def reconcile_ownership(snapshot: Ownership, digest: str) -> dict[str, Any] | No
             "ambiguous-rejected",
         )
     if len(owned) > 1 or any(
-        not item.get("draft") or item.get("state") != "OPEN" for item in owned
+        not item.get("draft") or item.get("state") != "OPEN" or item.get("blocked", False) for item in owned
     ):
         raise AdapterError(
             "publication",
@@ -341,6 +341,7 @@ class GitHubEffects:
         self._publication_token: str | None = None
         self._content_read_token: str | None = None
         self._content_checkout: TrustedContentCheckout | None = None
+        self._publication_digest: str | None = None
 
     def prepare_content(self, delivery_id: str, timeout_seconds: float) -> None:
         """Attest a clean exact-SHA workbase before any cost-bearing model call."""
@@ -355,6 +356,9 @@ class GitHubEffects:
                 ["git", "rev-parse", "--verify", "HEAD"], cwd=ROOT, text=True,
                 timeout=timeout_seconds, env={k: v for k, v in os.environ.items() if k in SAFE_ENV},
             ).strip()
+            authorized = os.environ.get("AUTHORIZED_EXECUTOR_SHA", "")
+            if not re.fullmatch(r"[0-9a-f]{40}", authorized) or executor != authorized:
+                raise BaselineError("executor differs from independently authorized release")
             base = attest_default_branch(
                 TARGET, delivery_id, executor_sha=executor, token=token,
                 timeout_seconds=timeout_seconds,
@@ -432,7 +436,8 @@ esac
         for pr in json.loads(raw):
             match = pattern.search(pr.get("body") or "")
             if match:
-                found.append({"url": pr["url"], "state": pr["state"], "draft": pr["isDraft"], "digest": match.group(1)})
+                found.append({"url": pr["url"], "state": pr["state"], "draft": pr["isDraft"], "digest": match.group(1),
+                              "blocked": "<!-- ai-sdlc-publication-blocked:" in (pr.get("body") or "")})
             else:
                 found.append({"url": pr["url"], "state": pr["state"], "draft": pr["isDraft"], "digest": "conflict"})
         return Ownership(branch_exists=branch_exists, pull_requests=found)
@@ -624,6 +629,8 @@ esac
             self._content_checkout.base, observed, phase,
         )
         if not decision.may_continue:
+            if phase == PublicationPhase.AFTER_PR and pr:
+                self._block_stale_draft(pr, branch, decision.observed_sha, timeout_seconds)
             detail = {
                 PublicationDisposition.REJECT_NO_REMOTE_EFFECT:
                     "Stale or unverifiable default branch before publication; no topic push",
@@ -635,7 +642,35 @@ esac
             raise AdapterError("publication", detail, "ambiguous-rejected",
                                branch=branch, pr=pr)
 
+    def _block_stale_draft(self, pr: str, branch: str, observed: str | None,
+                           timeout_seconds: float) -> None:
+        """Persist a blocked state on the exact owned draft; never report success."""
+        base = self._content_checkout.base
+        marker = f"<!-- {MARKER}: {base.delivery_id}; payload-sha256: {self._publication_digest} -->"
+        try:
+            snapshot = json.loads(self._gh(
+                "pr", "view", pr, "--repo", TARGET, "--json", "body,headRefName,isDraft,state",
+                timeout_seconds=timeout_seconds,
+            ))
+            body = snapshot["body"]
+            if (snapshot["headRefName"] != branch or not snapshot["isDraft"]
+                    or snapshot["state"] != "OPEN" or not self._publication_digest or marker not in body):
+                raise ValueError("draft ownership unavailable")
+            evidence = (f"<!-- ai-sdlc-publication-blocked: stale-or-unverifiable-base -->\n"
+                        f"BLOCKED: default branch changed or could not be verified after publication.\n"
+                        f"Executor SHA: `{base.executor_sha}`; content base SHA: `{base.content_sha}`; "
+                        f"observed HEAD: `{observed or 'unverifiable'}`. Human reconciliation required.\n\n")
+            self._gh("pr", "edit", pr, "--repo", TARGET, "--body", evidence + body,
+                     timeout_seconds=timeout_seconds)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError,
+                ValueError, KeyError, TypeError) as exc:
+            raise AdapterError(
+                "publication", "Stale draft blocking could not be confirmed; human reconciliation required",
+                "ambiguous-rejected", branch=branch, pr=pr,
+            ) from exc
+
     def publish(self, branch: str, delivery_id: str, digest: str, timeout_seconds: float) -> str:
+        self._publication_digest = digest
         workspace = self._working_content_root()
         env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
         env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
@@ -691,7 +726,11 @@ esac
             )
         self._check_content_base_head(PublicationPhase.AFTER_PUSH_BEFORE_PR,
                                       branch, budget())
-        body = f"<!-- {MARKER}: {delivery_id}; payload-sha256: {digest} -->\n\nAutomated draft; human review and merge are required. Reverify default-branch HEAD before marking ready."
+        base = self._content_checkout.base
+        body = (f"<!-- {MARKER}: {delivery_id}; payload-sha256: {digest} -->\n"
+                f"<!-- ai-sdlc-provenance: executor-sha: {base.executor_sha}; content-base-sha: {base.content_sha} -->\n\n"
+                f"Executor SHA: `{base.executor_sha}`\nContent base SHA: `{base.content_sha}`\n\n"
+                "Automated draft; human review and merge are required. Reverify default-branch HEAD before marking ready.")
         # The commit is already durable on the remote branch. Retry only PR
         # creation so a transient GitHub CLI/API failure cannot strand that
         # branch and make every later delivery attempt fail its non-force push.
