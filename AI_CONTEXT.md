@@ -522,3 +522,9 @@ echoing them. Raw blob/diff bytes use a reversible byte mapping. Binary scans
 compare occurrence counts against the same baseline path, so duplicating an
 existing example cannot bypass policy; staged and final contents are checked
 independently. Credential-like values in filenames are rejected with fixed errors.
+
+Managed draft reuse additionally requires that the recorded content parent still
+equals the current default-branch commit, not just its branch name. A timed-out PR
+create is an ambiguous remote effect: reserve reconciliation time, do not repeat
+the create, verify exact ownership and run the after-PR HEAD/blocking disposition.
+Recovery failure retains known branch/PR identity and never restarts the budget.

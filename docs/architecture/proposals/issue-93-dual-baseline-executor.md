@@ -331,3 +331,10 @@ path values before diagnostics can echo them. For binary content, compare comple
 token occurrence counts against baseline counts rather than exempting every copy
 of a known value. Streaming must count a cross-chunk token once and retain partial
 prefixes; the index and final working tree are independent checks.
+
+Reusable draft freshness compares its recorded content parent with the current
+default HEAD. Name equality alone does not prove freshness. A timeout during PR
+creation is an ambiguous remote effect rather than a no-effect failure: reserve
+part of the existing deadline for exact ownership discovery and after-PR HEAD
+reconciliation, including blocking an owned stale draft. Never retry a timed-out
+create or restart model execution; retain known branch/PR evidence on rejection.

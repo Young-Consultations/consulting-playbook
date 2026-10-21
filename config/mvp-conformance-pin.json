@@ -4,7 +4,7 @@
   "compatibility_sha": "e27b8a541afbd27b4be5606a19ffa43637ad312a",
   "fixture_set": "TC-MVP-CI-001",
   "fixture_version": "2.3.0",
-  "adapter_revision": "sha256:d4c5a4746fb115211134374bca79d16bbdec3db173d67f0e625300bcc838131e",
+  "adapter_revision": "sha256:c554c37cde87292f0757ae37e543a7172e697f8c55767add72d44c73d95eb4df",
   "compatibility_files": {
     "contracts/task-contract.schema.json": "d95673363eb7f825eb64b73ddb0468c787078ce4",
     "contracts/execution-input.schema.json": "b2b16cfda619c82d73a5e78ae34566feb6b83224",
@@ -15,7 +15,7 @@
   },
   "target_files": {
     ".github/workflows/codex-execute.yml": "ead48624ba3b9189a1c709bf62782f29903da0ce",
-    "scripts/codex_target_adapter.py": "7bbe4f1f489e901952a6ded4c96c0aea910f3e9d",
+    "scripts/codex_target_adapter.py": "6b5e3f37592165294a552a620020380fd638a229",
     "scripts/run_tc_mvp_ci_001.py": "41dd4eb16216a345f828df17c064b8b6017baf8f",
     "scripts/codex_auth_handoff.py": "c66ecf1c01a8cd04178ebe0b865069fc64d2d30c",
     "scripts/run_tc_mvp_ci_001_receiver_303.py": "f0a3441e7432215ec229485e80b912df665d0167",
@@ -25,11 +25,11 @@
     "scripts/validate_repository.py": "0ed354d5277731819ca6337aea1ef2e76dd4067b",
     "scripts/test_task_content_baseline.py": "37ad56ce5ed44fe6f0190fbe26f69f6a00192e69",
     "scripts/test_codex_execute_contract.py": "13be3f6bc9a6277e5d8893767d893c86865bcca1",
-    "scripts/test_task_content_checkout.py": "b4bcc5ad44a9c31f23be65ac7e5a0a166b222c53",
+    "scripts/test_task_content_checkout.py": "31e5f9f04b8d372d7aa42025b0012ee0474ceaa5",
     ".github/workflows/mvp-conformance.yml": "3e0cca823acf6d4c4d9892d55afbbe892d2f65a5",
     "scripts/candidate_test_sandbox.py": "63e289ccb7a5e7732d9529845eb82da0463c981e",
     "scripts/test_candidate_test_sandbox.py": "122812b72d2d5ed40eeb279e91fface397dfb310",
-    "scripts/test_publication_isolation.py": "b4696bffa853419826b9ed4acd57e27c70300b00",
+    "scripts/test_publication_isolation.py": "1cb4f3ac3801c143767f30b1502bef8d252ba8cf",
     "scripts/test_validate_repository.py": "67b7484fed51a831271e62ee1d650a46602495fd"
   }
 }

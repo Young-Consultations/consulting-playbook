@@ -247,17 +247,39 @@ class ContentCheckoutTests(unittest.TestCase):
                                      timeout_seconds=10, read=read)
         value = payload()
         digest = canonical_digest(value)
-        for observation in (SHA, OTHER, None):
+        for observation, failure in ((head, error) for head in (SHA, OTHER, None)
+                                     for error in ("exit", "timeout")):
             effects = GitHubEffects()
             effects._content_checkout = type("Prepared", (), {"base": base, "root": Path("/unused")})()
             effects._publication_checkout = effects._content_checkout
             effects._content_read_token = "read-token"
             remote = {"body": "", "creates": 0, "pushes": 0, "edits": 0}
+            clock = [0.0]
+            create_budgets, recovery_budgets = [], []
             def gh(*args, **kwargs):
                 if args[:2] == ("pr", "create"):
                     remote["body"] = args[args.index("--body") + 1]
                     remote["creates"] += 1
+                    if failure == "timeout":
+                        create_budgets.append(kwargs["timeout_seconds"])
+                        clock[0] += kwargs["timeout_seconds"]
+                        raise subprocess.TimeoutExpired("gh", kwargs["timeout_seconds"])
                     raise subprocess.CalledProcessError(1, "gh")  # Remote success, lost response.
+                if args[:2] == ("api", "--paginate"):
+                    if remote["creates"]: recovery_budgets.append(kwargs["timeout_seconds"])
+                    return "codex/delivery-42" if remote["creates"] else ""
+                if args[:2] == ("pr", "list"):
+                    return json.dumps([{"url": "https://github.com/" + TARGET + "/pull/7",
+                                        "body": remote["body"], "headRefName": "codex/delivery-42",
+                                        "headRefOid": SHA, "headRepository": {"nameWithOwner": TARGET},
+                                        "baseRefName": "main", "isDraft": True, "state": "OPEN"}]
+                                      if remote["creates"] else [])
+                if args[:2] == ("api", f"repos/{TARGET}/git/ref/heads/codex/delivery-42"):
+                    return json.dumps({"ref": "refs/heads/codex/delivery-42", "object": {"sha": SHA}})
+                if args[:2] == ("api", f"repos/{TARGET}/commits/{SHA}"):
+                    return json.dumps({"sha": SHA, "parents": [{"sha": SHA}],
+                                       "commit": {"message": effects._commit_message("delivery-42", digest, EXECUTOR, SHA)}})
+                if args[:2] == ("api", f"repos/{TARGET}"): return "main"
                 if args[:2] == ("pr", "view"):
                     return json.dumps({"body": remote["body"], "headRefName": "codex/delivery-42",
                                        "headRefOid": effects._candidate_sha, "headRepository": {"nameWithOwner": TARGET},
@@ -278,7 +300,11 @@ class ContentCheckoutTests(unittest.TestCase):
                             type("Observed", (), {"content_sha": SHA})(),
                             BaselineError("unavailable") if observation is None else
                             type("Observed", (), {"content_sha": observation})()]
-            with (patch.object(effects, "discover", side_effect=[Ownership(False, []), recovered]),
+            if failure == "timeout" and observation == SHA:
+                observations.append(type("Observed", (), {"content_sha": SHA})())
+            discover = effects.discover if failure == "timeout" else [Ownership(False, []), recovered]
+            with (patch.object(effects, "discover", side_effect=discover),
+                  patch("codex_target_adapter.time.monotonic", side_effect=lambda: clock[0]),
                   patch.object(effects, "prepare_content"), patch.object(effects, "codex") as model,
                   patch.object(effects, "has_candidate_changes", return_value=True),
                   patch.object(effects, "validate_candidate", return_value=(True, "passed")),
@@ -289,9 +315,13 @@ class ContentCheckoutTests(unittest.TestCase):
                   patch("codex_target_adapter.attest_default_branch", side_effect=observations) as reads):
                 result = run_adapter(json.dumps(value), value["concurrency_group"], "trusted", {"trusted"},
                                      effects, prior_result_effect="none").result
-            self.assertEqual(reads.call_count, 3)
+            self.assertEqual(reads.call_count, 4 if failure == "timeout" and observation == SHA else 3)
             model.assert_called_once()
-            self.assertEqual((remote["pushes"], remote["creates"]), (1, 3))
+            self.assertEqual((remote["pushes"], remote["creates"]), (1, 1 if failure == "timeout" else 3))
+            if failure == "timeout":
+                self.assertEqual(create_budgets, [value["timeout_minutes"] * 60 * 0.8])
+                self.assertGreater(recovery_budgets[0], 0)
+                self.assertLess(recovery_budgets[0], create_budgets[0])
             self.assertEqual(result["execution_status"], "duplicate-reused" if observation == SHA else "ambiguous-rejected")
             self.assertEqual(remote["edits"], int(observation != SHA))
             self.assertTrue(result["pull_request_url"].endswith("/pull/7"))

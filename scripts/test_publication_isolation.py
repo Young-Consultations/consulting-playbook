@@ -143,7 +143,7 @@ class PublicationIsolationTests(unittest.TestCase):
 
 class DraftOwnershipTests(unittest.TestCase):
     def test_actual_discovery_rejects_changed_or_incomplete_bindings_before_model(self):
-        for defect in (None, "ref", "head", "parent", "digest", "fork", "base", "unreadable", "orphan"):
+        for defect in (None, "ref", "head", "parent", "digest", "fork", "base", "unreadable", "orphan", "stale", "head-unreadable"):
             value = payload()
             digest = canonical_digest(value)
             executor, base, candidate = "c" * 40, "a" * 40, "f" * 40
@@ -168,6 +168,9 @@ class DraftOwnershipTests(unittest.TestCase):
                     return json.dumps({"sha": candidate, "parents": [{"sha": "b" * 40 if defect == "parent" else base}],
                                        "commit": {"message": effects._commit_message("delivery-42", "0" * 64 if defect == "digest" else digest, executor, base)}})
                 if args[:2] == ("api", f"repos/{TARGET}"): return "main"
+                if args[:2] == ("api", f"repos/{TARGET}/commits/main"):
+                    if defect == "head-unreadable": raise subprocess.TimeoutExpired("gh", 1)
+                    return "b" * 40 if defect == "stale" else base
                 raise AssertionError(args)
             with (patch.object(effects, "_gh", side_effect=gh), patch.object(effects, "codex") as model):
                 result = run_adapter(json.dumps(value), value["concurrency_group"], "trusted", {"trusted"}, effects,

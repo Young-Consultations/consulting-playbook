@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol
+from urllib.parse import quote
 
 from jsonschema import Draft202012Validator, FormatChecker
 from codex_auth_handoff import handoff_startup_auth, isolated_codex_home, submit_stdin_prompt
@@ -293,18 +294,27 @@ def run_adapter(raw: str, transport_group: str, caller: str, trusted_callers: se
             remaining()
         except AdapterError as exc:
             if exc.safe_message == "create-race":
-                ownership = effects.discover(branch, payload["delivery_id"], remaining())
-                remaining()
-                reusable = reconcile_ownership(ownership, digest)
-                if reusable is not None:
-                    effects.verify_recovered_publication(branch, reusable["url"], remaining())
+                recovered_pr = None
+                try:
+                    ownership = effects.discover(branch, payload["delivery_id"], remaining())
                     remaining()
-                    return Outcome(_result(payload, started, "duplicate-reused", "none", None,
-                                           branch=branch, pr=reusable["url"], validation="passed", tests="passed"), payload["source_issue"])
+                    reusable = reconcile_ownership(ownership, digest)
+                    if reusable is not None:
+                        recovered_pr = reusable["url"]
+                        effects.verify_recovered_publication(branch, recovered_pr, remaining())
+                        remaining()
+                        return Outcome(_result(payload, started, "duplicate-reused", "none", None,
+                                               branch=branch, pr=recovered_pr, validation="passed", tests="passed"), payload["source_issue"])
+                except (AdapterError, subprocess.TimeoutExpired) as recovery:
+                    if isinstance(recovery, AdapterError) and recovery.branch:
+                        raise
+                    raise AdapterError("publication", "Publication recovery unconfirmed; human reconciliation required",
+                                       "ambiguous-rejected", branch=branch, pr=recovered_pr) from recovery
                 raise AdapterError(
                     "publication",
                     "Delivery ownership is ambiguous after publication create race",
                     "ambiguous-rejected",
+                    branch=branch,
                 ) from exc
             raise
         return Outcome(_result(payload, started, "draft-pr-created", "none", None,
@@ -527,13 +537,24 @@ esac
             default_branch = self._gh("api", f"repos/{TARGET}", "--jq", ".default_branch",
                                       timeout_seconds=remaining_time(deadline)).strip()
             remaining_time(deadline)
-            return (ref.get("ref") == "refs/heads/" + branch
+            valid = (ref.get("ref") == "refs/heads/" + branch
                     and ref.get("object", {}).get("sha") == candidate
                     and commit.get("sha") == candidate
                     and [parent.get("sha") for parent in commit.get("parents", [])] == [content]
                     and pr.get("baseRefName") == default_branch
                     and commit.get("commit", {}).get("message", "").rstrip("\n")
                     == self._commit_message(delivery_id, digest, executor, content))
+            if valid and self._candidate_sha == candidate and self._content_checkout is not None:
+                # A newly created draft recovered after a lost response still
+                # needs the after-PR disposition (including stale-draft blocking).
+                self.verify_recovered_publication(branch, pr["url"], remaining_time(deadline))
+                return True
+            if not valid:
+                return False
+            current = self._gh("api", f"repos/{TARGET}/commits/{quote(default_branch, safe='')}",
+                               "--jq", ".sha", timeout_seconds=remaining_time(deadline)).strip()
+            remaining_time(deadline)
+            return valid and current == content
         except (ValueError, TypeError, AttributeError, KeyError, OSError,
                 subprocess.CalledProcessError, subprocess.TimeoutExpired):
             return False
@@ -910,13 +931,18 @@ esac
             try:
                 pr = self._gh("pr", "create", "--repo", TARGET, "--draft", "--head", branch, "--title",
                               f"AI-SDLC delivery {delivery_id}", "--body", body,
-                              timeout_seconds=budget()).strip()
-                self._check_content_base_head(PublicationPhase.AFTER_PR,
-                                              branch, budget(), pr=pr)
-                return pr
+                              timeout_seconds=budget() * 0.8).strip()
+            except subprocess.TimeoutExpired as exc:
+                # The remote may already have created the draft. Reserve time
+                # for ownership/HEAD reconciliation, never retry this mutation.
+                raise AdapterError("publication", "create-race", "ambiguous-rejected", branch=branch) from exc
             except subprocess.CalledProcessError:
                 if attempt == 2:
-                    raise AdapterError("publication", "create-race")
+                    raise AdapterError("publication", "create-race", "ambiguous-rejected", branch=branch)
+                continue
+            self._check_content_base_head(PublicationPhase.AFTER_PR,
+                                          branch, budget(), pr=pr)
+            return pr
         raise AssertionError("unreachable")
 
 

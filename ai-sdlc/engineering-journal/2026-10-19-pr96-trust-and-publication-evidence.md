@@ -149,3 +149,14 @@ occurrence counts. Streaming counts complete tokens once across chunk boundaries
 path-value failures do not echo the value. Ten validator regressions cover these
 cases alongside the earlier staged/unstaged/untracked and binary checks. Fresh
 exact-head CI and review remain required before the authorized source merge.
+
+Final-head Codex review identified DEF-0145/DEF-0146: an older managed draft could
+be reused after default HEAD advanced, and TimeoutExpired bypassed the lost-create
+response recovery path. Reuse now reads the current default commit and rejects
+stale/unreadable evidence. PR create reserves 20 percent of the remaining deadline
+for reconciliation and a timeout immediately enters ownership/after-PR recovery
+without another create. Actual discovery regressions cover stale/unreadable reuse;
+the real publisher path covers remotely successful timeouts with unchanged, moved
+or unreadable HEAD, bounded recovery budgets, one model call and one push/create.
+Known branch/PR identity survives recovery rejection. Source integration gates
+remain exact-head CI and fresh review; no deployment or REAL operation occurred.
