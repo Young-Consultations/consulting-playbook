@@ -184,3 +184,157 @@ and interface architecture are updated in the same reviewed change.
 `AI_CONTEXT.md` may be aligned only after this decision and those normative
 changes are merged and verified. DEF-0125 remains investigating until actual
 implementation, release, and operational acceptance prove resolution.
+
+## PR #96 implementation review safeguards (unreleased)
+
+The production workflow must compare its workflow ref, workflow SHA and executor
+checkout HEAD with `conformance.adapter_commit_sha` and `workflow_ref` in the
+organization registry **before importing target code or supplying model,
+publication or result-writer credentials**. `CODEX_AUTHORIZED_CONTROL_PLANE_SHA`
+is a protected `consulting-playbook-codex` environment variable selecting an
+independently approved 40-hex control-plane commit; it is never a dispatch input
+or a value inferred from target content. Missing, inaccessible or mismatched
+binding fails closed. The adapter separately requires that bound executor SHA
+before establishing task content. Existing workflow permissions remain read-only.
+
+This adds a deployment prerequisite: environment protection and an approved
+registry commit binding the new immutable adapter must be reviewed before use.
+The current 3.1.0 registry authorizes only the existing 3.1.0 adapter; it cannot
+authorize this unreleased branch. No environment variable is configured by this PR.
+A mutable workflow can change its own checks, so this gate does not replace
+protected-environment restrictions on which workflow refs may access credentials.
+
+New drafts retain the original delivery/digest marker and add durable executor
+and content-base SHA metadata. If the final HEAD observation is stale or
+unverifiable, the publisher verifies the exact branch, delivery, digest, open
+state and draft state before prepending explicit blocked evidence to the PR body.
+Blocked drafts cannot be reused as successful deliveries. Failed blocking writes
+return ambiguous rejection with branch and PR URL for human reconciliation;
+there is no automatic model retry. Successful body updates are durable evidence,
+not an unconditional GitHub enforcement against a human marking the draft ready.
+Release/preflight/acceptance must establish the corresponding review protections.
+
+Runner/registry representation detail (DEF-0129): the registry workflow reference
+uses a short adapter tag, while `github.workflow_ref` is fully qualified. Compare
+the runner identity with the exact registered repository/workflow path followed
+by `@refs/tags/` and `conformance.adapter_ref`; do not accept a branch ref or strip
+arbitrary ref prefixes. Workflow and checkout SHA checks remain mandatory.
+
+Ambiguous-create recovery must apply the same after-PR HEAD reconciliation as a
+successful create response before returning duplicate reuse. A discovered owned
+draft is evidence of a remote effect, not proof of baseline currency. Preserve
+partial branch/PR identity and block stale or unreadable observations.
+
+The baseline setup uses one monotonic admitted deadline through executor HEAD
+observation, both provenance API reads and each Git checkout command. Each receives
+only decreasing remaining time; check expiry before subsequent operations and
+after returns, clean up temporary content, and report a canonical timeout.
+
+Publication object identity: capture a validated exact candidate SHA before push,
+verify its parent against the attested content base, and push that exact object.
+Emit structured workflow log evidence before/after push binding delivery, payload
+digest, branch, executor/content SHAs and candidate SHA. Preserve immutable SHA
+and digest evidence in canonical partial failure messages (existing contract,
+maximum 500 characters) so a moved/deleted topic ref cannot erase which object
+was published. Existing authenticated result delivery persists that canonical
+failure on the source receipt; logs remain subject to normal workflow retention.
+A stale post-push topic requires human quarantine review; do not claim that a
+remote quarantine was executed when only a fail-closed disposition was returned.
+
+One deadline spans final HEAD attestation and stale-draft blocking, including PR
+view and PR edit. Each operation consumes decreasing remaining time. An exhausted
+deadline prevents further commands, returns ambiguous rejection with immutable
+partial-effect identity, and explicitly marks blocking as unconfirmed for human
+reconciliation instead of restarting an execution budget to attempt cleanup.
+
+Candidate-facing tests must exercise candidate content. The pinned orchestrator
+runs the candidate's fixed `scripts/test_codex_execute_contract.py` entrypoint in
+a disposable snapshot under bubblewrap. The sandbox clears environment, isolates
+PID/network/IPC/user namespaces, drops capabilities, and mounts only read-only
+OS/Python runtime directories and explicit dependency package directories, plus
+a writable snapshot, temporary home and private /proc and /dev. It does not expose
+host home, runner temporary files, original checkouts or parent-process /proc.
+Capture/discard test output rather than forwarding untrusted workflow commands.
+Copying and test execution share the remaining validation deadline. Sandbox or
+runtime dependency readiness is checked before model authentication. Candidate
+code/test changes still require review; a passing candidate suite is not proof
+of test completeness or permission to bypass other security gates.
+
+Production and conformance CI install bubblewrap. CI prepares the same userns
+prerequisites as production and requires real integration tests for broken and
+deleted candidate code/tests, blocked host credentials/network/process access,
+snapshot-only writes and timeout. Local namespace restrictions may skip those
+integration cases, but cannot stand in for mandatory CI evidence.
+
+A Git push timeout may occur after remote acceptance. Reserve 20% of the current
+publication budget for read-only exact-ref reconciliation. If time remains, read
+the topic ref and compare its commit SHA with the captured candidate. Exact,
+different and unverifiable results all retain partial-effect identities and
+return ambiguous rejection requiring human reconciliation. If the deadline is
+exhausted, issue no further remote command and preserve unverified evidence.
+Never retry the push, automatically create a PR, or invoke a second model call.
+
+## Source implementation completion and acceptance
+
+The final source candidate keeps model Git metadata outside the trusted boundary.
+After model completion, materialize a second independently fetched exact-base
+checkout outside the writable model root. Copy final working-tree regular files
+only, with descriptor-relative `O_NOFOLLOW` reads, no source index/config/hooks,
+no nested repositories, and no symlinks or special files. The protected checkout
+retains its own metadata and becomes the sole validation/publication snapshot.
+This deliberately discards model staging metadata: staged-only data absent from
+the final working tree is never published. Candidate tests use a separate disposable
+copy of this snapshot; they cannot change the validated publisher checkout.
+
+All host Git operations after the model run use protected metadata and isolated
+system/global configuration. Model filters, fsmonitor, hooks and URL rewrites do
+not cross into that checkout. The one permitted publisher hook is pinned policy:
+it accepts only the expected remote ref with an advertised all-zero old OID.
+The server then enforces its old-OID compare-and-swap during creation. This rejects
+even fast-forward updates to a competing branch without any force option.
+
+Generated commits include delivery/digest/executor/content trailers. Draft reuse
+must bind the provenance marker to the PR head SHA, the same-repository remote
+topic ref, exactly one recorded content parent, current default base, and those
+immutable commit trailers. Ambiguous/missing legacy evidence fails closed before
+model execution. Draft blocking also verifies the expected candidate head/repository
+before modifying a PR; mutable refs cannot supply global atomicity.
+
+Sandbox runtime/dependency mounts must be trusted system/prefix paths under `/usr`
+or `/opt`, excluding the host home, its ancestors/descendants and symlink aliases.
+The host user site is not a dependency source. Production/CI must install dependencies
+in the trusted runtime. A missing dependency or unavailable sandbox fails readiness
+before the paid boundary.
+
+Premerge evidence is provided by `test_publication_isolation.py` (real local Git
+malicious metadata, safe create-only publication, links and API-backed reuse proof),
+`test_task_content_checkout.py` (all publication race windows and partial timeouts),
+`test_validate_repository.py` (staged/unstaged/untracked path/secret checks), and
+mandatory CI namespace tests in `test_candidate_test_sandbox.py`. Require exact-head
+conformance and a fresh independent code/security review before source merge.
+
+Source merge is not activation. Immutable target tagging, registry/control-plane
+composition, environment workflow-ref/authorized-SHA binding, release compatibility,
+deployed preflight and a fresh governed REAL identity remain subsequent acceptance
+gates. Parent DEF-0125 stays investigating until those gates pass; #167 stays terminal.
+
+Final validation coverage also requires complete nested untracked-path enumeration,
+NUL-delimited rename source/destination parsing, and raw final-file/stage-zero secret
+inspection. Binary diffs alone supply no added content; a safe working-tree file
+must not hide a credential staged in the index. External diff and text conversion
+are disabled. `test_validate_repository.py` includes nested untracked forbidden
+paths/values, binary values and split read-boundary/staged-replacement regressions.
+
+Path status/name metadata is strict UTF-8 and fails closed on decoding errors;
+raw blob and diff contents use a reversible byte mapping. Credential checks cover
+path values before diagnostics can echo them. For binary content, compare complete
+token occurrence counts against baseline counts rather than exempting every copy
+of a known value. Streaming must count a cross-chunk token once and retain partial
+prefixes; the index and final working tree are independent checks.
+
+Reusable draft freshness compares its recorded content parent with the current
+default HEAD. Name equality alone does not prove freshness. A timeout during PR
+creation is an ambiguous remote effect rather than a no-effect failure: reserve
+part of the existing deadline for exact ownership discovery and after-PR HEAD
+reconciliation, including blocking an owned stale draft. Never retry a timed-out
+create or restart model execution; retain known branch/PR evidence on rejection.

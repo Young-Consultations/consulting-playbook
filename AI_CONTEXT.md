@@ -197,29 +197,41 @@ the organization release, while current activation is separate mutable
 organization-router state. This repository neither enforces historical
 activation nor enables itself.
 
-The published 2.4.2 and 2.4.5 compatibility units remain historical
-evidence. The current published source/control-plane runtime is
-`ai-sdlc-v3.0.2`, and the enabled consulting target is immutable
-`codex-adapter-v3.0.2` at
-`3bde0dc760088b9af21454a0f70ed498dae043a7`. Deployed Runtime Preflight
-36640642872 and immutable REAL preflight 36640734704 passed before the
-portfolio source consumer adopted 3.0.2.
+The published 2.4.2, 2.4.5, 3.0.2 and 3.0.3 compatibility units
+remain historical evidence. The current published and attested control plane is
+`ai-sdlc-v3.1.0` at immutable
+`e9d11fc99fee73d247c93699f058ed64786bd4c0`, selecting
+`codex-adapter-v3.1.0` at immutable
+`4f15841efcba4883770b5e32c0582f733d73eb91`. The source consumer is
+migrated, and deployed Runtime Preflight 39086605325, deterministic no-cost
+SIM 39087269988 and immutable no-Codex REAL-readiness preflight
+39087311313 passed. Those establish release/configuration readiness, **not**
+current task-content workbase provenance or accepted cost-bearing REAL.
 
-Fresh REAL #154 remains the initial 2.4.5 live-path proof. REAL #156 later
-exposed DEF-0064 at the result-writer identity/redelivery boundary, leading to
-the organization-owned GitHub App `ai-sdlc-result-writer` (App ID `5100679`),
-installed only on `Young-Consultations/portfolio-tasks`. REAL #159 then proved
-the App result-writer prerequisite path but exposed DEF-0073 at the 3.0.0
-receiver; published 3.0.2 repaired that receiver compatibility boundary.
+Fresh REAL #154 remains historical initial 2.4.5 live-path proof; REAL #156
+led to the result-writer GitHub App repair, and REAL #159 exposed the
+receiver boundary later repaired by 3.0.2/3.0.3. Immutable historical tags
+must never be rewritten. The 3.1.0 trusted terminal receipt preflight
+prevents retry of a terminal failure, preserving exact authorized managed
+draft reuse and blocking unsupported evidence before Codex.
 
-After #159 reconciliation preserved the original trusted 3.0.1 admission,
-DEF-0086 exposed the router's cross-release admission-reuse defect. The current
-pre-publication target candidate is `codex-adapter-v3.0.3`. It leaves the
-target adapter implementation unchanged and repins both the result credential
-preflight and result receiver to future `ai-sdlc-v3.0.3`. The candidate is
-implementation evidence only until its immutable target tag, matching
-control-plane 3.0.3 release, deployed preflights, source repin, and controlled
-REAL #159 terminal/redelivery acceptance complete.
+**Approved ADR-013 / issue #93, not yet implemented in production:**
+Trusted executor/policy must remain at the exact immutable adapter release
+SHA, while task content comes from an independently verified current
+target default-branch commit in a separate clean worktree. Bind repository,
+delivery/scope, trusted code SHA and content base SHA before a cost-bearing
+model invocation. No unreviewed content scripts, Git hooks or imports may run
+as trusted policy with privileged credentials. The publisher must recheck
+default HEAD before push, after push/pre-PR and after draft creation. Reject
+earlier stale identities with zero new remote effects; quarantine owned
+post-push topic effects or mark stale drafts blocked for human review.
+GitHub moving refs cannot be made globally atomic by a single HEAD read.
+No force-push, automatic merge, automatic Codex retry or replay of terminal
+portfolio source #167. New immutable adapter and control-plane compatibility
+publication, independent security checks and fresh governed REAL acceptance
+remain required. The current implementation still couples work content to
+the pinned executor checkout; **do not treat approval, new tests, or CI alone
+as defect resolution**.
 
 The GitHub App token and private key do not enter the Codex adapter environment.
 A compatible cross-release retry preserves exactly one trusted durable
@@ -414,3 +426,105 @@ approval status changes, ownership boundaries change, or the single current
 interface policy changes. Keep this document concise and point to canonical
 sources. Preserve historical behavior in Git history, release records, or ADRs;
 do not maintain multiple active context policies or execution contracts here.
+
+### Unreleased PR #96 review safeguards
+
+The candidate workflow checks workflow ref/SHA and executor checkout against the
+organization registry before importing local adapter code. The registry keeps its
+short tag reference; the runner workflow ref must exactly use `@refs/tags/<adapter_ref>`
+for that same repository and workflow path. Branch refs and short runner refs are
+rejected even when their commit matches. It requires protected
+environment variable `CODEX_AUTHORIZED_CONTROL_PLANE_SHA` naming an independently
+approved immutable control-plane commit; missing/mismatched evidence fails closed.
+The current 3.1.0 registry cannot authorize this new candidate. No variable or
+credential policy has been configured by the candidate. Protected environment
+workflow-ref restrictions remain a deployment prerequisite.
+
+Candidate drafts include executor/content SHA provenance. A final stale or
+unverifiable HEAD observation persists blocked evidence on the owned draft;
+blocked drafts are rejected during reuse. Failure to persist blocking preserves
+partial-effect identity and requires human reconciliation. This is unreleased
+implementation evidence, not production acceptance or resolution of DEF-0125.
+
+PR #96 recovery and timeout safeguards (unreleased): an ambiguously created draft
+must pass after-PR HEAD reconciliation before duplicate reuse can succeed. Stale
+or unreadable HEAD blocks that owned draft. Baseline setup shares one monotonic
+deadline across executor observation, both provenance reads and all checkout Git
+commands; expiry stops further operations, cleans up and reports `timeout`.
+
+PR #96 publication evidence (unreleased): the publisher captures and validates the
+candidate commit SHA before push, verifies its exact parent, and pushes that SHA
+rather than a moving HEAD reference. Structured workflow log records bind push
+intent/completion to delivery, payload digest, executor/content SHAs and candidate
+SHA. Canonical partial failure messages preserve the same immutable identities
+within the existing 500-character contract. A post-push stale base requires human
+quarantine review; the adapter does not claim that remote quarantine was applied.
+Final HEAD attestation and PR view/edit blocking share one monotonic deadline;
+expiry stops further remote commands and reports blocking as unconfirmed with
+partial identity. Workflow log retention and the existing authenticated source
+receipt are the evidence stores; no new schema field or registry policy is added.
+
+PR #96 candidate testing (unreleased): policy validation stays pinned; candidate
+application tests run from a disposable candidate snapshot inside bubblewrap with
+separate PID/network namespaces, cleared environment and no host home/original
+checkout mounts. Only read-only OS/Python runtime directories and dependency
+packages are exposed; snapshot and temporary home are writable. Missing sandbox,
+missing test entrypoint, failed tests or deadline expiry cannot report passed.
+Sandbox plus Python dependency readiness is checked before model authentication.
+CI requires the real namespace isolation, candidate failure/deletion and timeout
+regressions; local hosts that prohibit namespaces cannot supply that evidence.
+
+A timed-out push is a possible remote effect. The push gets 80% of the remaining
+publication budget, reserving time for an exact remote topic-ref observation under
+the same deadline. Exact-candidate, different-object and unverified observations
+all return ambiguous rejection with branch/candidate/digest/baseline evidence;
+no automatic second push, PR creation or model call follows the timeout.
+
+### PR #96 source-completion boundary (unreleased)
+
+The current candidate supersedes earlier implementation notes as follows:
+
+- Sandbox runtime/dependency mounts must resolve under system `/usr` or `/opt`
+  paths, never the host home, its descendants, ancestors or symlink aliases.
+  User-site dependencies are not mounted. Required dependencies must be installed
+  in the trusted system/runtime environment; readiness fails before model login.
+- After model completion, an independently fetched publisher checkout retains
+  fresh protected Git metadata. Only regular working-tree data is copied from
+  the model checkout using descriptor-relative no-follow reads. Source `.git`
+  is ignored; links, special files and nested repositories are rejected. The
+  model's index is not authoritative: only final working-tree bytes can enter
+  the validated publication snapshot. Validation, candidate tests and publication
+  use that snapshot, never model-controlled Git metadata.
+- A pinned publisher pre-push guard permits creation of the expected ref only
+  when its advertised old object is zero. The server's old-OID check rejects
+  concurrent creation. There is no force push or fast-forward overwrite of an
+  existing delivery ref. Model hooks and ambient Git configuration stay disabled.
+- Draft reuse requires exact same-repository PR/head/ref identity, current default
+  base, one commit parent matching recorded content SHA, and immutable commit
+  trailers binding delivery, payload digest and both baseline SHAs. Incomplete
+  legacy evidence, altered refs/markers, forks, unreadable proofs and orphan refs
+  require human reconciliation and cannot authorize another model invocation.
+
+Source merge requires current-head review, security evidence and exact-head CI.
+Merge does not publish a new adapter, change the control-plane/environment binding,
+enable REAL, or resolve parent DEF-0125. Those require the separate immutable
+release, compatibility, protected-environment, deployed-preflight and fresh
+new-identity acceptance sequence. Never replay terminal source #167.
+
+Candidate policy enumerates every nested untracked path (`--untracked-files=all`)
+and parses NUL-delimited rename records. Secret validation inspects raw final-file
+bytes and raw stage-zero blobs, not just added diff lines; binary data, safe
+working-tree replacements and markers split across read chunks must not bypass it.
+Git text conversion/external diff execution stays disabled.
+
+Path metadata must decode as exact UTF-8; undecodable paths fail closed without
+echoing them. Raw blob/diff bytes use a reversible byte mapping. Binary scans
+compare occurrence counts against the same baseline path, so duplicating an
+existing example cannot bypass policy; staged and final contents are checked
+independently. Credential-like values in filenames are rejected with fixed errors.
+
+Managed draft reuse additionally requires that the recorded content parent still
+equals the current default-branch commit, not just its branch name. A timed-out PR
+create is an ambiguous remote effect: reserve reconciliation time, do not repeat
+the create, verify exact ownership and run the after-PR HEAD/blocking disposition.
+Recovery failure retains known branch/PR identity and never restarts the budget.

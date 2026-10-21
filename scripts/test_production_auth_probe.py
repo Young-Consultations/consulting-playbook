@@ -178,15 +178,21 @@ def test_ephemeral_codex_home_stays_absent_during_quiet_period() -> None:
         attempts += 1
         actual_rmtree(path)
         if attempts == 1:
+            recreated = threading.Event()
+
             def recreate() -> None:
-                time.sleep(0.1)
                 plugin_dir = path / "plugins"
                 plugin_dir.mkdir(parents=True)
                 (plugin_dir / "cache").write_text("transient", encoding="utf-8")
+                recreated.set()
 
             writer = threading.Thread(target=recreate)
             writers.append(writer)
             writer.start()
+            # A wall-clock sleep here was not a proof that the writer raced
+            # cleanup before its 250 ms quiet-period ended. Synchronize
+            # exact filesystem evidence, not scheduler timing.
+            assert recreated.wait(2), "fake plugin writer never recreated state"
 
     with patch.object(handoff.shutil, "rmtree", side_effect=delayed_writer):
         with handoff.isolated_codex_home("auth-quiet-test-") as home:

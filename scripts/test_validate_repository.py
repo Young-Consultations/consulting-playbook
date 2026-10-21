@@ -78,6 +78,63 @@ class RepositoryPolicyTests(unittest.TestCase):
                 self.git("reset", "--quiet", "HEAD", "--", relative)
                 (self.root / relative).unlink()
 
+    def test_nested_untracked_files_are_validated_individually(self) -> None:
+        self.write("consulting/new-directory/nested/file.md", "sk-" + "x" * 24)
+        self.validate("a credential-like value was detected")
+        (self.root / "consulting/new-directory/nested/file.md").unlink()
+        self.write("consulting/new-directory/nested/.env", "fixture")
+        self.validate("a credential-like file name was detected")
+
+    def test_binary_credential_values_and_chunk_boundaries_are_rejected(self) -> None:
+        for prefix in (b"\0", b"\0" + b"a" * 65530):
+            path = self.root / "consulting/binary.bin"
+            path.write_bytes(prefix + b"sk-" + b"x" * 24 + b"\0")
+            self.validate("a credential-like value was detected")
+            self.git("add", "consulting/binary.bin")
+            path.write_bytes(b"Safe working-tree bytes.\0")
+            self.validate("a credential-like value was detected")
+            self.git("reset", "--quiet", "HEAD", "--", "consulting/binary.bin")
+            path.unlink()
+
+    def test_unchanged_baseline_examples_are_not_new_generated_secrets(self) -> None:
+        path = self.root / "consulting/baseline-example.bin"
+        example = b"sk-" + b"x" * 170
+        prefix = b"\0" + b"a" * 65505
+        path.write_bytes(prefix + example + b"\0")
+        self.git("add", "consulting/baseline-example.bin")
+        self.git("commit", "-qm", "baseline synthetic example")
+        path.write_bytes(prefix + example + b"\0safe change")
+        self.validate()
+        path.write_bytes(prefix + example[:140] + b"\0")
+        self.validate("a credential-like value was detected")
+
+    def test_non_utf8_file_names_fail_closed(self) -> None:
+        path = self.root / "consulting" / os.fsdecode(b"binary-\xff.bin")
+        path.write_bytes(b"\0sk-" + b"x" * 24)
+        self.validate("candidate path names must be UTF-8")
+        self.git("add", "--all")
+        self.validate("candidate path names must be UTF-8")
+
+    def test_credential_values_in_names_are_rejected_without_echoing_them(self) -> None:
+        name = "consulting/" + "sk-" + "x" * 24 + ".md"
+        self.write(name, "ordinary content")
+        self.validate("a credential-like value was detected in a candidate path")
+        self.git("add", "--all")
+        self.validate("a credential-like value was detected in a candidate path")
+
+    def test_binary_baseline_value_duplication_is_rejected_in_final_and_index(self) -> None:
+        path = self.root / "consulting/duplication.bin"
+        example = b"sk-" + b"x" * 170
+        original = b"\0" + example + b"\0"
+        path.write_bytes(original)
+        self.git("add", "consulting/duplication.bin")
+        self.git("commit", "-qm", "synthetic baseline fixture")
+        path.write_bytes(original + b"a" * 65400 + example + b"\0")
+        self.validate("a credential-like value was detected")
+        self.git("add", "consulting/duplication.bin")
+        path.write_bytes(original)
+        self.validate("a credential-like value was detected")
+
     def test_generated_credential_values_are_rejected(self) -> None:
         for prefix in ("sk-", "ghp_", "gho_", "ghu_", "ghs_", "ghr_"):
             for state in ("unstaged", "staged", "untracked"):

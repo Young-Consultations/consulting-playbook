@@ -78,6 +78,7 @@ class FakeEffects:
         )
         self.discoveries = 0
         self.codex_calls = 0
+        self.prepared = 0
         self.publish_calls = 0
         self.validation_calls = 0
 
@@ -86,6 +87,9 @@ class FakeEffects:
         if self.discoveries > 1 and self.race is not None:
             return Ownership(self.race_branch_exists, self.race)
         return Ownership(self.branch_exists, self.found)
+
+    def prepare_content(self, *_: Any) -> None:
+        self.prepared += 1
 
     def codex(self, *_: Any) -> None:
         self.codex_calls += 1
@@ -97,6 +101,9 @@ class FakeEffects:
 
     def has_candidate_changes(self, *_: Any) -> bool:
         return self.candidate_changes
+
+    def verify_recovered_publication(self, branch: str, pr: str, timeout_seconds: float) -> None:
+        pass  # No remote effects in this deterministic conformance double.
 
     def publish(self, *_: Any) -> str:
         self.publish_calls += 1
@@ -304,8 +311,9 @@ def test_security_and_publication_guards() -> None:
         "production execution does not use the proven login flow",
     )
     require(
-        '"--sandbox", "workspace-write", "-C", str(ROOT)' in adapter,
-        "Codex does not use the bounded writable target workspace",
+        '"--sandbox", "workspace-write", "-C", str(workspace)' in adapter
+        and "workspace = self._working_content_root()" in adapter,
+        "Codex must use the independently attested content checkout, not executor ROOT",
     )
     require(
         "run: python -m pip install --disable-pip-version-check --no-input 'jsonschema[format]==4.26.0'"
@@ -452,6 +460,10 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             return self.returncode
 
     effects = GitHubEffects()
+    # These direct unit tests bypass run_adapter; supply a verified test-only
+    # workspace to isolate the production Codex credential boundary.
+    effects._content_checkout = type("Prepared", (), {"root": ROOT})()
+    effects._publication_checkout = effects._content_checkout
     def fake_submit_prompt(proc: FakeCodexProcess, prompt: str, remaining: Any) -> None:
         proc.stdin.write(prompt)
         proc.stdin.close()
@@ -469,6 +481,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         ),
         patch.object(effects, "_gh", return_value="true\n") as github,
         patch("codex_target_adapter.subprocess.run", side_effect=fake_run),
+        patch("codex_target_adapter.sandbox_ready", return_value=True),
         patch("codex_target_adapter.subprocess.Popen", side_effect=FakeCodexProcess),
         patch("codex_target_adapter.submit_stdin_prompt", side_effect=fake_submit_prompt),
     ):
@@ -574,6 +587,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             patch.dict(os.environ, {"OPENAI_API_KEY": "sentinel-openai-key"}, clear=False),
             patch.object(effects, "_gh", return_value="true\n"),
             patch("codex_target_adapter.subprocess.run", side_effect=fake_run),
+        patch("codex_target_adapter.sandbox_ready", return_value=True),
             patch("codex_target_adapter.subprocess.Popen", return_value=StoppedCodexProcess()),
             patch("codex_target_adapter.handoff_startup_auth", side_effect=failure),
         ):
@@ -615,6 +629,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
         require(not unavailable_run.called, "Codex ran after publication readiness failed")
 
     probe_effects = GitHubEffects()
+    probe_effects._content_checkout = type("Prepared", (), {"root": ROOT})()
     with (
         patch.dict(
             os.environ,
@@ -675,6 +690,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
             "codex_target_adapter.subprocess.run",
             side_effect=fail_login_after_transport_probe,
         ) as failed_login,
+        patch("codex_target_adapter.sandbox_ready", return_value=True),
     ):
         try:
             effects.codex("Do not execute.", 30)
@@ -719,6 +735,12 @@ def test_publication_transport_auth_and_failure_classification() -> None:
     def exercise(stderr: bytes) -> tuple[AdapterError, dict[str, Any]]:
         effects = GitHubEffects()
         effects._publication_token = "sentinel-publication-token"
+        # Synthetic already-attested checkout for direct publication tests.
+        effects._content_checkout = type(
+            "Prepared", (), {"root": ROOT, "base": type(
+                "Base", (), {"content_sha": "f" * 40, "executor_sha": "e" * 40})()}
+        )()
+        effects._publication_checkout = effects._content_checkout
         observed: dict[str, Any] = {}
 
         def fake_publish_run(
@@ -735,7 +757,11 @@ def test_publication_transport_auth_and_failure_classification() -> None:
                 return subprocess.CompletedProcess(command, 1, stderr=stderr)
             return subprocess.CompletedProcess(command, 0)
 
-        with patch("codex_target_adapter.subprocess.run", side_effect=fake_publish_run):
+        with (
+            patch("codex_target_adapter.subprocess.run", side_effect=fake_publish_run),
+            patch("codex_target_adapter.subprocess.check_output", return_value="f" * 40 + "\n"),
+            patch.object(effects, "_check_content_base_head"),
+        ):
             try:
                 effects.publish("codex/delivery-42", "delivery-42", "a" * 64, 30)
             except AdapterError as exc:
@@ -853,6 +879,33 @@ def test_idempotency_and_create_race() -> None:
         ),
     )
     require(race["execution_status"] == "ambiguous-rejected", "ambiguous create race did not fail closed")
+
+
+def test_failed_workbase_provenance_denies_codex_and_publication() -> None:
+    class FailedProvenance(FakeEffects):
+        def prepare_content(self, delivery_id: str, timeout_seconds: float) -> None:
+            self.prepared += 1
+            raise AdapterError("dependency", "Authenticated current task-content base is unavailable", "failed")
+
+    effects = FailedProvenance()
+    value = payload()
+    result = execute(value, effects)
+    require(
+        result["execution_status"] == "failed"
+        and result["failure_category"] == "dependency",
+        "missing content SHA proof was not rejected",
+    )
+    require(
+        effects.discoveries == 1 and effects.prepared == 1
+        and effects.codex_calls == effects.publish_calls == 0,
+        "invalid content provenance reached cost-bearing model or remote effects",
+    )
+    reused = FakeEffects(found=[managed(value)])
+    require(
+        execute(value, reused)["execution_status"] == "duplicate-reused"
+        and reused.prepared == 0,
+        "prior owned draft reuse must not fetch a new baseline or incur Codex",
+    )
 
 
 def test_exact_shared_blobs_and_evidence() -> None:
