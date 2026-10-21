@@ -479,3 +479,34 @@ publication budget, reserving time for an exact remote topic-ref observation und
 the same deadline. Exact-candidate, different-object and unverified observations
 all return ambiguous rejection with branch/candidate/digest/baseline evidence;
 no automatic second push, PR creation or model call follows the timeout.
+
+### PR #96 source-completion boundary (unreleased)
+
+The current candidate supersedes earlier implementation notes as follows:
+
+- Sandbox runtime/dependency mounts must resolve under system `/usr` or `/opt`
+  paths, never the host home, its descendants, ancestors or symlink aliases.
+  User-site dependencies are not mounted. Required dependencies must be installed
+  in the trusted system/runtime environment; readiness fails before model login.
+- After model completion, an independently fetched publisher checkout retains
+  fresh protected Git metadata. Only regular working-tree data is copied from
+  the model checkout using descriptor-relative no-follow reads. Source `.git`
+  is ignored; links, special files and nested repositories are rejected. The
+  model's index is not authoritative: only final working-tree bytes can enter
+  the validated publication snapshot. Validation, candidate tests and publication
+  use that snapshot, never model-controlled Git metadata.
+- A pinned publisher pre-push guard permits creation of the expected ref only
+  when its advertised old object is zero. The server's old-OID check rejects
+  concurrent creation. There is no force push or fast-forward overwrite of an
+  existing delivery ref. Model hooks and ambient Git configuration stay disabled.
+- Draft reuse requires exact same-repository PR/head/ref identity, current default
+  base, one commit parent matching recorded content SHA, and immutable commit
+  trailers binding delivery, payload digest and both baseline SHAs. Incomplete
+  legacy evidence, altered refs/markers, forks, unreadable proofs and orphan refs
+  require human reconciliation and cannot authorize another model invocation.
+
+Source merge requires current-head review, security evidence and exact-head CI.
+Merge does not publish a new adapter, change the control-plane/environment binding,
+enable REAL, or resolve parent DEF-0125. Those require the separate immutable
+release, compatibility, protected-environment, deployed-preflight and fresh
+new-identity acceptance sequence. Never replay terminal source #167.

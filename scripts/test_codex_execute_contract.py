@@ -463,6 +463,7 @@ def test_production_codex_runtime_matches_preflight_boundary() -> None:
     # These direct unit tests bypass run_adapter; supply a verified test-only
     # workspace to isolate the production Codex credential boundary.
     effects._content_checkout = type("Prepared", (), {"root": ROOT})()
+    effects._publication_checkout = effects._content_checkout
     def fake_submit_prompt(proc: FakeCodexProcess, prompt: str, remaining: Any) -> None:
         proc.stdin.write(prompt)
         proc.stdin.close()
@@ -739,6 +740,7 @@ def test_publication_transport_auth_and_failure_classification() -> None:
             "Prepared", (), {"root": ROOT, "base": type(
                 "Base", (), {"content_sha": "f" * 40, "executor_sha": "e" * 40})()}
         )()
+        effects._publication_checkout = effects._content_checkout
         observed: dict[str, Any] = {}
 
         def fake_publish_run(

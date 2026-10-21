@@ -12,10 +12,69 @@ import os
 import subprocess
 import tempfile
 import time
+import shutil
+import stat
 from pathlib import Path
 from typing import Any, Callable
 
 from task_content_baseline import BaselineError, TaskBase, require_exact_content_checkout
+
+
+def copy_candidate_data(source: Path, destination: Path, deadline: float) -> None:
+    """Copy working-tree bytes only; never inspect or import model Git metadata.
+
+    Source directories/files are opened relative to directory descriptors with
+    O_NOFOLLOW. Links, devices, sockets and nested repositories fail closed.
+    The destination is a fresh, independently fetched checkout outside the model
+    workspace and retains its protected .git directory.
+    """
+    if source.resolve() == destination.resolve():
+        raise BaselineError("candidate and publication workspace must be distinct")
+    for entry in destination.iterdir():
+        remaining_time(deadline)
+        if entry.name == ".git":
+            continue
+        if entry.is_dir() and not entry.is_symlink():
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
+
+    def copy_directory(fd: int, target: Path, top: bool = False) -> None:
+        for name in os.listdir(fd):
+            remaining_time(deadline)
+            if top and name == ".git":
+                continue
+            if name.casefold() == ".git":
+                raise BaselineError("nested repository metadata is not candidate data")
+            metadata = os.stat(name, dir_fd=fd, follow_symlinks=False)
+            if stat.S_ISDIR(metadata.st_mode):
+                child = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+                try:
+                    (target / name).mkdir(mode=0o755)
+                    copy_directory(child, target / name)
+                finally:
+                    os.close(child)
+            elif stat.S_ISREG(metadata.st_mode):
+                child = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
+                with os.fdopen(child, "rb") as stream, (target / name).open("xb") as output:
+                    if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+                        raise BaselineError("candidate is not a regular file")
+                    while True:
+                        remaining_time(deadline)
+                        block = stream.read(1024 * 1024)
+                        if not block:
+                            break
+                        output.write(block)
+                (target / name).chmod(0o755 if metadata.st_mode & 0o111 else 0o644)
+            else:
+                raise BaselineError("candidate links and special files are not supported")
+
+    fd = os.open(source, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        copy_directory(fd, destination, top=True)
+        remaining_time(deadline)
+    finally:
+        os.close(fd)
 
 
 def remaining_time(deadline: float) -> float:
@@ -36,6 +95,11 @@ def _git_environment() -> dict[str, str]:
         "GIT_CONFIG_SYSTEM": os.devnull,
         "GIT_TERMINAL_PROMPT": "0",
         "GIT_LFS_SKIP_SMUDGE": "1",
+        "GIT_CONFIG_COUNT": "2",
+        "GIT_CONFIG_KEY_0": "core.hooksPath",
+        "GIT_CONFIG_VALUE_0": os.devnull,
+        "GIT_CONFIG_KEY_1": "core.fsmonitor",
+        "GIT_CONFIG_VALUE_1": "false",
     })
     return env
 

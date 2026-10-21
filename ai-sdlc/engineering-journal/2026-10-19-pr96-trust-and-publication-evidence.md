@@ -101,3 +101,32 @@ model invocation. All outcomes preserve canonical branch/candidate/digest eviden
 and require human reconciliation. An exhausted deadline makes no further API call.
 Defect Ledger, architecture guidance and AI_CONTEXT reflect the unreleased behavior;
 no tag, registry, credential binding, REAL task or source #167 replay is changed.
+
+## 2026-10-21: source-completion security evidence
+
+The owner requested completion of PR #96. Codex's remaining finding showed that
+user-site package mounts exposed runner-home descendants (DEF-0136). The completion
+audit also established three distinct source discrepancies behind the listed gates:
+post-model Git still used model-writable metadata (DEF-0137, high); a normal push
+could fast-forward a competing ref despite the no-force rule (DEF-0138); and marker-only
+reuse did not bind the mutable draft/ref to its immutable object/parent (DEF-0139).
+
+The source repair excludes home-derived runtime mounts, materializes an independent
+publisher checkout, copies only final regular working-tree data without Git metadata,
+and validates/publishes from that protected snapshot. A pinned create-only pre-push
+guard refuses nonzero remote old OIDs; normal Git server object comparison covers
+concurrent creation after negotiation. Reuse checks the PR head/repository/ref,
+parent, default base and immutable delivery/digest/executor/content commit trailers.
+
+Regression evidence uses real Git repositories to demonstrate that malicious model
+hooks, filters, fsmonitor and URL rewrites never execute in host publication; existing
+refs cannot be fast-forwarded while new refs can be created; links/nested metadata
+are rejected; and inconsistent/unsupported API ownership records cannot reach a second
+model call. Existing staged/unstaged/untracked validators and mandatory namespace CI
+cover the other candidate trust boundaries. These are implementation corrections
+under ADR-013, not a new contract schema or production authorization.
+
+The merge decision requires fresh exact-head CI and independent code/security review.
+Do not conflate those source gates with the subsequent immutable release/environment
+binding, deployed preflight and controlled new-identity REAL acceptance. Parent
+DEF-0125 remains investigating after source merge; no terminal #167 replay is allowed.

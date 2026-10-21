@@ -24,7 +24,8 @@ from jsonschema import Draft202012Validator, FormatChecker
 from codex_auth_handoff import handoff_startup_auth, isolated_codex_home, submit_stdin_prompt
 from candidate_test_sandbox import sandbox_ready, run_candidate_tests
 from task_content_baseline import BaselineError, PublicationDisposition, PublicationPhase, verify_publication_head
-from task_content_checkout import TrustedContentCheckout, attest_default_branch, checkout_attested_base, remaining_time
+from task_content_checkout import (TrustedContentCheckout, attest_default_branch, checkout_attested_base,
+                                   remaining_time, copy_candidate_data, _git_environment)
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = "Young-Consultations/consulting-playbook"
@@ -345,6 +346,7 @@ class GitHubEffects:
         self._publication_token: str | None = None
         self._content_read_token: str | None = None
         self._content_checkout: TrustedContentCheckout | None = None
+        self._publication_checkout: TrustedContentCheckout | None = None
         self._publication_digest: str | None = None
         self._candidate_sha: str | None = None
 
@@ -384,6 +386,9 @@ class GitHubEffects:
             ) from exc
 
     def close(self) -> None:
+        if self._publication_checkout is not None:
+            self._publication_checkout.close()
+            self._publication_checkout = None
         if self._content_checkout is not None:
             self._content_checkout.close()
             self._content_checkout = None
@@ -399,6 +404,28 @@ class GitHubEffects:
             self._publication_token = _take_secret("TARGET_PUBLICATION_TOKEN")
         return self._publication_token
 
+    def _publisher_root(self, timeout_seconds: float) -> Path:
+        if self._publication_checkout is not None:
+            return self._publication_checkout.root
+        if self._content_checkout is None:
+            return ROOT  # Verify-only path has no model workspace.
+        if not self._content_read_token:
+            raise AdapterError("authorization", "Independent publication checkout proof is missing", "ambiguous-rejected")
+        deadline = time.monotonic() + timeout_seconds
+        checkout = None
+        try:
+            checkout = checkout_attested_base(
+                self._content_checkout.base, token=self._content_read_token,
+                timeout_seconds=remaining_time(deadline), deadline=deadline,
+            )
+            copy_candidate_data(self._content_checkout.root, checkout.root, deadline)
+            self._publication_checkout = checkout
+            return checkout.root
+        except Exception:
+            if checkout is not None:
+                checkout.close()
+            raise
+
     def _gh(self, *args: str, timeout_seconds: float) -> str:
         env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
         env["GH_TOKEN"] = self._publication_credential()
@@ -408,7 +435,7 @@ class GitHubEffects:
 
     def _publication_git_environment(self) -> tuple[dict[str, str], str]:
         """Create a secret-free askpass helper and publication-only Git environment."""
-        env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
+        env = _git_environment()
         token = self._publication_credential()
         askpass_script = """#!/bin/sh
 case "$1" in
@@ -421,8 +448,24 @@ esac
         with open(askpass_path, "w", encoding="utf-8") as askpass_file:
             askpass_file.write(askpass_script)
         os.chmod(askpass_path, 0o700)
+        # The reviewed publisher hook enforces creation-only semantics even
+        # when a competing ref exists before Git negotiates its update. Git's
+        # own old-OID comparison then rejects a concurrent creation afterward.
+        hooks = ROOT / ".git/ai-sdlc-push-hooks"
+        hooks.mkdir(exist_ok=True)
+        guard = hooks / "pre-push"
+        guard.write_text(
+            '#!/bin/sh\nwhile read local_ref local_oid remote_ref remote_oid; do\n'
+            '  [ "$remote_ref" = "$AI_SDLC_EXPECTED_REF" ] || exit 1\n'
+            '  [ "$remote_oid" = "0000000000000000000000000000000000000000" ] || exit 1\n'
+            'done\n', encoding="utf-8",
+        )
+        guard.chmod(0o700)
         return {
             **env,
+            "GIT_CONFIG_COUNT": "3",
+            "GIT_CONFIG_KEY_2": "core.hooksPath",
+            "GIT_CONFIG_VALUE_2": str(hooks),
             "GIT_ASKPASS": askpass_path,
             "GIT_TERMINAL_PROMPT": "0",
             "GIT_USERNAME": "x-access-token",
@@ -430,27 +473,70 @@ esac
         }, askpass_path
 
     def discover(self, branch: str, delivery_id: str, timeout_seconds: float) -> Ownership:
+        deadline = time.monotonic() + timeout_seconds
         branch_names = self._gh(
             "api",
             "--paginate",
             f"repos/{TARGET}/branches?per_page=100",
             "--jq",
             ".[].name",
-            timeout_seconds=timeout_seconds,
+            timeout_seconds=remaining_time(deadline),
         )
         branch_exists = branch in branch_names.splitlines()
         raw = self._gh("pr", "list", "--repo", TARGET, "--state", "all", "--head", branch,
-                       "--json", "url,state,isDraft,body", timeout_seconds=timeout_seconds)
+                       "--json", "url,state,isDraft,body,headRefOid,headRefName,headRepository,baseRefName",
+                       timeout_seconds=remaining_time(deadline))
         found = []
         pattern = re.compile(rf"<!--\s*{MARKER}:\s*{re.escape(delivery_id)};\s*payload-sha256:\s*([0-9a-f]{{64}})\s*-->")
         for pr in json.loads(raw):
             match = pattern.search(pr.get("body") or "")
             if match:
+                blocked = "<!-- ai-sdlc-publication-blocked:" in (pr.get("body") or "")
+                valid = not blocked and branch_exists and self._verify_draft_provenance(
+                    pr, branch, delivery_id, match.group(1), deadline,
+                )
                 found.append({"url": pr["url"], "state": pr["state"], "draft": pr["isDraft"], "digest": match.group(1),
-                              "blocked": "<!-- ai-sdlc-publication-blocked:" in (pr.get("body") or "")})
+                              "blocked": blocked or not valid})
             else:
                 found.append({"url": pr["url"], "state": pr["state"], "draft": pr["isDraft"], "digest": "conflict"})
         return Ownership(branch_exists=branch_exists, pull_requests=found)
+
+    @staticmethod
+    def _commit_message(delivery_id: str, digest: str, executor: str, content: str) -> str:
+        return (f"AI-SDLC delivery {delivery_id}\n\nPayload-SHA256: {digest}\n"
+                f"Executor-SHA: {executor}\nContent-Base-SHA: {content}")
+
+    def _verify_draft_provenance(self, pr: dict[str, Any], branch: str,
+                                 delivery_id: str, digest: str, deadline: float) -> bool:
+        """Bind mutable PR/ref evidence to one immutable commit and parent."""
+        marker = re.search(
+            r"<!-- ai-sdlc-provenance: executor-sha: ([0-9a-f]{40}); content-base-sha: ([0-9a-f]{40}); candidate-sha: ([0-9a-f]{40}) -->",
+            pr.get("body") or "",
+        )
+        if marker is None:
+            return False
+        executor, content, candidate = marker.groups()
+        if (pr.get("headRefOid") != candidate or pr.get("headRefName") != branch
+                or (pr.get("headRepository") or {}).get("nameWithOwner") != TARGET):
+            return False
+        try:
+            ref = json.loads(self._gh("api", f"repos/{TARGET}/git/ref/heads/{branch}",
+                                      timeout_seconds=remaining_time(deadline)))
+            commit = json.loads(self._gh("api", f"repos/{TARGET}/commits/{candidate}",
+                                         timeout_seconds=remaining_time(deadline)))
+            default_branch = self._gh("api", f"repos/{TARGET}", "--jq", ".default_branch",
+                                      timeout_seconds=remaining_time(deadline)).strip()
+            remaining_time(deadline)
+            return (ref.get("ref") == "refs/heads/" + branch
+                    and ref.get("object", {}).get("sha") == candidate
+                    and commit.get("sha") == candidate
+                    and [parent.get("sha") for parent in commit.get("parents", [])] == [content]
+                    and pr.get("baseRefName") == default_branch
+                    and commit.get("commit", {}).get("message", "").rstrip("\n")
+                    == self._commit_message(delivery_id, digest, executor, content))
+        except (ValueError, TypeError, AttributeError, KeyError, OSError,
+                subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            return False
 
     def codex(self, instructions: str, timeout_seconds: float) -> None:
         workspace = self._working_content_root()
@@ -493,6 +579,7 @@ esac
         run_attempt = os.getenv("GITHUB_RUN_ATTEMPT", "1")
         probe_ref = f"refs/heads/ai-sdlc-preflight-{run_id}-{run_attempt}"
         push_env, askpass_path = self._publication_git_environment()
+        push_env["AI_SDLC_EXPECTED_REF"] = probe_ref
         try:
             probe = subprocess.run(
                 ["git", "push", "--dry-run", remote, f"HEAD:{probe_ref}"],
@@ -598,18 +685,20 @@ esac
             raise AdapterError("codex-runtime", "Codex execution failed", "failed")
 
     def has_candidate_changes(self, timeout_seconds: float) -> bool:
-        env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
+        deadline = time.monotonic() + timeout_seconds
+        workspace = self._publisher_root(remaining_time(deadline))
+        env = _git_environment()
         return bool(subprocess.check_output(
             ["git", "status", "--porcelain=v1", "-z", "--untracked-files=normal"],
-            cwd=self._working_content_root(), env=env, timeout=timeout_seconds,
+            cwd=workspace, env=env, timeout=remaining_time(deadline),
         ))
 
     def validate_candidate(self, timeout_seconds: float) -> tuple[bool, str]:
         # Policy validation remains pinned. Candidate-owned tests run only
         # inside the credential-free namespace sandbox on a disposable snapshot.
-        env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
+        env = _git_environment()
         deadline = time.monotonic() + timeout_seconds
-        candidate = self._content_checkout.root if self._content_checkout else ROOT
+        candidate = self._publisher_root(remaining_time(deadline))
         commands = [
             (["python", str(ROOT / "scripts/validate_repository.py"), "--worktree", str(candidate)],
              "validation", ROOT),
@@ -671,13 +760,15 @@ esac
         marker = f"<!-- {MARKER}: {base.delivery_id}; payload-sha256: {self._publication_digest} -->"
         try:
             snapshot = json.loads(self._gh(
-                "pr", "view", pr, "--repo", TARGET, "--json", "body,headRefName,isDraft,state",
+                "pr", "view", pr, "--repo", TARGET, "--json", "body,headRefName,headRefOid,headRepository,isDraft,state",
                 timeout_seconds=remaining_time(deadline),
             ))
             remaining_time(deadline)
             body = snapshot["body"]
             if (snapshot["headRefName"] != branch or not snapshot["isDraft"]
-                    or snapshot["state"] != "OPEN" or not self._publication_digest or marker not in body):
+                    or snapshot["state"] != "OPEN" or not self._publication_digest or marker not in body
+                    or not self._candidate_sha or snapshot.get("headRefOid") != self._candidate_sha
+                    or (snapshot.get("headRepository") or {}).get("nameWithOwner") != TARGET):
                 raise ValueError("draft ownership unavailable")
             evidence = (f"<!-- ai-sdlc-publication-blocked: stale-or-unverifiable-base -->\n"
                         f"BLOCKED: default branch changed or could not be verified after publication.\n"
@@ -737,12 +828,12 @@ esac
         )
 
     def publish(self, branch: str, delivery_id: str, digest: str, timeout_seconds: float) -> str:
+        deadline = time.monotonic() + timeout_seconds
         self._publication_digest = digest
-        workspace = self._working_content_root()
-        env = {k: v for k, v in os.environ.items() if k in SAFE_ENV}
+        workspace = self._publisher_root(remaining_time(deadline))
+        env = _git_environment()
         env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
                    GIT_TERMINAL_PROMPT="0")
-        deadline = time.monotonic() + timeout_seconds
         def budget() -> float:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
@@ -756,7 +847,9 @@ esac
             raise AdapterError("codex-runtime", "Codex produced no candidate changes", "failed")
         subprocess.run(["git", "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false",
                         "-c", "user.name=ai-sdlc-target", "-c",
-                        "user.email=ai-sdlc@users.noreply.github.com", "commit", "-m", f"AI-SDLC delivery {delivery_id}"], check=True, cwd=workspace, env=env,
+                        "user.email=ai-sdlc@users.noreply.github.com", "commit", "-m",
+                        self._commit_message(delivery_id, digest, self._content_checkout.base.executor_sha,
+                                             self._content_checkout.base.content_sha)], check=True, cwd=workspace, env=env,
                        timeout=budget())
         self._candidate_sha = subprocess.check_output(
             ["git", "rev-parse", "--verify", "HEAD"], cwd=workspace, env=env,
@@ -774,6 +867,7 @@ esac
         self._check_content_base_head(PublicationPhase.BEFORE_PUSH, branch, budget())
         remote = f"https://github.com/{TARGET}.git"
         push_env, askpass_path = self._publication_git_environment()
+        push_env["AI_SDLC_EXPECTED_REF"] = f"refs/heads/{branch}"
         self._log_publication_evidence("push-intent", branch, delivery_id)
         try:
             pushed = subprocess.run(
@@ -793,7 +887,8 @@ esac
                 pass
         if pushed.returncode:
             stderr_text = (pushed.stderr or b"").decode("utf-8", errors="replace").lower()
-            if "non-fast-forward" in stderr_text or "fetch first" in stderr_text:
+            if ("non-fast-forward" in stderr_text or "fetch first" in stderr_text
+                    or "pre-push hook declined" in stderr_text):
                 raise AdapterError("publication", "create-race")
             raise AdapterError(
                 "publication",

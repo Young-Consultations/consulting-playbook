@@ -273,3 +273,47 @@ different and unverifiable results all retain partial-effect identities and
 return ambiguous rejection requiring human reconciliation. If the deadline is
 exhausted, issue no further remote command and preserve unverified evidence.
 Never retry the push, automatically create a PR, or invoke a second model call.
+
+## Source implementation completion and acceptance
+
+The final source candidate keeps model Git metadata outside the trusted boundary.
+After model completion, materialize a second independently fetched exact-base
+checkout outside the writable model root. Copy final working-tree regular files
+only, with descriptor-relative `O_NOFOLLOW` reads, no source index/config/hooks,
+no nested repositories, and no symlinks or special files. The protected checkout
+retains its own metadata and becomes the sole validation/publication snapshot.
+This deliberately discards model staging metadata: staged-only data absent from
+the final working tree is never published. Candidate tests use a separate disposable
+copy of this snapshot; they cannot change the validated publisher checkout.
+
+All host Git operations after the model run use protected metadata and isolated
+system/global configuration. Model filters, fsmonitor, hooks and URL rewrites do
+not cross into that checkout. The one permitted publisher hook is pinned policy:
+it accepts only the expected remote ref with an advertised all-zero old OID.
+The server then enforces its old-OID compare-and-swap during creation. This rejects
+even fast-forward updates to a competing branch without any force option.
+
+Generated commits include delivery/digest/executor/content trailers. Draft reuse
+must bind the provenance marker to the PR head SHA, the same-repository remote
+topic ref, exactly one recorded content parent, current default base, and those
+immutable commit trailers. Ambiguous/missing legacy evidence fails closed before
+model execution. Draft blocking also verifies the expected candidate head/repository
+before modifying a PR; mutable refs cannot supply global atomicity.
+
+Sandbox runtime/dependency mounts must be trusted system/prefix paths under `/usr`
+or `/opt`, excluding the host home, its ancestors/descendants and symlink aliases.
+The host user site is not a dependency source. Production/CI must install dependencies
+in the trusted runtime. A missing dependency or unavailable sandbox fails readiness
+before the paid boundary.
+
+Premerge evidence is provided by `test_publication_isolation.py` (real local Git
+malicious metadata, safe create-only publication, links and API-backed reuse proof),
+`test_task_content_checkout.py` (all publication race windows and partial timeouts),
+`test_validate_repository.py` (staged/unstaged/untracked path/secret checks), and
+mandatory CI namespace tests in `test_candidate_test_sandbox.py`. Require exact-head
+conformance and a fresh independent code/security review before source merge.
+
+Source merge is not activation. Immutable target tagging, registry/control-plane
+composition, environment workflow-ref/authorized-SHA binding, release compatibility,
+deployed preflight and a fresh governed REAL identity remain subsequent acceptance
+gates. Parent DEF-0125 stays investigating until those gates pass; #167 stays terminal.

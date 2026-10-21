@@ -35,6 +35,7 @@ jobs:
           python scripts/test_task_content_baseline.py
           python scripts/test_task_content_checkout.py
           python scripts/test_candidate_test_sandbox.py
+          python scripts/test_publication_isolation.py
           python scripts/test_codex_auth_preflight.py
           python scripts/test_production_auth_probe.py
           python scripts/test_codex_execute_contract.py

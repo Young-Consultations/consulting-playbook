@@ -22,13 +22,23 @@ from task_content_checkout import remaining_time
 TEST_SCRIPT = "scripts/test_codex_execute_contract.py"
 
 
+def _trusted_runtime_path(path: Path) -> bool:
+    resolved = path.resolve()
+    home = Path.home().resolve()
+    return (any(resolved == root or resolved.is_relative_to(root)
+                for root in (Path("/usr"), Path("/opt")))
+            and resolved != home and not resolved.is_relative_to(home)
+            and not home.is_relative_to(resolved))
+
+
 def sandbox_command(snapshot: Path, *, probe: bool = False) -> list[str]:
     command = ["bwrap", "--unshare-all", "--die-with-parent", "--new-session",
                "--cap-drop", "ALL", "--clearenv"]
     mounted = []
     for directory in ("/usr", "/bin", "/lib", "/lib64", str(Path(sys.prefix)), str(Path(sys.base_prefix))):
         path = Path(directory)
-        if not path.exists() or any(path == root or path.is_relative_to(root) for root in mounted):
+        if (not path.exists() or not _trusted_runtime_path(path)
+                or any(path == root or path.is_relative_to(root) for root in mounted)):
             continue
         # Bind real runtime paths, retaining the conventional symlink aliases.
         if path.is_symlink():
@@ -37,9 +47,10 @@ def sandbox_command(snapshot: Path, *, probe: bool = False) -> list[str]:
             command += ["--ro-bind", str(path), str(path)]
             mounted.append(path)
     dependencies = []
-    for index, directory in enumerate([*site.getsitepackages(), site.getusersitepackages()]):
+    for index, directory in enumerate(site.getsitepackages()):
         path = Path(directory)
-        if not path.is_dir() or any(path == root or path.is_relative_to(root) for root in mounted):
+        if (not path.is_dir() or not _trusted_runtime_path(path)
+                or any(path == root or path.is_relative_to(root) for root in mounted)):
             continue
         destination = f"/test-dependencies/{index}"
         command += ["--ro-bind", str(path), destination]

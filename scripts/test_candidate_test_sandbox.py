@@ -34,6 +34,24 @@ class SandboxBoundaryTests(unittest.TestCase):
             for dangerous in ("/proc", str(Path.home()), "/workspace"):
                 self.assertFalse(any(command[i] == "--ro-bind" and command[i + 1] == dangerous
                                      for i in range(len(command) - 1)))
+            for i, item in enumerate(command[:-1]):
+                if item in {"--ro-bind", "--bind"} and command[i + 1] != directory:
+                    self.assertFalse(Path(command[i + 1]).resolve().is_relative_to(Path.home().resolve()))
+
+    def test_home_descendant_and_symlink_dependency_paths_are_not_mounted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory) / "home"
+            packages = home / ".local/lib/python/site-packages"
+            packages.mkdir(parents=True)
+            alias = Path(directory) / "packages-alias"
+            alias.symlink_to(packages, target_is_directory=True)
+            with (patch.object(Path, "home", return_value=home),
+                  patch.object(sandbox.site, "getsitepackages", return_value=[str(packages), str(alias)]),
+                  patch.object(sandbox.site, "getusersitepackages") as user_site):
+                command = sandbox.sandbox_command(Path(directory) / "candidate")
+            user_site.assert_not_called()
+            self.assertNotIn(str(packages), command)
+            self.assertNotIn(str(alias), command)
 
     def test_sandbox_unavailable_stops_before_model_authentication(self):
         effects = GitHubEffects()
@@ -54,6 +72,7 @@ class SandboxBoundaryTests(unittest.TestCase):
             root = Path(directory)
             effects = GitHubEffects()
             effects._content_checkout = type("Prepared", (), {"root": root})()
+            effects._publication_checkout = effects._content_checkout
             with (patch("codex_target_adapter.subprocess.run", return_value=subprocess.CompletedProcess([], 0)) as policy,
                   patch("codex_target_adapter.run_candidate_tests", return_value=False) as tests):
                 self.assertEqual(effects.validate_candidate(10), (False, "tests"))

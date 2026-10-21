@@ -170,6 +170,7 @@ class ContentCheckoutTests(unittest.TestCase):
             for unreadable in (False, True):
                 effects = GitHubEffects()
                 effects._content_checkout = type("Prepared", (), {"base": base, "root": Path("/unused")})()
+                effects._publication_checkout = effects._content_checkout
                 effects._content_read_token = "read-token"
                 phases = iter((PublicationPhase.BEFORE_PUSH, PublicationPhase.AFTER_PUSH_BEFORE_PR,
                                PublicationPhase.AFTER_PR))
@@ -192,6 +193,7 @@ class ContentCheckoutTests(unittest.TestCase):
                         return "https://github.com/" + TARGET + "/pull/7"
                     if args[:2] == ("pr", "view"):
                         return json.dumps({"body": remote["body"], "headRefName": "codex/delivery-42",
+                                           "headRefOid": effects._candidate_sha, "headRepository": {"nameWithOwner": TARGET},
                                            "isDraft": True, "state": "OPEN"})
                     if args[:2] == ("pr", "edit"):
                         remote["edits"] += 1
@@ -248,6 +250,7 @@ class ContentCheckoutTests(unittest.TestCase):
         for observation in (SHA, OTHER, None):
             effects = GitHubEffects()
             effects._content_checkout = type("Prepared", (), {"base": base, "root": Path("/unused")})()
+            effects._publication_checkout = effects._content_checkout
             effects._content_read_token = "read-token"
             remote = {"body": "", "creates": 0, "pushes": 0, "edits": 0}
             def gh(*args, **kwargs):
@@ -257,6 +260,7 @@ class ContentCheckoutTests(unittest.TestCase):
                     raise subprocess.CalledProcessError(1, "gh")  # Remote success, lost response.
                 if args[:2] == ("pr", "view"):
                     return json.dumps({"body": remote["body"], "headRefName": "codex/delivery-42",
+                                       "headRefOid": effects._candidate_sha, "headRepository": {"nameWithOwner": TARGET},
                                        "isDraft": True, "state": "OPEN"})
                 if args[:2] == ("pr", "edit"):
                     remote["body"] = args[args.index("--body") + 1]
@@ -365,6 +369,7 @@ class ContentCheckoutTests(unittest.TestCase):
             value = payload()
             effects = GitHubEffects()
             effects._content_checkout = type("Prepared", (), {"base": base, "root": root})()
+            effects._publication_checkout = effects._content_checkout
             effects._content_read_token = "read-token"
             pushed = []
             observations = [0]
@@ -434,6 +439,7 @@ class ContentCheckoutTests(unittest.TestCase):
                 if args[1] == "view":
                     clock[0] += elapsed_view
                     return json.dumps({"body": "<!-- ai-sdlc-delivery-id: delivery-42; payload-sha256: " + "e" * 64 + " -->",
+                                       "headRefOid": effects._candidate_sha, "headRepository": {"nameWithOwner": TARGET},
                                        "headRefName": "codex/delivery-42", "isDraft": True, "state": "OPEN"})
                 clock[0] += 1
                 return ""
@@ -471,6 +477,7 @@ class ContentCheckoutTests(unittest.TestCase):
                 base = TaskBase(TARGET, "main", base_sha, EXECUTOR, "delivery-42")
                 effects = GitHubEffects()
                 effects._content_checkout = type("Prepared", (), {"base": base, "root": root})()
+                effects._publication_checkout = effects._content_checkout
                 effects._content_read_token = "read-token"
                 pushes, requests = [], []
                 def run(command, **kwargs):
