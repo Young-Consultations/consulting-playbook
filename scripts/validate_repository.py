@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import re
 import subprocess
 from pathlib import Path
@@ -28,8 +29,8 @@ FORBIDDEN_NAMES = re.compile(r"(^|/)(\.env($|\.)|credentials|secrets?($|\.)|.*\.
 SECRET_VALUE = re.compile(r"(sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9_]{20,})")
 
 
-def run(*args: str, worktree: Path | None = None) -> str:
-    return subprocess.run(args, cwd=worktree, check=True, text=True, errors="replace", capture_output=True).stdout
+def run(*args: str, worktree: Path | None = None, encoding: str = "utf-8") -> str:
+    return subprocess.run(args, cwd=worktree, check=True, encoding=encoding, errors="strict", capture_output=True).stdout
 
 
 def main() -> None:
@@ -40,8 +41,14 @@ def main() -> None:
     if not (worktree / ".git").exists():
         raise SystemExit("candidate validation requires a Git checkout")
     def git(*parts: str) -> str:
-        return run("git", *parts, worktree=worktree)
-    entries = iter(git("status", "--porcelain=v1", "-z", "--untracked-files=all").split("\0"))
+        # Paths must decode exactly. Blob/diff bytes use a reversible mapping
+        # so every ASCII credential marker survives arbitrary binary content.
+        binary = parts[0] == "cat-file" or (parts[0] == "diff" and "--name-only" not in parts)
+        return run("git", *parts, worktree=worktree, encoding="latin-1" if binary else "utf-8")
+    try:
+        entries = iter(git("status", "--porcelain=v1", "-z", "--untracked-files=all").split("\0"))
+    except UnicodeDecodeError:
+        raise SystemExit("candidate path names must be UTF-8")
     files: list[str] = []
     for entry in entries:
         if not entry:
@@ -53,6 +60,8 @@ def main() -> None:
             if original:
                 files.append(original)
     for name in files:
+        if SECRET_VALUE.search(name):
+            raise SystemExit("a credential-like value was detected in a candidate path")
         root = Path(name).parts[0]
         if root not in ALLOWED_ROOTS:
             raise SystemExit(f"changed path is outside the repository allowlist: {name}")
@@ -70,28 +79,19 @@ def main() -> None:
     content += "\n" + added_content(git("diff", "--cached", "--no-ext-diff", "--no-textconv"))
     if SECRET_VALUE.search(content):
         raise SystemExit("a credential-like value was detected in generated content")
-    baseline_values: dict[str, set[str]] = {}
-    def new_value(text: str, name: str, partial: bool = False) -> bool:
-        matches = list(SECRET_VALUE.finditer(text))
-        if not matches:
+    baseline_values: dict[str, Counter[str]] = {}
+    def new_occurrence(values: Counter[str], name: str) -> bool:
+        if not values:
             return False
         if name not in baseline_values:
             try:
-                baseline_values[name] = set(SECRET_VALUE.findall(git("cat-file", "blob", "HEAD:" + name)))
+                baseline_values[name] = Counter(SECRET_VALUE.findall(git("cat-file", "blob", "HEAD:" + name)))
             except subprocess.CalledProcessError:
-                baseline_values[name] = set()
-        for match in matches:
-            value = match.group()
-            if value in baseline_values[name]:
-                continue
-            if partial and match.end() == len(text) and any(
-                    baseline.startswith(value) for baseline in baseline_values[name]):
-                continue
-            return True
-        return False
+                baseline_values[name] = Counter()
+        return any(count > baseline_values[name][value] for value, count in values.items())
 
     for name in git("diff", "--cached", "--name-only", "--diff-filter=ACMRT", "-z").split("\0"):
-        if name and new_value(git("cat-file", "blob", ":0:" + name), name):
+        if name and new_occurrence(Counter(SECRET_VALUE.findall(git("cat-file", "blob", ":0:" + name))), name):
             raise SystemExit("a credential-like value was detected in generated content")
     for name in files:
         path = worktree / name
@@ -101,17 +101,24 @@ def main() -> None:
             if not path.resolve().is_relative_to(worktree):
                 raise SystemExit("candidate path escapes the worktree")
             # Inspect final file bytes as well as staged/unstaged diffs. Git
-            # emits no added lines for binary files. Bound memory use and keep
-            # overlap so markers split across chunks are still detected.
-            overlap = ""
+            # emits no added lines for binary files. Count complete tokens
+            # once; retain an unfinished token or short prefix between chunks.
+            pending = ""
+            values: Counter[str] = Counter()
             with path.open("rb") as stream:
                 while block := stream.read(65536):
-                    text = overlap + block.decode("utf-8", errors="replace")
-                    if new_value(text, name, partial=True):
+                    text = pending + block.decode("latin-1")
+                    matches = list(SECRET_VALUE.finditer(text))
+                    unfinished = matches[-1] if matches and matches[-1].end() == len(text) else None
+                    complete = matches[:-1] if unfinished else matches
+                    values.update(match.group() for match in complete)
+                    if new_occurrence(values, name):
                         raise SystemExit("a credential-like value was detected in generated content")
-                    width = max([128, *(len(value) + 1 for value in baseline_values.get(name, set()))])
-                    overlap = text[-width:]
-            if new_value(overlap, name):
+                    start = unfinished.start() if unfinished else max(
+                        complete[-1].end() if complete else 0, len(text) - 32, 0)
+                    pending = text[start:]
+            values.update(SECRET_VALUE.findall(pending))
+            if new_occurrence(values, name):
                 raise SystemExit("a credential-like value was detected in generated content")
 
 

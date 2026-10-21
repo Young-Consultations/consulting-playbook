@@ -139,3 +139,13 @@ scans raw final-file bytes with chunk overlap and raw stage-zero blobs, and disa
 text conversion. Focused regressions cover these paths before the final candidate
 is reviewed and merged. These close existing validation obligations without a new
 requirements decision or production effect.
+
+Codex review of 53513be found DEF-0142/DEF-0143: lossy decoding could turn a real
+non-UTF-8 path into a nonexistent path that escaped scanning, and value membership
+could exempt duplicate baseline credentials in binary changes. The final audit
+also found filename values themselves were not covered (DEF-0144). Path metadata
+now decodes strictly, blob bytes reversibly, and binary/staged checks compare
+occurrence counts. Streaming counts complete tokens once across chunk boundaries;
+path-value failures do not echo the value. Ten validator regressions cover these
+cases alongside the earlier staged/unstaged/untracked and binary checks. Fresh
+exact-head CI and review remain required before the authorized source merge.

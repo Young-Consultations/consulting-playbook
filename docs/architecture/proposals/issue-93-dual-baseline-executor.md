@@ -324,3 +324,10 @@ inspection. Binary diffs alone supply no added content; a safe working-tree file
 must not hide a credential staged in the index. External diff and text conversion
 are disabled. `test_validate_repository.py` includes nested untracked forbidden
 paths/values, binary values and split read-boundary/staged-replacement regressions.
+
+Path status/name metadata is strict UTF-8 and fails closed on decoding errors;
+raw blob and diff contents use a reversible byte mapping. Credential checks cover
+path values before diagnostics can echo them. For binary content, compare complete
+token occurrence counts against baseline counts rather than exempting every copy
+of a known value. Streaming must count a cross-chunk token once and retain partial
+prefixes; the index and final working tree are independent checks.

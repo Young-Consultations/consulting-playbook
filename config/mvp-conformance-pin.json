@@ -4,7 +4,7 @@
   "compatibility_sha": "e27b8a541afbd27b4be5606a19ffa43637ad312a",
   "fixture_set": "TC-MVP-CI-001",
   "fixture_version": "2.3.0",
-  "adapter_revision": "sha256:4dd967b303eaa208e7562d8a48e3455e72aeec9d90dbd5176a5eaa1d55ff6635",
+  "adapter_revision": "sha256:d4c5a4746fb115211134374bca79d16bbdec3db173d67f0e625300bcc838131e",
   "compatibility_files": {
     "contracts/task-contract.schema.json": "d95673363eb7f825eb64b73ddb0468c787078ce4",
     "contracts/execution-input.schema.json": "b2b16cfda619c82d73a5e78ae34566feb6b83224",
@@ -22,7 +22,7 @@
     "scripts/run_tc_mvp_ci_001_receiver_310.py": "430bb8ed8d8fabe54b9482d00a2e6f4654763cb8",
     "scripts/task_content_baseline.py": "f854b5769b4921aca4dfc8055e03af7dad2ee8e2",
     "scripts/task_content_checkout.py": "ec4edd073a13a61f8ad9a830b82dbfa404ff4386",
-    "scripts/validate_repository.py": "0cd4f7f2885908d63069ca41b41a14287a0a0063",
+    "scripts/validate_repository.py": "0ed354d5277731819ca6337aea1ef2e76dd4067b",
     "scripts/test_task_content_baseline.py": "37ad56ce5ed44fe6f0190fbe26f69f6a00192e69",
     "scripts/test_codex_execute_contract.py": "13be3f6bc9a6277e5d8893767d893c86865bcca1",
     "scripts/test_task_content_checkout.py": "b4bcc5ad44a9c31f23be65ac7e5a0a166b222c53",
@@ -30,6 +30,6 @@
     "scripts/candidate_test_sandbox.py": "63e289ccb7a5e7732d9529845eb82da0463c981e",
     "scripts/test_candidate_test_sandbox.py": "122812b72d2d5ed40eeb279e91fface397dfb310",
     "scripts/test_publication_isolation.py": "b4696bffa853419826b9ed4acd57e27c70300b00",
-    "scripts/test_validate_repository.py": "b76a31bc1b2dcd98229ef99af627332264d92e99"
+    "scripts/test_validate_repository.py": "67b7484fed51a831271e62ee1d650a46602495fd"
   }
 }

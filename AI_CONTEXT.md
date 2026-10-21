@@ -516,3 +516,9 @@ and parses NUL-delimited rename records. Secret validation inspects raw final-fi
 bytes and raw stage-zero blobs, not just added diff lines; binary data, safe
 working-tree replacements and markers split across read chunks must not bypass it.
 Git text conversion/external diff execution stays disabled.
+
+Path metadata must decode as exact UTF-8; undecodable paths fail closed without
+echoing them. Raw blob/diff bytes use a reversible byte mapping. Binary scans
+compare occurrence counts against the same baseline path, so duplicating an
+existing example cannot bypass policy; staged and final contents are checked
+independently. Credential-like values in filenames are rejected with fixed errors.
