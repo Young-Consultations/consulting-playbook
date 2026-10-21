@@ -510,3 +510,9 @@ Merge does not publish a new adapter, change the control-plane/environment bindi
 enable REAL, or resolve parent DEF-0125. Those require the separate immutable
 release, compatibility, protected-environment, deployed-preflight and fresh
 new-identity acceptance sequence. Never replay terminal source #167.
+
+Candidate policy enumerates every nested untracked path (`--untracked-files=all`)
+and parses NUL-delimited rename records. Secret validation inspects raw final-file
+bytes and raw stage-zero blobs, not just added diff lines; binary data, safe
+working-tree replacements and markers split across read chunks must not bypass it.
+Git text conversion/external diff execution stays disabled.

@@ -317,3 +317,10 @@ Source merge is not activation. Immutable target tagging, registry/control-plane
 composition, environment workflow-ref/authorized-SHA binding, release compatibility,
 deployed preflight and a fresh governed REAL identity remain subsequent acceptance
 gates. Parent DEF-0125 stays investigating until those gates pass; #167 stays terminal.
+
+Final validation coverage also requires complete nested untracked-path enumeration,
+NUL-delimited rename source/destination parsing, and raw final-file/stage-zero secret
+inspection. Binary diffs alone supply no added content; a safe working-tree file
+must not hide a credential staged in the index. External diff and text conversion
+are disabled. `test_validate_repository.py` includes nested untracked forbidden
+paths/values, binary values and split read-boundary/staged-replacement regressions.

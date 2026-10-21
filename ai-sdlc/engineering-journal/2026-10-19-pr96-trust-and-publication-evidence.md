@@ -130,3 +130,12 @@ The merge decision requires fresh exact-head CI and independent code/security re
 Do not conflate those source gates with the subsequent immutable release/environment
 binding, deployed preflight and controlled new-identity REAL acceptance. Parent
 DEF-0125 remains investigating after source merge; no terminal #167 replay is allowed.
+
+The final validation audit found DEF-0140/DEF-0141: collapsed untracked-directory
+status records bypassed nested path/value checks, while binary diffs omitted added
+content and could hide staged credentials behind safe working-tree replacements.
+The validator now enumerates all nested paths, parses NUL-delimited rename records,
+scans raw final-file bytes with chunk overlap and raw stage-zero blobs, and disables
+text conversion. Focused regressions cover these paths before the final candidate
+is reviewed and merged. These close existing validation obligations without a new
+requirements decision or production effect.
