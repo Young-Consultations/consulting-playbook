@@ -4,7 +4,7 @@
   "compatibility_sha": "e27b8a541afbd27b4be5606a19ffa43637ad312a",
   "fixture_set": "TC-MVP-CI-001",
   "fixture_version": "2.3.0",
-  "adapter_revision": "sha256:6a97396193818e837fefbf03104b6af57c9bd1a7c52e318691156a9394518616",
+  "adapter_revision": "sha256:ed1f90c3297555e2b73ef8f5377da368e90d83785d6d57bb75b66dc809f5c014",
   "compatibility_files": {
     "contracts/task-contract.schema.json": "d95673363eb7f825eb64b73ddb0468c787078ce4",
     "contracts/execution-input.schema.json": "b2b16cfda619c82d73a5e78ae34566feb6b83224",
@@ -26,7 +26,7 @@
     "scripts/test_task_content_baseline.py": "37ad56ce5ed44fe6f0190fbe26f69f6a00192e69",
     "scripts/test_codex_execute_contract.py": "2744167818697705c253159c3e4bfe8c44c995c8",
     "scripts/test_task_content_checkout.py": "31e5f9f04b8d372d7aa42025b0012ee0474ceaa5",
-    ".github/workflows/mvp-conformance.yml": "3e0cca823acf6d4c4d9892d55afbbe892d2f65a5",
+    ".github/workflows/mvp-conformance.yml": "6197eddc165d9983136904ad1736ed8b8918fe78",
     "scripts/candidate_test_sandbox.py": "63e289ccb7a5e7732d9529845eb82da0463c981e",
     "scripts/test_candidate_test_sandbox.py": "122812b72d2d5ed40eeb279e91fface397dfb310",
     "scripts/test_publication_isolation.py": "1cb4f3ac3801c143767f30b1502bef8d252ba8cf",
