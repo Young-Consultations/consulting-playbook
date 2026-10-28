@@ -65,7 +65,7 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   effect provenance, do not claim zero transient writes, and never auto-merge
   or spend more model calls to reconcile drift.
 - **Exact published receiver self-pin:** The 3.1.0 target workflow invokes
-  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0`
+  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v4.0.0`
   as its immutable versioned result-consumer interface; this approved design
   does not change its signature, authentication, or ownership.
 - **Terminal receipt boundary:** The 3.1.0 trusted source journal blocks

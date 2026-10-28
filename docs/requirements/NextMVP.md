@@ -135,7 +135,7 @@ Published 3.0.3 subsequently repaired that boundary.
 
 The released `codex-adapter-v3.1.0` target for issue #111
 uses only the versioned organization receiver. It shall invoke
-`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v3.1.0`
+`Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v4.0.0`
 with inputs `execution_result` and `source_issue` and the
 `RESULT_WRITER_PRIVATE_KEY` secret, supplied from target secret
 `AI_SDLC_RESULT_WRITER_PRIVATE_KEY`. The matching receiver shall mint a
@@ -199,7 +199,7 @@ GitHub App `ai-sdlc-result-writer` (App ID `5100679`) scoped only to
 `portfolio-tasks` with Issues write and Contents write; require the token's
 reported app slug to equal `ai-sdlc-result-writer`; and invoke the
 organization-owned
-`codex-result-credential-preflight@ai-sdlc-v3.1.0`. That preflight shall prove
+`codex-result-credential-preflight@ai-sdlc-v4.0.0`. That preflight shall prove
 the trusted result-author identity, issue-comment create/delete access, and the
 dedicated no-op repository-dispatch capability. Any failure stops the delivery
 before cost-bearing execution. The installation token shall not be supplied to

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Bind target conformance to the proposed 3.1.0 receiver candidate."""
+"""Bind target conformance to the proposed 4.0.0 receiver candidate.
+
+The historical entrypoint name is retained for CI callers.
+"""
 from __future__ import annotations
 
 import argparse
@@ -9,7 +12,7 @@ from pathlib import Path
 from run_tc_mvp_ci_001 import ROOT, run
 
 EXPECTED_GENERATOR_STATE = "pending-ai-sdlc-v2.3.1-tag"
-EXPECTED_RECEIVER_STATE = "pending-ai-sdlc-v3.1.0-live-verification"
+EXPECTED_RECEIVER_STATE = "pending-ai-sdlc-v4.0.0-live-verification"
 
 
 def main() -> None:
@@ -32,7 +35,7 @@ def main() -> None:
     args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     if failures:
         raise SystemExit("TC-MVP-CI-001 failed:\n- " + "\n- ".join(failures))
-    print("TC-MVP-CI-001: target adapter passed; receiver 3.1.0 live verification remains pending")
+    print("TC-MVP-CI-001: target adapter passed; receiver 4.0.0 live verification remains pending")
 
 
 if __name__ == "__main__":
