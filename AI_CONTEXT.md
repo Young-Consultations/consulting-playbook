@@ -215,7 +215,16 @@ must never be rewritten. The 3.1.0 trusted terminal receipt preflight
 prevents retry of a terminal failure, preserving exact authorized managed
 draft reuse and blocking unsupported evidence before Codex.
 
-**Approved ADR-013 / issue #93, not yet implemented in production:**
+**Approved ADR-013 / issue #93, implemented and live-accepted in 4.0.0:**
+
+DEF-0125 is resolved by independent live acceptance of fresh source #171 in run
+40802447762, with one model invocation, original candidate `15d705e` parented on
+newer content base `bcad36d` and immutable executor `84964d3`. Final reviewed PR #99
+merged as `c56870f`; the canonical ledger and
+`ai-sdlc/engineering-journal/2026-10-28-def-0125-live-acceptance.md` record evidence.
+Earlier pending-release/acceptance statements below describe historical gates and
+are superseded for DEF-0125 by this closure. No unrelated defect is resolved by
+this record; terminal failed sources #167 and #170 must not be replayed.
 Trusted executor/policy must remain at the exact immutable adapter release
 SHA, while task content comes from an independently verified current
 target default-branch commit in a separate clean worktree. Bind repository,
