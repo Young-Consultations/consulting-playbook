@@ -201,7 +201,7 @@ def test_exact_dispatch_and_receiver_boundary() -> None:
     require(inputs.count("execution_input_json:") == 1 and inputs.count("concurrency_group:") == 1, "target inputs differ")
     workflow_lines = {line.strip() for line in WORKFLOW.splitlines()}
     require(
-        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v4.0.0"
+        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v5.0.0"
         in workflow_lines,
         "receiver is not exactly and immutably pinned",
     )
@@ -259,7 +259,7 @@ def test_security_and_publication_guards() -> None:
         "result writer token permissions do not match the receiver boundary",
     )
     require(
-        "uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v4.0.0"
+        "uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v5.0.0"
         in WORKFLOW,
         "result delivery preflight is not pinned to the matching control-plane candidate",
     )
@@ -935,7 +935,7 @@ def test_missing_publication_readiness_stops_before_model() -> None:
         require("OPENAI_API_KEY" in os.environ, "provider credential consumed despite denial")
     require("PUBLICATION_READINESS_EVIDENCE" in adapter_module.SECRET_NAMES, "readiness not isolated")
     require("PUBLICATION_READINESS_EVIDENCE: ${{ secrets.PUBLICATION_READINESS_EVIDENCE }}" in WORKFLOW, "readiness not sourced from protected secret")
-    require("codex-result-receiver.yml@ai-sdlc-v4.0.0" in WORKFLOW, "receiver binding differs")
+    require("codex-result-receiver.yml@ai-sdlc-v5.0.0" in WORKFLOW, "receiver binding differs")
 
 
 def test_exact_shared_blobs_and_evidence() -> None:
