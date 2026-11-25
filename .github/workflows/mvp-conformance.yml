@@ -40,6 +40,7 @@ jobs:
           python scripts/test_production_auth_probe.py
           python scripts/test_publication_readiness.py
           python scripts/test_publication_canary.py
+          python scripts/test_publication_canary_transport.py
           python scripts/test_codex_execute_contract.py
           python scripts/run_tc_mvp_ci_001_receiver_310.py
           git diff --exit-code -- .ai-sdlc/conformance/tc-mvp-ci-001.json
