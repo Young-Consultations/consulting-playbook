@@ -566,7 +566,7 @@ esac
             "executor_sha": self._content_checkout.base.executor_sha,
             "control_plane_sha": os.environ.get("AUTHORIZED_CONTROL_PLANE_SHA", ""),
             "environment": "consulting-playbook-codex",
-            "receiver_ref": "ai-sdlc-v4.0.0",
+            "receiver_ref": "ai-sdlc-v5.0.0",
             "policy_revision": os.environ.get("PUBLICATION_POLICY_REVISION", ""),
         }
         try:
