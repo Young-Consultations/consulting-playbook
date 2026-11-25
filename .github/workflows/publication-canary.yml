@@ -1,0 +1,49 @@
+name: No-model publication canary
+
+on:
+  workflow_dispatch:
+    inputs:
+      canary_id:
+        description: Owner-approved unique canary identity (never reuse after cleanup).
+        required: true
+        type: string
+      base_sha:
+        description: Exact approved main commit.
+        required: true
+        type: string
+      confirmation:
+        description: Enter publish-one-draft only after separate approval.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publication-canary-consulting
+  cancel-in-progress: false
+
+jobs:
+  canary:
+    if: ${{ github.repository == 'Young-Consultations/consulting-playbook' && github.ref == 'refs/tags/codex-adapter-v5.0.0' && github.run_attempt == 1 }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: consulting-playbook-codex
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify immutable authorization and publish one bounded draft
+        env:
+          CANARY_ID: ${{ inputs.canary_id }}
+          CANARY_BASE_SHA: ${{ inputs.base_sha }}
+          CANARY_CONFIRMATION: ${{ inputs.confirmation }}
+          CANARY_APPROVER: ${{ vars.PUBLICATION_CANARY_APPROVER }}
+          CANARY_PUBLISHER: ${{ vars.PUBLICATION_CANARY_PUBLISHER }}
+          CANARY_AUTHORIZATION: ${{ vars.PUBLICATION_CANARY_AUTHORIZATION }}
+          AUTHORIZED_CONTROL_PLANE_SHA: ${{ vars.CODEX_AUTHORIZED_CONTROL_PLANE_SHA }}
+          PUBLICATION_POLICY_REVISION: ${{ vars.PUBLICATION_POLICY_REVISION }}
+          CANARY_READ_TOKEN: ${{ github.token }}
+          TARGET_PUBLICATION_TOKEN: ${{ secrets.TARGET_PUBLICATION_TOKEN }}
+        run: exec python3 scripts/publication_canary_transport.py
