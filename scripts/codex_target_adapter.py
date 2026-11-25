@@ -24,6 +24,7 @@ from urllib.parse import quote
 from jsonschema import Draft202012Validator, FormatChecker
 from codex_auth_handoff import handoff_startup_auth, isolated_codex_home, submit_stdin_prompt
 from candidate_test_sandbox import sandbox_ready, run_candidate_tests
+from publication_readiness import ReadinessError, require_readiness
 from task_content_baseline import BaselineError, PublicationDisposition, PublicationPhase, verify_publication_head
 from task_content_checkout import (TrustedContentCheckout, attest_default_branch, checkout_attested_base,
                                    remaining_time, copy_candidate_data, _git_environment)
@@ -33,7 +34,7 @@ TARGET = "Young-Consultations/consulting-playbook"
 MARKER = "ai-sdlc-delivery-id"
 ALLOWED_TYPES = {"automation", "documentation", "feature", "testing"}
 SAFE_ENV = {"PATH", "HOME", "LANG", "LC_ALL", "CI", "GITHUB_ACTIONS"}
-SECRET_NAMES = ("OPENAI_API_KEY", "TARGET_PUBLICATION_TOKEN", "CONTENT_READ_TOKEN", "TRUSTED_CALLERS")
+SECRET_NAMES = ("OPENAI_API_KEY", "TARGET_PUBLICATION_TOKEN", "CONTENT_READ_TOKEN", "TRUSTED_CALLERS", "PUBLICATION_READINESS_EVIDENCE")
 SECRET_FD_ENV = "CODEX_ADAPTER_SECRETS_FD"
 _RUNTIME_SECRETS: dict[str, str] = {}
 
@@ -559,6 +560,21 @@ esac
                 subprocess.CalledProcessError, subprocess.TimeoutExpired):
             return False
 
+    def _require_publication_readiness(self) -> None:
+        expected = {
+            "repository": TARGET,
+            "executor_sha": self._content_checkout.base.executor_sha,
+            "control_plane_sha": os.environ.get("AUTHORIZED_CONTROL_PLANE_SHA", ""),
+            "environment": "consulting-playbook-codex",
+            "receiver_ref": "ai-sdlc-v5.0.0",
+            "policy_revision": os.environ.get("PUBLICATION_POLICY_REVISION", ""),
+        }
+        try:
+            require_readiness(_take_optional_secret("PUBLICATION_READINESS_EVIDENCE"),
+                              expected, self._publication_credential())
+        except ReadinessError as exc:
+            raise AdapterError("publication", str(exc), "failed") from None
+
     def codex(self, instructions: str, timeout_seconds: float) -> None:
         workspace = self._working_content_root()
         deadline = time.monotonic() + timeout_seconds
@@ -624,6 +640,9 @@ esac
 
         if not sandbox_ready(budget()):
             raise AdapterError("dependency", "Candidate test sandbox is unavailable", "failed")
+
+        # A successful Git push dry-run does not prove Pull requests: write.
+        self._require_publication_readiness()
 
         # Consume the secret before any child process is created. In
         # particular, a model-launched command must not be able to recover it

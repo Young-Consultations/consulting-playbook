@@ -1,5 +1,7 @@
 # Interface Architecture
 
+Release candidate note: the v5.0.0 receiver/preflight requirements below apply only to the unpublished candidate. The deployed v4.0.0 immutable path remains unchanged until separate release and readiness acceptance.
+
 ## Contract rules applying to every interface
 
 All interfaces are versioned, schema-validatable, least-privilege and technology-neutral. Requests identify contract version, message/command ID, correlation ID, actor or system identity, timestamp, classification, purpose and payload where applicable. Responses identify outcome, safe error code, correlation, authoritative revision/status and retry guidance. Receivers validate structure, semantics, authority, freshness, classification, target ownership and compatibility at their trust boundary.
@@ -64,8 +66,8 @@ Human interfaces must explain consequences, distinguish required/optional/not-ap
   GitHub unrelated refs cannot be atomically frozen; retain exact partial
   effect provenance, do not claim zero transient writes, and never auto-merge
   or spend more model calls to reconcile drift.
-- **Exact published receiver self-pin:** The 3.1.0 target workflow invokes
-  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v4.0.0`
+- **Exact candidate receiver self-pin:** The proposed v5.0.0 target workflow invokes
+  `Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v5.0.0`
   as its immutable versioned result-consumer interface; this approved design
   does not change its signature, authentication, or ownership.
 - **Terminal receipt boundary:** The 3.1.0 trusted source journal blocks

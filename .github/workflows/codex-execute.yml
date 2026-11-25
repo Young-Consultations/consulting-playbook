@@ -135,7 +135,7 @@ jobs:
           [[ "$APP_SLUG" == "ai-sdlc-result-writer" ]]
       - name: Prove result-delivery prerequisites before Codex
         id: result-preflight
-        uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v4.0.0
+        uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v5.0.0
         with:
           result-token: ${{ steps.result-writer-token.outputs.token }}
           source-issue: ${{ steps.result-source.outputs.source_issue }}
@@ -171,6 +171,9 @@ jobs:
           # Workflow permissions are contents:read only; this token is NOT a publisher.
           CONTENT_READ_TOKEN: ${{ github.token }}
           AUTHORIZED_EXECUTOR_SHA: ${{ steps.executor-binding.outputs.executor_sha }}
+          AUTHORIZED_CONTROL_PLANE_SHA: ${{ vars.CODEX_AUTHORIZED_CONTROL_PLANE_SHA }}
+          PUBLICATION_POLICY_REVISION: ${{ vars.PUBLICATION_POLICY_REVISION }}
+          PUBLICATION_READINESS_EVIDENCE: ${{ secrets.PUBLICATION_READINESS_EVIDENCE }}
         # Replace the runner shell so the adapter can re-exec with a
         # secret-free environment and leave no secret-bearing ancestor.
         run: exec python3 scripts/codex_target_adapter.py
@@ -192,7 +195,7 @@ jobs:
     permissions:
       contents: read
     # 3.0.3 candidate: release publication and control-plane binding are separate gates.
-    uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v4.0.0
+    uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v5.0.0
     with:
       execution_result: ${{ needs.execute.outputs.execution_result }}
       source_issue: ${{ needs.execute.outputs.source_issue }}

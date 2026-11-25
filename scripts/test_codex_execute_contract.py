@@ -201,7 +201,7 @@ def test_exact_dispatch_and_receiver_boundary() -> None:
     require(inputs.count("execution_input_json:") == 1 and inputs.count("concurrency_group:") == 1, "target inputs differ")
     workflow_lines = {line.strip() for line in WORKFLOW.splitlines()}
     require(
-        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v4.0.0"
+        "uses: Young-Consultations/.github/.github/workflows/codex-result-receiver.yml@ai-sdlc-v5.0.0"
         in workflow_lines,
         "receiver is not exactly and immutably pinned",
     )
@@ -259,7 +259,7 @@ def test_security_and_publication_guards() -> None:
         "result writer token permissions do not match the receiver boundary",
     )
     require(
-        "uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v4.0.0"
+        "uses: Young-Consultations/.github/actions/codex-result-credential-preflight@ai-sdlc-v5.0.0"
         in WORKFLOW,
         "result delivery preflight is not pinned to the matching control-plane candidate",
     )
@@ -393,6 +393,7 @@ def test_runtime_secrets_cross_reexec_without_environment_exposure() -> None:
         require(not adapter_module._RUNTIME_SECRETS, "consumed runtime secrets remained in memory store")
 
 
+@patch.object(GitHubEffects, "_require_publication_readiness", new=lambda self: None)
 def test_production_codex_runtime_matches_preflight_boundary() -> None:
     calls: list[dict[str, Any]] = []
     executions: list[dict[str, Any]] = []
@@ -906,6 +907,35 @@ def test_failed_workbase_provenance_denies_codex_and_publication() -> None:
         and reused.prepared == 0,
         "prior owned draft reuse must not fetch a new baseline or incur Codex",
     )
+
+
+def test_missing_publication_readiness_stops_before_model() -> None:
+    effects = GitHubEffects()
+    effects._content_checkout = type("Prepared", (), {
+        "root": ROOT, "base": type("Base", (), {"executor_sha": "a" * 40})(),
+    })()
+    effects._publication_token = "synthetic-publisher"
+    with (
+        patch.dict(os.environ, {"OPENAI_API_KEY": "synthetic-provider", "PUBLICATION_READINESS_EVIDENCE": ""}, clear=True),
+        patch.object(effects, "_gh", return_value="true"),
+        patch.object(effects, "_publication_git_environment", return_value=({}, "/nonexistent/helper")),
+        patch.object(adapter_module.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as transport,
+        patch.object(adapter_module, "sandbox_ready", return_value=True),
+        patch.object(adapter_module.subprocess, "Popen") as model,
+        patch.object(effects, "publish") as publish,
+    ):
+        try:
+            effects.codex("must not execute", 10)
+        except AdapterError as exc:
+            require(exc.category == "publication" and "readiness" in exc.safe_message, "wrong failure category")
+        else:
+            raise ValueError("missing PR readiness did not block execution")
+        require(transport.call_count == 1, "unexpected process after dry-run")
+        require(not model.called and not publish.called, "missing readiness reached effects")
+        require("OPENAI_API_KEY" in os.environ, "provider credential consumed despite denial")
+    require("PUBLICATION_READINESS_EVIDENCE" in adapter_module.SECRET_NAMES, "readiness not isolated")
+    require("PUBLICATION_READINESS_EVIDENCE: ${{ secrets.PUBLICATION_READINESS_EVIDENCE }}" in WORKFLOW, "readiness not sourced from protected secret")
+    require("codex-result-receiver.yml@ai-sdlc-v5.0.0" in WORKFLOW, "receiver binding differs")
 
 
 def test_exact_shared_blobs_and_evidence() -> None:
