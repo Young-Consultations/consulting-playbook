@@ -4,7 +4,7 @@
   "compatibility_sha": "e27b8a541afbd27b4be5606a19ffa43637ad312a",
   "fixture_set": "TC-MVP-CI-001",
   "fixture_version": "2.3.0",
-  "adapter_revision": "sha256:ed1f90c3297555e2b73ef8f5377da368e90d83785d6d57bb75b66dc809f5c014",
+  "adapter_revision": "sha256:feaf7d4daa6a2c360eebec91d1f2d8fa479f0b474070a133f9badc30a8b7982a",
   "compatibility_files": {
     "contracts/task-contract.schema.json": "d95673363eb7f825eb64b73ddb0468c787078ce4",
     "contracts/execution-input.schema.json": "b2b16cfda619c82d73a5e78ae34566feb6b83224",
@@ -14,8 +14,8 @@
     "tests/fixtures/mvp-v2/expected-results.json": "b45c6921f029220b2f3138d5cd2d9443499a3171"
   },
   "target_files": {
-    ".github/workflows/codex-execute.yml": "42ebce6a83c46c91d918f1ffe938097dd6cec8d4",
-    "scripts/codex_target_adapter.py": "6b5e3f37592165294a552a620020380fd638a229",
+    ".github/workflows/codex-execute.yml": "6dd6b2a40df8f1897ac1aa239fee412f9bc8525f",
+    "scripts/codex_target_adapter.py": "0833578a9c1fc9c70d6b0ecde560c8914c8801f2",
     "scripts/run_tc_mvp_ci_001.py": "41dd4eb16216a345f828df17c064b8b6017baf8f",
     "scripts/codex_auth_handoff.py": "c66ecf1c01a8cd04178ebe0b865069fc64d2d30c",
     "scripts/run_tc_mvp_ci_001_receiver_303.py": "f0a3441e7432215ec229485e80b912df665d0167",
@@ -24,12 +24,14 @@
     "scripts/task_content_checkout.py": "ec4edd073a13a61f8ad9a830b82dbfa404ff4386",
     "scripts/validate_repository.py": "0ed354d5277731819ca6337aea1ef2e76dd4067b",
     "scripts/test_task_content_baseline.py": "37ad56ce5ed44fe6f0190fbe26f69f6a00192e69",
-    "scripts/test_codex_execute_contract.py": "2744167818697705c253159c3e4bfe8c44c995c8",
+    "scripts/test_codex_execute_contract.py": "ed3ae8c189d7c87ee097d2e637dd58fbe30f1714",
     "scripts/test_task_content_checkout.py": "31e5f9f04b8d372d7aa42025b0012ee0474ceaa5",
-    ".github/workflows/mvp-conformance.yml": "6197eddc165d9983136904ad1736ed8b8918fe78",
+    ".github/workflows/mvp-conformance.yml": "d5f3f98b887ce60f33747a1045d4a377b46ef50d",
     "scripts/candidate_test_sandbox.py": "63e289ccb7a5e7732d9529845eb82da0463c981e",
     "scripts/test_candidate_test_sandbox.py": "122812b72d2d5ed40eeb279e91fface397dfb310",
     "scripts/test_publication_isolation.py": "1cb4f3ac3801c143767f30b1502bef8d252ba8cf",
-    "scripts/test_validate_repository.py": "67b7484fed51a831271e62ee1d650a46602495fd"
+    "scripts/test_validate_repository.py": "67b7484fed51a831271e62ee1d650a46602495fd",
+    "scripts/publication_readiness.py": "da1694cd87be514986f96862c1db07c36217d462",
+    "scripts/test_publication_readiness.py": "f520be598da6a233855cf64be20c5b851880badf"
   }
 }

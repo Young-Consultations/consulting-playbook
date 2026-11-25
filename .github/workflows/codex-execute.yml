@@ -171,6 +171,9 @@ jobs:
           # Workflow permissions are contents:read only; this token is NOT a publisher.
           CONTENT_READ_TOKEN: ${{ github.token }}
           AUTHORIZED_EXECUTOR_SHA: ${{ steps.executor-binding.outputs.executor_sha }}
+          AUTHORIZED_CONTROL_PLANE_SHA: ${{ vars.CODEX_AUTHORIZED_CONTROL_PLANE_SHA }}
+          PUBLICATION_POLICY_REVISION: ${{ vars.PUBLICATION_POLICY_REVISION }}
+          PUBLICATION_READINESS_EVIDENCE: ${{ secrets.PUBLICATION_READINESS_EVIDENCE }}
         # Replace the runner shell so the adapter can re-exec with a
         # secret-free environment and leave no secret-bearing ancestor.
         run: exec python3 scripts/codex_target_adapter.py
