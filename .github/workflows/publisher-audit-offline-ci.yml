@@ -1,0 +1,28 @@
+name: Publisher audit offline CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Run offline publisher diagnostic regressions
+        env:
+          NO_NETWORK: "1"
+        run: |
+          python3 scripts/test_publisher_credential_audit.py
+          git diff --check
+      - name: Validate workflow syntax
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          "$(go env GOPATH)/bin/actionlint" -shellcheck= .github/workflows/publisher-credential-audit.yml .github/workflows/publisher-audit-offline-ci.yml
