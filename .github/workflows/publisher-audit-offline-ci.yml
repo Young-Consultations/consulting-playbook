@@ -21,8 +21,9 @@ jobs:
           NO_NETWORK: "1"
         run: |
           python3 scripts/test_publisher_credential_audit.py
+          python3 scripts/test_package_publication_readiness.py
           git diff --check
       - name: Validate workflow syntax
         run: |
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
-          "$(go env GOPATH)/bin/actionlint" -shellcheck= .github/workflows/publisher-credential-audit.yml .github/workflows/publisher-audit-offline-ci.yml
+          "$(go env GOPATH)/bin/actionlint" -shellcheck= .github/workflows/publisher-credential-audit.yml .github/workflows/publisher-audit-offline-ci.yml .github/workflows/package-publication-readiness.yml
