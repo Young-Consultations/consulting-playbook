@@ -257,7 +257,7 @@ class HandoffTests(unittest.TestCase):
                 with patch.dict(os.environ, {name:value}):
                     self.assertEqual(p.credential_free_preflight(), 1)
 
-    def exercise_main(self, mode, *, mutation=None, expected=0):
+    def exercise_main(self, mode, *, mutation=None, expected=0, inject_effect=None):
         lib, pk, sk = keys()
         row, routes, pr, _ = self.readback_fixture()
         run = dict(RUN, id=123, path=p.CANARY_WORKFLOW, event="workflow_dispatch",
@@ -278,17 +278,27 @@ class HandoffTests(unittest.TestCase):
               {"name":"Verify immutable authorization and publish one bounded draft",
                "status":"completed","conclusion":"success"}]}]}
         calls = []
+        violations = []
+
+        def deny(effect):
+            violations.append(effect)
+            raise AssertionError(effect)
+
         class Client:
             def __init__(self, token, *, publisher=False):
-                if publisher or token not in (TOKEN, "synthetic-reader"):
-                    raise AssertionError("credential/write trap")
+                if publisher:
+                    deny("write-capable client")
+                if token not in (TOKEN, "synthetic-reader"):
+                    deny("unexpected credential")
                 self.token = token
             def call(self, method, path, data=None):
                 calls.append((self.token,method,path))
                 if method != "GET" or data is not None:
-                    raise AssertionError("write trap")
+                    deny("API write or request body")
                 if self.token == TOKEN and path not in ("/user",p.PREFIX):
-                    raise AssertionError("publisher read scope trap")
+                    deny("publisher read scope")
+                if path not in routes:
+                    deny("unexpected API endpoint")
                 return routes[path]
         class Clock(datetime):
             @classmethod
@@ -303,23 +313,36 @@ class HandoffTests(unittest.TestCase):
                 mutation(env,row,helper,pr)
             log = "canary\tstep\t" + p.canonical(row)
             def fake_subprocess(args, **kwargs):
-                self.assertEqual(args, ["gh","run","view","--repo",p.TARGET,"--job","789","--log"])
-                self.assertEqual(kwargs["env"]["GH_TOKEN"], "synthetic-reader")
-                self.assertNotIn(TOKEN, json.dumps(kwargs["env"]))
-                self.assertNotIn(p.digest(TOKEN.encode()), json.dumps(kwargs["env"]))
+                if args != ["gh","run","view","--repo",p.TARGET,"--job","789","--log"]:
+                    deny("unexpected subprocess command")
+                child = kwargs.get("env", {})
+                if child.get("GH_TOKEN") != "synthetic-reader":
+                    deny("subprocess credential scope")
+                if TOKEN in json.dumps(child) or p.digest(TOKEN.encode()) in json.dumps(child):
+                    deny("subprocess plaintext credential or fingerprint")
                 for k in ("READ_TOKEN","TARGET_PUBLICATION_TOKEN","PUBLICATION_READINESS_EVIDENCE"):
-                    self.assertNotIn(k, os.environ)
+                    if k in os.environ or k in child:
+                        deny("secret retained at subprocess boundary")
+                if inject_effect:
+                    inject_effect(Client)
                 return log
             stdout,stderr=StringIO(),StringIO()
             # Allow only fake GETs and exact fake gh log command; no live network.
             with patch.dict(os.environ,env,clear=True), patch.object(p,"datetime",Clock), \
                  patch.object(transport,"GitHub",Client), \
                  patch.object(p.subprocess,"check_output",side_effect=fake_subprocess), \
-                 patch.object(p.subprocess,"run",side_effect=AssertionError("subprocess trap")), \
-                 patch("socket.socket",side_effect=AssertionError("network trap")), \
+                 patch.object(p.subprocess,"run",side_effect=AssertionError("subprocess trap")) as run_trap, \
+                 patch.object(p.subprocess,"Popen",side_effect=AssertionError("process trap")) as popen_trap, \
+                 patch("socket.socket",side_effect=AssertionError("network trap")) as network_trap, \
                  patch.object(p.sys,"path",list(p.sys.path)), \
                  redirect_stdout(stdout), redirect_stderr(stderr):
                 result=p.main()
+            # Assertions must run OUTSIDE main(): its fail-closed exception handler
+            # may swallow the trap exception and return the expected denial.
+            self.assertEqual(violations, [], "prohibited-effect attempts")
+            self.assertEqual(network_trap.call_count, 0, "prohibited network attempts")
+            self.assertEqual(run_trap.call_count, 0, "prohibited subprocess attempts")
+            self.assertEqual(popen_trap.call_count, 0, "prohibited process attempts")
             self.assertEqual(result,expected,stdout.getvalue()+stderr.getvalue())
             output=stdout.getvalue()+stderr.getvalue()
             self.assertNotIn(TOKEN,output)
@@ -352,6 +375,29 @@ class HandoffTests(unittest.TestCase):
 
     def test_main_verify_success(self):
         self.assertTrue(self.exercise_main("verify"))
+
+    def test_denial_harness_detects_swallowed_effects(self):
+        # Inject effects inside the otherwise legitimate log fetch. The real
+        # main() catches AssertionError and returns 1; the harness must still
+        # fail for each forbidden attempt. All effects are intercepted mocks.
+        import socket
+        cases = [
+            ("network", lambda client: socket.socket()),
+            ("subprocess", lambda client: p.subprocess.run(["forbidden"])),
+            ("process", lambda client: p.subprocess.Popen(["forbidden"])),
+            ("command", lambda client: p.subprocess.check_output(["forbidden"])),
+            ("write", lambda client: client("synthetic-reader").call("POST", p.PREFIX)),
+            ("body", lambda client: client("synthetic-reader").call("GET", p.PREFIX, {})),
+            ("credential", lambda client: client("unexpected-synthetic-token")),
+            ("publisher mode", lambda client: client(TOKEN, publisher=True)),
+            ("publisher scope", lambda client: client(TOKEN).call("GET", p.PREFIX+"/pulls")),
+            ("child scope", lambda client: p.subprocess.check_output(
+                ["gh","run","view","--repo",p.TARGET,"--job","789","--log"],
+                env={"GH_TOKEN": TOKEN})),
+        ]
+        for label, effect in cases:
+            with self.subTest(effect=label), self.assertRaisesRegex(AssertionError, "prohibited"):
+                self.exercise_main("package", expected=1, inject_effect=effect)
 
     def test_main_denials(self):
         mutations=[
