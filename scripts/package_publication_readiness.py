@@ -79,12 +79,14 @@ def key_bytes(value):
     return raw
 
 
-def authorize(env):
+def preflight(env):
     mode = env.get("MODE")
     sha = env.get("EXPECTED_HELPER_SHA", "")
     run = env.get("CANARY_RUN_ID", "")
+    helper_run = env.get("GITHUB_RUN_ID", "")
     need(mode in {"package", "verify"} and re.fullmatch(r"[0-9a-f]{40}", sha)
          and re.fullmatch(r"[1-9][0-9]*", run)
+         and re.fullmatch(r"[1-9][0-9]*", helper_run) and helper_run != run
          and env.get("GITHUB_REPOSITORY") == TARGET
          and env.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
          and env.get("GITHUB_REF") == REF
@@ -92,10 +94,7 @@ def authorize(env):
          and env.get("GITHUB_SHA") == env.get("GITHUB_WORKFLOW_SHA") == sha
          and env.get("GITHUB_ACTOR") == env.get("GITHUB_TRIGGERING_ACTOR") == OWNER
          and env.get("GITHUB_RUN_ATTEMPT") == "1"
-         and env.get("CONFIRMATION") == mode + "-accepted-canary"
-         and env.get("AUTHORIZED_CONTROL_PLANE_SHA") == CONTROL
-         and env.get("PUBLICATION_POLICY_REVISION") == POLICY
-         and not env.get("PUBLICATION_CANARY_AUTHORIZATION"))
+         and env.get("CONFIRMATION") == mode + "-accepted-canary")
     need(not any(env.get(k) for k in ("OPENAI_API_KEY", "CODEX_API_KEY",
               "CODEX_ROUTER_TOKEN", "CODEX_RESULT_TOKEN", "AI_SDLC_RESULT_WRITER_PRIVATE_KEY")))
     continuity = parse(env["CONTINUITY_JSON"])
@@ -110,10 +109,31 @@ def authorize(env):
         need(not key_id and not key)
         pub = None
         key_binding = "no-key"
-    grant = ":".join(("readiness-handoff", mode, sha, run,
+    return mode, int(run), continuity, key_id, pub, key_binding
+
+
+def authorize(env):
+    mode, run, continuity, key_id, pub, key_binding = preflight(env)
+    need(env.get("AUTHORIZED_CONTROL_PLANE_SHA") == CONTROL
+         and env.get("PUBLICATION_POLICY_REVISION") == POLICY
+         and not env.get("PUBLICATION_CANARY_AUTHORIZATION"))
+    grant = ":".join(("readiness-handoff", mode, env["EXPECTED_HELPER_SHA"], str(run),
+                      env["GITHUB_RUN_ID"], env["GITHUB_RUN_ATTEMPT"],
                       digest(canonical(continuity).encode()), key_binding))
     need(env.get("MAINTENANCE_AUTHORIZATION") == grant)
-    return mode, int(run), continuity, key_id, pub
+    return mode, run, continuity, key_id, pub
+
+
+def credential_free_preflight():
+    try:
+        need(not any(os.environ.get(k) for k in ("READ_TOKEN", "TARGET_PUBLICATION_TOKEN",
+                  "PUBLICATION_READINESS_EVIDENCE", "MAINTENANCE_AUTHORIZATION")))
+        preflight(os.environ)
+        print("READINESS_CREDENTIAL_FREE_PREFLIGHT_PASS")
+        return 0
+    except Exception:
+        print("READINESS_CREDENTIAL_FREE_PREFLIGHT_BLOCKED", file=sys.stderr)
+        return 1
 
 
 def continuity_check(pair, run, helper, now):
@@ -225,10 +245,12 @@ def seal(raw, public_key):
     return base64.b64encode(out.raw).decode()
 
 
-def envelope(raw, key_id, public_key, run_id, helper_sha, continuity):
+def envelope(raw, key_id, public_key, run_id, helper_sha, continuity, helper_run_id, attempt):
+    need(type(helper_run_id) is int and helper_run_id > 0 and type(attempt) is int and attempt == 1)
     return {"version": 1, "repository": TARGET, "environment": ENVIRONMENT,
             "secret_name": "PUBLICATION_READINESS_EVIDENCE", "key_id": key_id,
             "public_key_sha256": digest(public_key), "canary_run_id": run_id,
+            "helper_run_id": helper_run_id, "helper_run_attempt": attempt,
             "helper_sha": helper_sha, "continuity_sha256": digest(canonical(continuity).encode()),
             "encrypted_value": seal(raw, public_key)}
 
@@ -264,8 +286,12 @@ def main():
         run = reader.call("GET", PREFIX + "/actions/runs/" + str(run_id))
         run_identity(run, run_id)
         helper = reader.call("GET", PREFIX + "/actions/runs/" + os.environ["GITHUB_RUN_ID"])
-        need(helper["head_sha"] == os.environ["EXPECTED_HELPER_SHA"]
-             and helper["path"] == WORKFLOW and helper["run_attempt"] == 1
+        need(type(helper["id"]) is int and helper["id"] == int(os.environ["GITHUB_RUN_ID"])
+             and helper["head_sha"] == os.environ["EXPECTED_HELPER_SHA"]
+             and helper["head_branch"] == REF.removeprefix("refs/heads/")
+             and helper["event"] == "workflow_dispatch" and helper["status"] == "in_progress"
+             and helper["repository"]["full_name"] == helper["head_repository"]["full_name"] == TARGET
+             and helper["path"] == WORKFLOW and type(helper["run_attempt"]) is int and helper["run_attempt"] == 1
              and helper["actor"]["login"] == helper["triggering_actor"]["login"] == OWNER)
         job = canary_job(reader.call("GET", PREFIX + "/actions/runs/" + str(run_id)
                                     + "/attempts/1/jobs?per_page=100"), run_id)
@@ -273,10 +299,13 @@ def main():
         now = datetime.now(timezone.utc)
         continuity_check(pair, run, helper, now)
         verify_evidence(row, run, reader, publisher, transport, Plan, now)
+        output = Path(os.environ["RUNNER_TEMP"]) / "readiness-envelope.json"
+        need(not output.exists() and not output.is_symlink())
         if mode == "package":
             raw = record_for(row, token, require_readiness, now)
-            result = envelope(raw, key_id, pub, run_id, helper["head_sha"], pair)
-            with (Path(os.environ["RUNNER_TEMP"]) / "readiness-envelope.json").open("x") as stream:
+            result = envelope(raw, key_id, pub, run_id, helper["head_sha"], pair,
+                              helper["id"], helper["run_attempt"])
+            with output.open("x") as stream:
                 stream.write(canonical(result) + "\n")
             print("READINESS_ENCRYPTED_HANDOFF_PASS; owner installation required")
         else:
@@ -293,4 +322,8 @@ def main():
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--preflight"]:
+        raise SystemExit(credential_free_preflight())
+    if sys.argv[1:]:
+        raise SystemExit("READINESS_HANDOFF_BLOCKED")
     raise SystemExit(main())

@@ -50,16 +50,25 @@ except observation timestamp. Never include secrets or fingerprints.
 Owner must independently verify actual GitHub metadata, including absence
 of fallbacks; inability to read it is a blocker.
 
-Separately approve a protected environment variable
+Dispatch only after separate owner authorization, while no maintenance grant exists.
+The unconditional credential-free preflight must succeed and the handoff job
+must wait at the protected environment. Verify the actual helper run ID,
+attempt 1, exact commit/ref, owner and input tuple before setting any grant.
+Do not approve the deployment yet. Separately approve a protected environment variable
 PUBLICATION_READINESS_MAINTENANCE_AUTHORIZATION equal to:
-readiness-handoff:MODE:HELPER_SHA:CANARY_RUN_ID:CONTINUITY_SHA256:KEY_BINDING
+readiness-handoff:MODE:HELPER_SHA:CANARY_RUN_ID:HELPER_RUN_ID:1:CONTINUITY_SHA256:KEY_BINDING
 where CONTINUITY_SHA256 is SHA256 of compact sorted JSON, KEY_BINDING is
 KEY_ID:SHA256_OF_DECODED_PUBLIC_KEY for package, or no-key for verify.
 No repo/org fallback for this grant; owner verifies this. Do not reuse grants
 or dispatch twice. Confirmation is package-accepted-canary or
 verify-accepted-canary. Verify inputs must have empty key fields. Grant does
 not auto-consume; remove separately after the exact authorized attempt.
-Protected approval remains separate even if grant exists.
+Protected approval remains separate even if grant exists. The grant is bound
+to the waiting helper run ID and attempt 1, not just the canary run; a second
+fresh run cannot use it. If preflight fails or the protected job is absent,
+stop. Green workflow status alone is not acceptance: verify the successful
+preflight and handoff jobs, exactly one successful mode step, the other
+skipped, the enforcement step and mode-specific terminal PASS log.
 
 ## Owner installation and verification (not implemented as an action)
 
@@ -69,7 +78,9 @@ registry using read-only credential; rechecks publisher /user and push
 metadata; validates exact plaintext with immutable validator. Sealed box
 uses GitHub's environment public key via system libsodium. Only ciphertext
 and nonsecret bindings go in one-day artifact publication-readiness-envelope.
-Inspect exact run identity, job success and artifact provenance; read back
+Inspect exact run identity, job success and artifact provenance, including
+helper_run_id and helper_run_attempt=1 in the envelope, matching the grant
+and actual producing run; read back
 public key and ID again from exact environment and compare. Recheck
 continuity, release and grant. No plaintext or fingerprint in artifacts.
 Separately authorize owner-side installation via environment secret PUT

@@ -5,6 +5,10 @@ from datetime import datetime, timezone
 import json
 import os
 import unittest
+from contextlib import redirect_stdout, redirect_stderr
+from io import StringIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import package_publication_readiness as p
@@ -41,7 +45,7 @@ class HandoffTests(unittest.TestCase):
     def test_ciphertext_roundtrip(self):
         lib, pk, sk = keys()
         raw = p.record_for(ROW, TOKEN, require_readiness, NOW)
-        obj = p.envelope(raw, "42", pk, 123, "a" * 40, pair())
+        obj = p.envelope(raw, "42", pk, 123, "a" * 40, pair(), 456, 1)
         encoded = json.dumps(obj)
         self.assertNotIn(TOKEN, encoded)
         self.assertNotIn(p.digest(TOKEN.encode()), encoded)
@@ -98,15 +102,15 @@ class HandoffTests(unittest.TestCase):
                    GITHUB_REPOSITORY=p.TARGET, GITHUB_EVENT_NAME="workflow_dispatch",
                    GITHUB_REF=p.REF, GITHUB_WORKFLOW_REF=p.TARGET+"/"+p.WORKFLOW+"@"+p.REF,
                    GITHUB_SHA=sha, GITHUB_WORKFLOW_SHA=sha, GITHUB_ACTOR=p.OWNER,
-                   GITHUB_TRIGGERING_ACTOR=p.OWNER, GITHUB_RUN_ATTEMPT="1",
+                   GITHUB_TRIGGERING_ACTOR=p.OWNER, GITHUB_RUN_ATTEMPT="1", GITHUB_RUN_ID="456",
                    CONFIRMATION="package-accepted-canary", AUTHORIZED_CONTROL_PLANE_SHA=p.CONTROL,
                    PUBLICATION_POLICY_REVISION=p.POLICY, CONTINUITY_JSON=p.canonical(pair()),
                    ENV_KEY_ID="42", ENV_PUBLIC_KEY=base64.b64encode(pk).decode())
         prefix = "readiness-handoff:"
         h = p.digest(p.canonical(pair()).encode())
-        env["MAINTENANCE_AUTHORIZATION"] = prefix + f"package:{sha}:123:{h}:42:{p.digest(pk)}"
+        env["MAINTENANCE_AUTHORIZATION"] = prefix + f"package:{sha}:123:456:1:{h}:42:{p.digest(pk)}"
         self.assertEqual(p.authorize(env)[0], "package")
-        for field, value in (("GITHUB_RUN_ATTEMPT", "2"), ("GITHUB_ACTOR", "other"),
+        for field, value in (("GITHUB_RUN_ATTEMPT", "2"), ("GITHUB_RUN_ID", "457"), ("GITHUB_ACTOR", "other"),
                              ("GITHUB_WORKFLOW_SHA", "b"*40), ("GITHUB_REF", "refs/heads/main"),
                              ("PUBLICATION_CANARY_AUTHORIZATION", "active"),
                              ("OPENAI_API_KEY", "synthetic"), ("ENV_KEY_ID", "43")):
@@ -116,7 +120,7 @@ class HandoffTests(unittest.TestCase):
                    ENV_KEY_ID="", ENV_PUBLIC_KEY="")
         with self.assertRaises(p.Blocked):
             p.authorize(env)
-        env["MAINTENANCE_AUTHORIZATION"] = prefix + f"verify:{sha}:123:{h}:no-key"
+        env["MAINTENANCE_AUTHORIZATION"] = prefix + f"verify:{sha}:123:456:1:{h}:no-key"
         self.assertEqual(p.authorize(env)[0], "verify")
 
     def test_unfresh_evidence_denies_before_network(self):
@@ -155,7 +159,7 @@ class HandoffTests(unittest.TestCase):
             with self.assertRaises(p.Blocked):
                 p.canary_job({"total_count": 1, "jobs": [dict(job, **change)]}, 123)
 
-    def test_real_immutable_readback_contract(self):
+    def readback_fixture(self):
         plan = Plan("synthetic-01", p.ADAPTER, p.CONTROL, "a"*40, p.POLICY)
         head = "b"*40
         row = dict(p.bindings(), status="created-draft-verified", readiness_eligible=False,
@@ -198,6 +202,10 @@ class HandoffTests(unittest.TestCase):
                 if method != "GET" or data is not None:
                     raise AssertionError("write trap")
                 return routes[path]
+        return row, routes, pr, Fake
+
+    def test_real_immutable_readback_contract(self):
+        row, routes, pr, Fake = self.readback_fixture()
         fake = Fake()
         p.verify_evidence(row, RUN, fake, fake, transport, Plan, NOW)
         for changed in (dict(row, candidate_sha="c"*40), dict(row, policy_revision="other"),
@@ -218,6 +226,148 @@ class HandoffTests(unittest.TestCase):
             log.assert_not_called()
             enc.assert_not_called()
             rec.assert_not_called()
+
+
+    def execution_env(self, mode, pk, tmp):
+        sha = "a"*40
+        env = dict(MODE=mode, EXPECTED_HELPER_SHA=sha, CANARY_RUN_ID="123",
+                   GITHUB_REPOSITORY=p.TARGET, GITHUB_EVENT_NAME="workflow_dispatch",
+                   GITHUB_REF=p.REF, GITHUB_WORKFLOW_REF=p.TARGET+"/"+p.WORKFLOW+"@"+p.REF,
+                   GITHUB_SHA=sha, GITHUB_WORKFLOW_SHA=sha, GITHUB_ACTOR=p.OWNER,
+                   GITHUB_TRIGGERING_ACTOR=p.OWNER, GITHUB_RUN_ATTEMPT="1", GITHUB_RUN_ID="456",
+                   CONFIRMATION=mode+"-accepted-canary", AUTHORIZED_CONTROL_PLANE_SHA=p.CONTROL,
+                   PUBLICATION_POLICY_REVISION=p.POLICY, CONTINUITY_JSON=p.canonical(pair()),
+                   ENV_KEY_ID="42" if mode=="package" else "",
+                   ENV_PUBLIC_KEY=base64.b64encode(pk).decode() if mode=="package" else "",
+                   IMMUTABLE_ROOT=str(Path(__file__).resolve().parents[1]), RUNNER_TEMP=tmp)
+        key = "42:"+p.digest(pk) if mode=="package" else "no-key"
+        env["MAINTENANCE_AUTHORIZATION"] = ":".join(("readiness-handoff", mode, sha, "123",
+            "456", "1", p.digest(p.canonical(pair()).encode()), key))
+        return env
+
+    def test_credential_free_preflight(self):
+        _, pk, _ = keys()
+        env = self.execution_env("package", pk, "/unused")
+        del env["MAINTENANCE_AUTHORIZATION"]
+        with patch.dict(os.environ, env, clear=True), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            self.assertEqual(p.credential_free_preflight(), 0)
+            for name, value in (("MODE", "other"), ("GITHUB_RUN_ATTEMPT", "2"),
+                                ("GITHUB_RUN_ID", "123"), ("GITHUB_REF", "refs/heads/main"),
+                                ("TARGET_PUBLICATION_TOKEN", TOKEN)):
+                with patch.dict(os.environ, {name:value}):
+                    self.assertEqual(p.credential_free_preflight(), 1)
+
+    def exercise_main(self, mode, *, mutation=None, expected=0):
+        lib, pk, sk = keys()
+        row, routes, pr, _ = self.readback_fixture()
+        run = dict(RUN, id=123, path=p.CANARY_WORKFLOW, event="workflow_dispatch",
+                   head_sha=p.ADAPTER, head_branch=p.TAG,
+                   repository={"full_name":p.TARGET}, head_repository={"full_name":p.TARGET},
+                   actor={"login":p.OWNER}, triggering_actor={"login":p.OWNER},
+                   run_attempt=1, status="completed", conclusion="success")
+        helper = dict(HELPER, id=456, head_sha="a"*40, path=p.WORKFLOW,
+                      head_branch=p.REF.removeprefix("refs/heads/"), event="workflow_dispatch",
+                      repository={"full_name":p.TARGET}, head_repository={"full_name":p.TARGET},
+                      run_attempt=1, status="in_progress", actor={"login":p.OWNER},
+                      triggering_actor={"login":p.OWNER})
+        routes[p.PREFIX+"/actions/runs/123"] = run
+        routes[p.PREFIX+"/actions/runs/456"] = helper
+        routes[p.PREFIX+"/actions/runs/123/attempts/1/jobs?per_page=100"] = {
+            "total_count":1, "jobs":[{"id":789,"run_id":123,"name":"canary",
+             "head_sha":p.ADAPTER,"status":"completed","conclusion":"success","steps":[
+              {"name":"Verify immutable authorization and publish one bounded draft",
+               "status":"completed","conclusion":"success"}]}]}
+        calls = []
+        class Client:
+            def __init__(self, token, *, publisher=False):
+                if publisher or token not in (TOKEN, "synthetic-reader"):
+                    raise AssertionError("credential/write trap")
+                self.token = token
+            def call(self, method, path, data=None):
+                calls.append((self.token,method,path))
+                if method != "GET" or data is not None:
+                    raise AssertionError("write trap")
+                if self.token == TOKEN and path not in ("/user",p.PREFIX):
+                    raise AssertionError("publisher read scope trap")
+                return routes[path]
+        class Clock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return NOW
+        with TemporaryDirectory() as tmp:
+            env = self.execution_env(mode, pk, tmp)
+            env.update(READ_TOKEN="synthetic-reader",TARGET_PUBLICATION_TOKEN=TOKEN)
+            if mode=="verify":
+                env["PUBLICATION_READINESS_EVIDENCE"] = p.record_for(row,TOKEN,require_readiness,NOW)
+            if mutation:
+                mutation(env,row,helper,pr)
+            log = "canary\tstep\t" + p.canonical(row)
+            def fake_subprocess(args, **kwargs):
+                self.assertEqual(args, ["gh","run","view","--repo",p.TARGET,"--job","789","--log"])
+                self.assertEqual(kwargs["env"]["GH_TOKEN"], "synthetic-reader")
+                self.assertNotIn(TOKEN, json.dumps(kwargs["env"]))
+                self.assertNotIn(p.digest(TOKEN.encode()), json.dumps(kwargs["env"]))
+                for k in ("READ_TOKEN","TARGET_PUBLICATION_TOKEN","PUBLICATION_READINESS_EVIDENCE"):
+                    self.assertNotIn(k, os.environ)
+                return log
+            stdout,stderr=StringIO(),StringIO()
+            # Allow only fake GETs and exact fake gh log command; no live network.
+            with patch.dict(os.environ,env,clear=True), patch.object(p,"datetime",Clock), \
+                 patch.object(transport,"GitHub",Client), \
+                 patch.object(p.subprocess,"check_output",side_effect=fake_subprocess), \
+                 patch.object(p.subprocess,"run",side_effect=AssertionError("subprocess trap")), \
+                 patch("socket.socket",side_effect=AssertionError("network trap")), \
+                 patch.object(p.sys,"path",list(p.sys.path)), \
+                 redirect_stdout(stdout), redirect_stderr(stderr):
+                result=p.main()
+            self.assertEqual(result,expected,stdout.getvalue()+stderr.getvalue())
+            output=stdout.getvalue()+stderr.getvalue()
+            self.assertNotIn(TOKEN,output)
+            self.assertNotIn(p.digest(TOKEN.encode()),output)
+            self.assertTrue(all(method=="GET" for _,method,_ in calls))
+            files=list(Path(tmp).iterdir())
+            if expected==0 and mode=="package":
+                self.assertEqual([f.name for f in files],["readiness-envelope.json"])
+                obj=json.loads(files[0].read_text())
+                self.assertEqual((obj["helper_run_id"],obj["helper_run_attempt"]),(456,1))
+                self.assertNotIn(TOKEN,files[0].read_text())
+                self.assertNotIn(p.digest(TOKEN.encode()),files[0].read_text())
+                encrypted=base64.b64decode(obj["encrypted_value"])
+                clear=ctypes.create_string_buffer(len(encrypted)-48)
+                lib.crypto_box_seal_open.argtypes=[ctypes.c_void_p,ctypes.c_char_p,
+                    ctypes.c_ulonglong,ctypes.c_char_p,ctypes.c_char_p]
+                self.assertEqual(lib.crypto_box_seal_open(clear,encrypted,len(encrypted),pk,sk),0)
+                require_readiness(clear.raw.decode(),p.bindings(),TOKEN,now=NOW)
+                self.assertIn("READINESS_ENCRYPTED_HANDOFF_PASS",output)
+            else:
+                self.assertEqual(files,[])
+                if expected==0:
+                    self.assertIn("READINESS_INSTALLED_VALIDATOR_PASS",output)
+                else:
+                    self.assertNotIn("_PASS",output)
+            return calls
+
+    def test_main_package_success(self):
+        self.assertTrue(self.exercise_main("package"))
+
+    def test_main_verify_success(self):
+        self.assertTrue(self.exercise_main("verify"))
+
+    def test_main_denials(self):
+        mutations=[
+            ("package",lambda env,row,helper,pr:env.update(GITHUB_RUN_ID="457")),
+            ("package",lambda env,row,helper,pr:helper.update(id=457)),
+            ("package",lambda env,row,helper,pr:row.update(status="verified-existing-draft")),
+            ("package",lambda env,row,helper,pr:pr.update(draft=False)),
+            ("verify",lambda env,row,helper,pr:env.update(PUBLICATION_READINESS_EVIDENCE="{}")),
+            ("verify",lambda env,row,helper,pr:env.update(PUBLICATION_READINESS_EVIDENCE=
+                p.record_for(row,"different-synthetic-token",require_readiness,NOW))),
+            ("verify",lambda env,row,helper,pr:env.update(PUBLICATION_READINESS_EVIDENCE=
+                p.record_for(dict(row,draft_url="https://github.com/"+p.TARGET+"/pull/999"),TOKEN,require_readiness,NOW))),
+        ]
+        for mode, mutation in mutations:
+            with self.subTest(mode=mode,mutation=mutation):
+                self.exercise_main(mode,mutation=mutation,expected=1)
 
 
 if __name__ == "__main__":
