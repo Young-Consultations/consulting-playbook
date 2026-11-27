@@ -1,0 +1,100 @@
+name: Package or verify protected publication readiness
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [package, verify]
+        required: true
+      expected_helper_sha:
+        type: string
+        required: true
+      canary_run_id:
+        type: string
+        required: true
+      continuity_json:
+        description: Owner-attested before/after metadata, never secret contents
+        type: string
+        required: true
+      environment_key_id:
+        type: string
+        required: false
+      environment_public_key:
+        description: GitHub environment public key; empty for verify
+        type: string
+        required: false
+      confirmation:
+        type: string
+        required: true
+
+permissions: {}
+concurrency:
+  group: publication-readiness-maintenance
+  cancel-in-progress: false
+
+jobs:
+  handoff:
+    if: >-
+      github.repository == 'Young-Consultations/consulting-playbook' &&
+      github.ref == 'refs/heads/review/v5-readiness-handoff' &&
+      github.actor == 'mightyjoe909' && github.triggering_actor == 'mightyjoe909' &&
+      github.run_attempt == 1 && github.sha == inputs.expected_helper_sha &&
+      github.workflow_sha == inputs.expected_helper_sha
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: consulting-playbook-codex
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    env:
+      MODE: ${{ inputs.mode }}
+      EXPECTED_HELPER_SHA: ${{ inputs.expected_helper_sha }}
+      CANARY_RUN_ID: ${{ inputs.canary_run_id }}
+      CONTINUITY_JSON: ${{ inputs.continuity_json }}
+      ENV_KEY_ID: ${{ inputs.environment_key_id }}
+      ENV_PUBLIC_KEY: ${{ inputs.environment_public_key }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+      AUTHORIZED_CONTROL_PLANE_SHA: ${{ vars.CODEX_AUTHORIZED_CONTROL_PLANE_SHA }}
+      PUBLICATION_POLICY_REVISION: ${{ vars.PUBLICATION_POLICY_REVISION }}
+      PUBLICATION_CANARY_AUTHORIZATION: ${{ vars.PUBLICATION_CANARY_AUTHORIZATION }}
+      MAINTENANCE_AUTHORIZATION: ${{ vars.PUBLICATION_READINESS_MAINTENANCE_AUTHORIZATION }}
+      IMMUTABLE_ROOT: ${{ github.workspace }}/immutable
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: e4328a6ddde2da6e691b8127b01863b659a5537b
+          path: immutable
+          persist-credentials: false
+      - name: Check exact helper and immutable validator identities
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$EXPECTED_HELPER_SHA" ]]
+          [[ "$(git -C immutable rev-parse HEAD)" == "e4328a6ddde2da6e691b8127b01863b659a5537b" ]]
+          python3 -c 'import ctypes; ctypes.CDLL("libsodium.so.23")'
+      - name: Package encrypted evidence only
+        if: inputs.mode == 'package'
+        env:
+          READ_TOKEN: ${{ github.token }}
+          TARGET_PUBLICATION_TOKEN: ${{ secrets.TARGET_PUBLICATION_TOKEN }}
+        run: exec python3 scripts/package_publication_readiness.py
+      - name: Verify installed readiness without model execution
+        if: inputs.mode == 'verify'
+        env:
+          READ_TOKEN: ${{ github.token }}
+          TARGET_PUBLICATION_TOKEN: ${{ secrets.TARGET_PUBLICATION_TOKEN }}
+          PUBLICATION_READINESS_EVIDENCE: ${{ secrets.PUBLICATION_READINESS_EVIDENCE }}
+        run: exec python3 scripts/package_publication_readiness.py
+      - name: Upload ciphertext only
+        if: inputs.mode == 'package'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: publication-readiness-envelope
+          path: ${{ runner.temp }}/readiness-envelope.json
+          if-no-files-found: error
+          retention-days: 1
